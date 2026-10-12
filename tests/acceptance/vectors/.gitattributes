@@ -1,0 +1,2 @@
+# Golden vectors are compared byte-for-byte; keep LF on every checkout.
+*.json text eol=lf
