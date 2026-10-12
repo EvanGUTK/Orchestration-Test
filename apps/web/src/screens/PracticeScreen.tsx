@@ -2,13 +2,14 @@ import { useId, useState } from "react";
 import type { FormEvent } from "react";
 import { MAX_BOARD_SIZE, MIN_BOARD_SIZE, PracticeOptionsSchema, practiceRuleset } from "@g2048/contracts";
 import { navigate } from "../app/routes.js";
-import { useServices } from "../app/services.js";
+import { describeApiError } from "../api/client.js";
+import { useActiveGame } from "../app/services.js";
 import { EngineUnavailable } from "./PlayScreen.js";
 
 const SIZES = Array.from({ length: MAX_BOARD_SIZE - MIN_BOARD_SIZE + 1 }, (_, i) => MIN_BOARD_SIZE + i);
 
 export function PracticeScreen() {
-  const { game } = useServices();
+  const game = useActiveGame();
   const id = useId();
   const [size, setSize] = useState("5");
   const [fourWeight, setFourWeight] = useState("1");
@@ -33,8 +34,12 @@ export function PracticeScreen() {
       return;
     }
     setError(null);
-    await game.start({ mode: "practice", rules: practiceRuleset(parsed.data), seed: parsed.data.seed });
-    navigate("play");
+    try {
+      await game.start({ mode: "practice", rules: practiceRuleset(parsed.data), seed: parsed.data.seed });
+      navigate("play");
+    } catch (err) {
+      setError(`Couldn't start the practice game. ${describeApiError(err)}`);
+    }
   };
 
   return (

@@ -44,15 +44,7 @@ describe("App shell", () => {
       sound: silentSoundPlayer,
     });
     render(<App services={services} />);
-    for (const path of [
-      "/leaderboards",
-      "/challenges",
-      "/profile",
-      "/duel",
-      "/duel/match",
-      "/bots",
-      "/replays",
-    ]) {
+    for (const path of ["/leaderboards", "/challenges", "/duel", "/duel/match", "/bots", "/replays"]) {
       await go(path);
       const main = screen.getByRole("main");
       expect(within(main).getByText("Not available yet")).toBeTruthy();
@@ -65,7 +57,7 @@ describe("App shell", () => {
     const services = createAppServices({ engine: null, storage: memoryStorage(), sound: silentSoundPlayer });
     render(<App services={services} />);
     await go("/play");
-    expect(screen.getByText(/engine has not been integrated/)).toBeTruthy();
+    expect(screen.getByText(/engine is not available/)).toBeTruthy();
   });
 
   it("switches theme from the settings screen and persists it", async () => {
@@ -98,14 +90,14 @@ describe("Guest play end-to-end", () => {
 
     // Keys outside the board do nothing.
     fireEvent.keyDown(document.body, { key: "ArrowLeft" });
-    await act(() => services.game!.idle());
-    expect(services.game!.getSnapshot().session!.state.revision).toBe(0);
+    await act(() => services.localGame!.idle());
+    expect(services.localGame!.getSnapshot().session!.state.revision).toBe(0);
 
     for (const key of ["ArrowLeft", "ArrowUp", "ArrowRight", "ArrowDown", "a", "w", "d", "s"]) {
       fireEvent.keyDown(board, { key });
     }
-    await act(() => services.game!.idle());
-    const state = services.game!.getSnapshot().session!.state;
+    await act(() => services.localGame!.idle());
+    const state = services.localGame!.getSnapshot().session!.state;
     expect(state.acceptedMoves).toBeGreaterThan(0);
     expect(board.querySelectorAll(".tile").length).toBe(state.board.cells.filter((c) => c !== null).length);
     expect(storage.getItem("g2048.guest.game.v1")).toContain(`\\"revision\\":${state.revision}`);
@@ -125,7 +117,7 @@ describe("Guest play end-to-end", () => {
     fireEvent.keyDown(board, { key: "d" });
     fireEvent.click(screen.getByRole("button", { name: "Move down" }));
     fireEvent.keyDown(board, { key: "ArrowLeft" });
-    await act(() => services.game!.idle());
+    await act(() => services.localGame!.idle());
     expect(engine.calls).toEqual(["left", "up", "right", "down", "left"]);
   });
 

@@ -8,8 +8,25 @@ export type GameSession = {
   /** Seed shown to the player for casual/practice games; null when the authority hides it. */
   readonly seed: string | null;
   readonly state: GameState;
-  /** Number of undo steps currently available (0 when the ruleset forbids undo). */
-  readonly undoDepth: number;
+  /** Whether an undo is currently possible. */
+  readonly canUndo: boolean;
+  /** Undo steps available when known locally; null when the server manages history. */
+  readonly undoDepth: number | null;
+  /** Where the authoritative state lives. */
+  readonly authority: "local" | "server";
+};
+
+export type MoveFailure = {
+  readonly ok: false;
+  readonly code: string;
+  readonly message: string;
+  /**
+   * True when the move may still be pending (connection lost / server busy after retries). The adapter
+   * keeps the command and its commandId; calling `move` again with the same direction re-sends it
+   * idempotently, so a lost response can never double-apply.
+   */
+  readonly retryable?: boolean;
+  readonly requestId?: string | null;
 };
 
 export type MoveOutcome =
@@ -20,7 +37,7 @@ export type MoveOutcome =
       readonly scoreDelta: Decimal;
       readonly events: readonly DomainEvent[];
     }
-  | { readonly ok: false; readonly code: string; readonly message: string };
+  | MoveFailure;
 
 export type StartRequest = {
   readonly mode: GameMode;
@@ -30,16 +47,21 @@ export type StartRequest = {
 };
 
 /**
- * Where moves are applied. FRONTEND-001 ships the local (guest, offline) implementation backed by the
- * pure engine; FRONTEND-002 adds a server implementation (authoritative moves with commandId +
- * expectedRevision). Every method resolves in call order; the MoveQueue never calls `move` concurrently.
+ * Where moves are applied: locally with the pure engine (guest, offline) or on the local server
+ * (accounts; authoritative moves with commandId + expectedRevision). The MoveQueue never calls `move`
+ * concurrently, and each method resolves in call order.
  */
 export interface GameAdapter {
   readonly kind: "local" | "server";
   current(): GameSession | null;
   start(request: StartRequest): Promise<GameSession>;
   move(direction: Direction): Promise<MoveOutcome>;
+  /** Returns the restored session, or null when there is nothing to undo. May throw transport errors. */
   undo(): Promise<GameSession | null>;
-  /** Removes the current game (and its local save). */
+  /** Ends the current game (status "forfeited"). */
+  forfeit(): Promise<GameSession | null>;
+  /** Re-reads the authoritative state and drops any unresolved command (it is reflected in the state). */
+  reload(): Promise<GameSession | null>;
+  /** Detaches the current game (and removes a local guest save). Server games stay resumable. */
   discard(): Promise<void>;
 }

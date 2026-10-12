@@ -28,16 +28,6 @@ export function LeaderboardsScreen() {
   );
 }
 
-export function ProfileScreen() {
-  return (
-    <Unavailable
-      purpose="Personal bests, score distribution, highest tiles, win/draw/loss and ranked history for your local account."
-      reason={`${SERVER_REASON} Statistics are never estimated.`}
-      alternatives={[{ to: "settings", label: "Guest settings" }, ...PLAY_INSTEAD]}
-    />
-  );
-}
-
 export function LobbyScreen() {
   return (
     <Unavailable

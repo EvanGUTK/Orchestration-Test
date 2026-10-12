@@ -1,6 +1,6 @@
 import { routeHref } from "../app/routes.js";
 import type { RouteId } from "../app/routes.js";
-import { useServices } from "../app/services.js";
+import { useActiveGame } from "../app/services.js";
 
 type ModeCard = {
   title: string;
@@ -63,7 +63,7 @@ const MODES: ModeCard[] = [
 ];
 
 export function ModesScreen() {
-  const { game } = useServices();
+  const game = useActiveGame();
   return (
     <ul className="mode-grid">
       {MODES.map((m) => {
