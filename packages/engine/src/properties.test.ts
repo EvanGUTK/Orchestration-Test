@@ -1,7 +1,9 @@
-import type { Board, Cell, Direction } from "@g2048/contracts";
+import { practiceRuleset, RULESETS } from "@g2048/contracts";
+import type { Board, Cell, Direction, GameState, Ruleset } from "@g2048/contracts";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { legalMoves, slide } from "./slide.js";
+import { applyMove, newGame } from "./game.js";
+import { isGameOver, legalMoves, slide } from "./slide.js";
 
 const DIRS: readonly Direction[] = ["up", "right", "down", "left"];
 
@@ -137,6 +139,67 @@ describe("slide properties (ENG-08)", () => {
         }
         expect(result.changed).toBe(result.events.length > 0);
       }),
+    );
+  });
+});
+
+const EVENT_RANK = {
+  "tile.moved": 0,
+  "tile.merged": 1,
+  "tile.spawned": 2,
+  "milestone.reached": 3,
+  "game.over": 4,
+};
+
+function rulesFor(size: number, fourWeight: number): Ruleset {
+  return size === 4 && fourWeight === 1
+    ? RULESETS["classic-v1"]
+    : practiceRuleset({ size, fourWeight, undo: true });
+}
+
+describe("applyMove properties (ENG-03, ENG-08)", () => {
+  it("random games keep counters, score, mass and event invariants; inputs stay frozen", () => {
+    fc.assert(
+      fc.property(
+        fc.string({ maxLength: 16 }),
+        fc.integer({ min: 3, max: 8 }),
+        fc.integer({ min: 0, max: 10 }),
+        fc.array(directionArb, { minLength: 1, maxLength: 120 }),
+        (seed, size, fourWeight, directions) => {
+          const rules = rulesFor(size, fourWeight);
+          let state: GameState = deepFreeze(newGame(rules, seed));
+          for (const direction of directions) {
+            if (state.status !== "active") break;
+            const snapshot = JSON.stringify(state);
+            const result = applyMove(state, direction, rules);
+            expect(JSON.stringify(state)).toBe(snapshot);
+            if (!result.changed) {
+              expect(result.state).toBe(state);
+              expect(result.events).toEqual([]);
+              expect(result.scoreDelta).toBe("0");
+              continue;
+            }
+            const next = result.state;
+            expect(next.acceptedMoves).toBe(state.acceptedMoves + 1);
+            expect(next.revision).toBe(state.revision + 1);
+            expect(BigInt(next.score)).toBe(BigInt(state.score) + BigInt(result.scoreDelta));
+            const spawns = result.events.filter((e) => e.type === "tile.spawned");
+            expect(spawns).toHaveLength(1);
+            const spawned = spawns[0]!;
+            if (spawned.type === "tile.spawned") {
+              expect(mass(next.board)).toBe(mass(state.board) + (1n << BigInt(spawned.exponent)));
+              if (fourWeight === 0) expect(spawned.exponent).toBe("1");
+              if (fourWeight === 10) expect(spawned.exponent).toBe("2");
+            }
+            const ranks = result.events.map((e) => EVENT_RANK[e.type]);
+            expect(ranks).toEqual([...ranks].sort((a, b) => a - b));
+            expect(result.events.some((e) => e.type === "game.over")).toBe(isGameOver(next.board));
+            expect(next.status).toBe(isGameOver(next.board) ? "completed" : "active");
+            state = deepFreeze(next);
+          }
+        },
+      ),
+      { numRuns: 60 },
     );
   });
 });
