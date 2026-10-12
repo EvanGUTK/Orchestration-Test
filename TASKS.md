@@ -9,4 +9,4 @@ Milestones M0–M6 per docs/PROJECT_SCOPE.md. States: assigned → ACKed → in-
 | BACKEND-001 | backend | M2 | CONTRACT-001 (+ ENGINE-001 for moves) | ACKed + plan received |
 | FRONTEND-001 | frontend | M1 | CONTRACT-001 (+ ENGINE-001) | integrated (2c184f0; 211 tests total green; build ok; needs backend wiring) |
 | COMP-001 | competition | M3 | CONTRACT-001 (+ ENGINE-001) | integrated (d17f158; 163 tests total green; note bots sim uses Number exponents with limit guard) |
-| QUALITY-001 | quality | M0 | CONTRACT-001 | ACKed + plan received |
+| QUALITY-001 | quality | M0 | CONTRACT-001 | integrated part 1 (28ebef4; independent oracle: no golden mismatch; server suites pending apps) |
