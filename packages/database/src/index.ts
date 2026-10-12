@@ -1,87 +1,95 @@
-// M0 skeleton created by chief; owned by the backend lane from CONTRACT-001 onward.
-import { backup as sqliteBackup, DatabaseSync } from "node:sqlite";
-import { createHash } from "node:crypto";
-import { copyFileSync, existsSync, mkdirSync, rmSync } from "node:fs";
-import { dirname } from "node:path";
+import type { DatabaseSync } from "node:sqlite";
+import { backupDatabase, restoreDatabase as restoreWith, type RestoreResult } from "./backup.js";
+import { openDatabase, type OpenOptions } from "./connection.js";
+import {
+  assertMigrationsCompatible,
+  inspectMigrations,
+  migrate as runMigrations,
+  SCHEMA_MIGRATIONS_DDL,
+  type MigrateOptions,
+  type Migration,
+} from "./migrate.js";
+import { MIGRATIONS } from "./migrations/index.js";
 
-export type Migration = { version: number; name: string; sql: string };
+export { openDatabase, isoNow, DEFAULT_BUSY_TIMEOUT_MS, type OpenOptions } from "./connection.js";
+export { DbBusyError, MigrationError, RestoreError, isSqliteBusy, isSqliteConstraint } from "./errors.js";
+export {
+  inspectMigrations,
+  migrationChecksum,
+  assertMigrationsCompatible,
+  type Migration,
+  type MigrationStatus,
+  type MigrateOptions,
+} from "./migrate.js";
+export { MIGRATIONS, LATEST_SCHEMA_VERSION } from "./migrations/index.js";
+export {
+  builtinRulesetCatalogue,
+  canonicalRulesetJson,
+  CANONICAL_RULESET_KEYS,
+  PRACTICE_TEMPLATE_JSON,
+  sha256Hex,
+} from "./rulesets.js";
+export { DatabaseWriter, transactionSync, type WriteWork, type WriterOptions } from "./writer.js";
+export { decimalOrderBy, compareCanonicalDecimal, isCanonicalDecimal } from "./decimal.js";
+export { backupDatabase, validateDatabaseFile, type RestoreResult, type ValidationReport } from "./backup.js";
+export { acquireDatabaseLock, lockHolder, lockPathFor, DatabaseLockedError } from "./lock.js";
+export { usersRepo, type UserRow } from "./repositories/users.js";
+export { sessionsRepo, type SessionRow, type SessionKind } from "./repositories/sessions.js";
+export { profilesRepo, type ProfileRow } from "./repositories/profiles.js";
+export { guestsRepo, type GuestRow } from "./repositories/guests.js";
 
-/** Ordered, append-only. Never edit an applied migration; add a new version. */
-export const MIGRATIONS: readonly Migration[] = [];
-
-export function openDatabase(path: string): DatabaseSync {
-  mkdirSync(dirname(path), { recursive: true });
-  const db = new DatabaseSync(path);
-  db.exec("PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;");
-  return db;
+/** Applies pending migrations from this build (see migrate.ts for the guarantees). */
+export function migrate(
+  db: DatabaseSync,
+  migrations: readonly Migration[] = MIGRATIONS,
+  options: MigrateOptions = {},
+): number[] {
+  return runMigrations(db, migrations, options);
 }
 
-function checksum(sql: string): string {
-  return createHash("sha256").update(sql, "utf8").digest("hex");
+/** Offline, validated restore using this build's migration list (see backup.ts for the rules). */
+export function restoreDatabase(
+  source: string,
+  target: string,
+  migrations: readonly Migration[] = MIGRATIONS,
+): Promise<RestoreResult> {
+  return restoreWith(source, target, migrations);
 }
 
-/** Applies pending migrations in one transaction each; verifies checksums of applied ones. */
-export function migrate(db: DatabaseSync, migrations: readonly Migration[] = MIGRATIONS): number[] {
-  db.exec(`CREATE TABLE IF NOT EXISTS schema_migrations (
-    version INTEGER PRIMARY KEY, name TEXT NOT NULL, checksum TEXT NOT NULL, applied_at TEXT NOT NULL)`);
-  const applied = new Map(
-    (
-      db.prepare("SELECT version, checksum FROM schema_migrations").all() as {
-        version: number;
-        checksum: string;
-      }[]
-    ).map((r) => [r.version, r.checksum]),
-  );
-  const done: number[] = [];
-  for (const m of migrations) {
-    const sum = checksum(m.sql);
-    const prior = applied.get(m.version);
-    if (prior !== undefined) {
-      if (prior !== sum) throw new Error(`Migration ${m.version} checksum changed after it was applied`);
-      continue;
-    }
-    db.exec("BEGIN IMMEDIATE");
-    try {
-      db.exec(m.sql);
-      db.prepare(
-        "INSERT INTO schema_migrations (version, name, checksum, applied_at) VALUES (?, ?, ?, ?)",
-      ).run(m.version, m.name, sum, new Date().toISOString());
-      db.exec("COMMIT");
-    } catch (error) {
-      db.exec("ROLLBACK");
-      throw error;
-    }
-    done.push(m.version);
-  }
-  return done;
-}
+export type PreparedDatabase = {
+  db: DatabaseSync;
+  applied: number[];
+  /** Backup taken before upgrading an existing database, or null when nothing needed upgrading. */
+  preflightBackup: string | null;
+};
 
-/** WAL-safe online backup through the SQLite backup API. */
-export async function backupDatabase(db: DatabaseSync, destination: string): Promise<void> {
-  if (existsSync(destination)) throw new Error(`Backup destination already exists: ${destination}`);
-  mkdirSync(dirname(destination), { recursive: true });
-  await sqliteBackup(db, destination);
-}
-
-/** Validates a backup, then replaces the target. The application must be stopped. */
-export function restoreDatabase(source: string, target: string): void {
-  if (!existsSync(source)) throw new Error(`Backup not found: ${source}`);
-  const candidate = new DatabaseSync(source, { readOnly: true });
+/**
+ * Boot sequence: open, refuse incompatible history, take a preflight backup when an EXISTING
+ * database has pending migrations, then migrate. Runs before the server accepts requests.
+ * On failure the connection is closed and the prior data is intact (each migration is atomic and
+ * the preflight backup is kept).
+ */
+export async function prepareDatabase(
+  path: string,
+  options: OpenOptions & MigrateOptions & { migrations?: readonly Migration[] } = {},
+): Promise<PreparedDatabase> {
+  const migrations = options.migrations ?? MIGRATIONS;
+  const db = openDatabase(path, options);
   try {
-    const row = candidate.prepare("PRAGMA integrity_check").get() as { integrity_check: string };
-    if (row.integrity_check !== "ok")
-      throw new Error(`Backup failed integrity check: ${row.integrity_check}`);
-    const hasMigrations = candidate
-      .prepare("SELECT 1 AS ok FROM sqlite_master WHERE type = 'table' AND name = 'schema_migrations'")
-      .get();
-    if (!hasMigrations) throw new Error("Backup is not a 2048 Infinite database (no schema_migrations)");
-  } finally {
-    candidate.close();
+    db.exec(SCHEMA_MIGRATIONS_DDL);
+    const status = inspectMigrations(db, migrations);
+    assertMigrationsCompatible(status);
+    let preflightBackup: string | null = null;
+    if (status.pending.length > 0 && status.applied.length > 0) {
+      const from = Math.max(...status.applied);
+      const to = Math.max(...status.pending.map((m) => m.version));
+      const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+      preflightBackup = await backupDatabase(db, `${path}.pre-migrate-v${from}-to-v${to}-${stamp}`);
+    }
+    const applied = runMigrations(db, migrations, options);
+    return { db, applied, preflightBackup };
+  } catch (error) {
+    db.close();
+    throw error;
   }
-  mkdirSync(dirname(target), { recursive: true });
-  const staged = `${target}.restore-tmp`;
-  copyFileSync(source, staged);
-  for (const suffix of ["-wal", "-shm"]) rmSync(`${target}${suffix}`, { force: true });
-  copyFileSync(staged, target);
-  rmSync(staged, { force: true });
 }
