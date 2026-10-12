@@ -6,6 +6,10 @@ const port = process.env.E2E_PORT ?? "5612";
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: false,
+  // No retries: a flaky test must be reported, never hidden. Each test gets a fresh browser context
+  // (empty localStorage) against one shared server whose database is private to this run.
+  retries: 0,
+  forbidOnly: true,
   reporter: [["list"]],
   use: { baseURL: `http://127.0.0.1:${port}`, trace: "retain-on-failure" },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
