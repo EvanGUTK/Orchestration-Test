@@ -60,3 +60,13 @@ Workers needing a new dependency or contract change message chief via `tools/mai
 ## Message protocol
 `tools/mailbox.py` with `LAB_*` env from `.lab/env.sh`. Chief sends `task`; worker replies `ack` (+ plan in a
 `status` message) before coding, then `result` with commit SHA, commands run, evidence paths, risks.
+
+## Addendum A1 (additive, 2026-10-12) — answers to FRONTEND-001 questions
+1. CSRF: modifying requests send header `x-csrf-token` = `Identity.csrfToken` (`CSRF_HEADER`).
+2. Guests: server guest sessions. `POST /auth/guest` (no body) sets an opaque HttpOnly guest cookie and returns `Identity{kind:"guest"}`.
+   Guests may create classic/practice/bot-exhibition games only; no ranked, no human Elo, no leaderboards writes. Local-only guest play stays as offline fallback.
+3. `GET /replays/:id` takes the GAME id (owner, or a match seat game after the match is finished). `GET /replays` lists own finished games (`Page<ReplaySummary>`).
+4. `GET /challenges` returns `Page<Challenge>` (`{items,nextCursor}`).
+5. Bot runs: `GET /bots/runs/:id` (BotRunView), `POST /bots/runs/:id/{pause|resume|step|cancel}` all idempotent.
+6. WS payload shapes: see `WsPayloads` in `src/api.ts`. `GameView` in `game.updated` is authoritative; clients ignore `sequence <= last seen`.
+7. `GET /profile/stats` returns `ProfileStats`.
