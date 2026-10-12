@@ -107,3 +107,6 @@ integration (do not commit `package-lock.json` changes from a worker branch).
 - C5. `forfeit` changes only `status` (revision/acceptedMoves unchanged); non-active input => `GAME_NOT_ACTIVE`.
 - C6. Move-cap completion sets `status: "completed"` without a `game.over` event; consumers read `state.status`.
 - C7. `verifyReplay` rejects no-op moves and requires `initialState` to equal `newGame(rules, seed)`.
+- C8. `preferences.keyBindings` is a partial record (any subset of directions). Register/login return
+  `AuthResponse` (= `MeResponse`); session clearing is `POST /auth/logout` with `{ "allSessions": true }`;
+  logout and password change return `RevokeResponse` `{ ok: true, revokedSessions }`.
