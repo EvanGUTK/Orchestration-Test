@@ -13,16 +13,16 @@ server on `127.0.0.1:$E2E_PORT` (default 5611) with a private temp DB; needs `np
 
 | ID | Test | Command | Status / dependency |
 | --- | --- | --- | --- |
-| ENG-01 | `tests/integration/engine-oracle.test.ts` (4 dirs x empty/full/alternating, input-unchanged) | `npm run test:integration` | planned; needs ENGINE-001 |
-| ENG-02 | same file + public `tests/fixtures/slide-v1.json` (oracle already passes all vectors in `golden-review.test.ts`) | same | oracle side written+run; engine side planned |
-| ENG-03 | `golden-review.test.ts` (no-op steps) + `engine-oracle.test.ts` + `api-authority.test.ts` (no-op through HTTP) | same | oracle side written+run; others need engine/server |
-| ENG-04 | `engine-oracle.test.ts` (seed + moves -> identical state after serialize/deserialize) + `api-authority.test.ts` | same | needs engine/server |
-| ENG-05 | `engine-oracle.test.ts` high-value section (exponents 54, 256, 4096; score > 2^53 via constructed boards) + `tests/acceptance/high-values.spec.ts` (UI shows `2^n`) | integration, e2e | planned; needs engine, DB, web |
-| ENG-06 | `engine-oracle.test.ts` (board constructed to reach exponent 11; one `milestone`, `celebrated2048` flips once, stays active) | integration | planned; needs engine |
-| ENG-07 | `golden-review.test.ts` spot boards + `engine-oracle.test.ts` randomized dead/alive agreement | integration | oracle spot checks written+run |
-| ENG-08 | `engine-oracle.test.ts` property/fuzz (mass conservation, score delta, transpose/rotation symmetry, differential vs oracle) | integration | planned; needs engine |
-| ENG-09 | `engine-oracle.test.ts` malformed-state table (bad cells, zero rng, leading zeros, huge exponent -> `DomainError` code, input not mutated) | integration | planned; needs engine |
-| ENG-10 | `golden-review.test.ts` (oracle reproduces all of `prng-v1.json`, `games-v1.json`) | `npx vitest run --project integration` | **written+run: 41 pass, no mismatch** |
+| ENG-01 | `tests/integration/engine-oracle.test.ts` (4 dirs x empty/full/alternating, input-unchanged) | `npm run test:integration` | **written+run against @2048/engine (ENGINE-001 e4f8c64): pass** |
+| ENG-02 | same file + public `tests/fixtures/slide-v1.json` (oracle already passes all vectors in `golden-review.test.ts`) | same | **written+run, engine passes** |
+| ENG-03 | `golden-review.test.ts` (no-op steps) + `engine-oracle.test.ts` + `api-authority.test.ts` (no-op through HTTP) | same | **engine written+run, passes**; HTTP side needs server |
+| ENG-04 | `engine-oracle.test.ts` (seed + moves -> identical state after serialize/deserialize) + `api-authority.test.ts` | same | engine side **written+run, passes**; HTTP side needs server |
+| ENG-05 | `engine-oracle.test.ts` high-value section (exponents 54, 256, 4096; score > 2^53 via constructed boards) + `tests/acceptance/high-values.spec.ts` (UI shows `2^n`) | integration, e2e | engine side **written+run, passes** (exponents 53..4096, score > 2^53); DB/UI side planned |
+| ENG-06 | `engine-oracle.test.ts` (board constructed to reach exponent 11; one `milestone`, `celebrated2048` flips once, stays active) | integration | **written+run, passes** |
+| ENG-07 | `golden-review.test.ts` spot boards + `engine-oracle.test.ts` randomized dead/alive agreement | integration | **written+run, passes** |
+| ENG-08 | `engine-oracle.test.ts` property/fuzz (mass conservation, score delta, transpose/rotation symmetry, differential vs oracle) | integration | **written+run, passes** (4000 slide + 3000 legal-move boards, 8 rulesets x 12 seeds x <=400 moves, rotation/mass properties) |
+| ENG-09 | `engine-oracle.test.ts` malformed-state table (bad cells, zero rng, leading zeros, huge exponent -> `DomainError` code, input not mutated) | integration | **written+run, passes** (30 malformed-state cases, resource pressure, bad direction) |
+| ENG-10 | `golden-review.test.ts` (oracle reproduces all of `prng-v1.json`, `games-v1.json`) | `npx vitest run --project integration` | **written+run: oracle reproduces all goldens (41 pass); engine PRNG/seed/sha256 differential passes** |
 
 ## Accounts, persistence, authority (ACC / DB)
 
@@ -77,7 +77,7 @@ server on `127.0.0.1:$E2E_PORT` (default 5611) with a private temp DB; needs `np
 | ID | Test | Status / dependency |
 | --- | --- | --- |
 | OPS-01 | `shell-offline-responsive.spec.ts` (all non-loopback requests aborted and counted; must be 0) + full flows under the same route guard | partly written; needs web |
-| OPS-02 | `tests/performance/ops02-engine-throughput.perf.ts` | written; self-checked on the oracle (p95 0.006 ms, harness only); engine run needs ENGINE-001 |
+| OPS-02 | `tests/performance/ops02-engine-throughput.perf.ts` | **written+run against @2048/engine: n=100000, p50 0.0016 ms, p95 0.0019 ms, p99 0.0043 ms (Apple M4, Node 24.21)**; target p95 < 2 ms met |
 | OPS-03 | `ops03-concurrent-games.perf.ts` (32 games / 10,000 commands, oracle-exact) | written; harness smoke-tested on a stand-in; needs server |
 | OPS-04 | `ops04-leaderboard.perf.ts` + `support/leaderboard-oracle.ts` | oracle written+run; live needs a seeder (question to chief) |
 | OPS-05 | `ops05-replay-seek.perf.ts` (>=100k domain events, 220 seeks) | written; needs server |

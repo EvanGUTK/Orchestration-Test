@@ -47,28 +47,46 @@ export function lines(size: number, dir: Dir): number[][] {
   return out;
 }
 
-export type SlideOut = { cells: Cell[]; changed: boolean; scoreDelta: bigint };
+export type OEvent =
+  | { type: "move"; from: number; to: number; exponent: string }
+  | { type: "merge"; sources: [number, number]; to: number; exponent: string; value: string }
+  | { type: "spawn"; index: number; exponent: string }
+  | { type: "milestone"; exponent: string }
+  | { type: "game-over" }
+  | { type: "move-cap" };
+
+export type SlideOut = { cells: Cell[]; changed: boolean; scoreDelta: bigint; events: OEvent[] };
 
 export function slide(cells: readonly Cell[], size: number, dir: Dir): SlideOut {
   const next: Cell[] = new Array(cells.length).fill(null);
   let delta = 0n;
+  const moves: { to: number; seq: number; ev: OEvent }[] = [];
+  const merges: { to: number; ev: OEvent }[] = [];
+  let seq = 0;
   for (const line of lines(size, dir)) {
-    const tiles = line.map((i) => cells[i]!).filter((c): c is string => c !== null).map((c) => BigInt(c));
-    const merged: bigint[] = [];
-    for (let k = 0; k < tiles.length; k++) {
-      if (k + 1 < tiles.length && tiles[k] === tiles[k + 1]) {
-        const e = tiles[k]! + 1n;
-        merged.push(e);
+    const tiles = line.map((i) => ({ src: i, e: cells[i] })).filter((t): t is { src: number; e: string } => t.e !== null).map((t) => ({ src: t.src, e: BigInt(t.e) }));
+    let pos = 0;
+    for (let k = 0; k < tiles.length; k++, pos++) {
+      const dest = line[pos]!;
+      const t = tiles[k]!;
+      if (k + 1 < tiles.length && tiles[k + 1]!.e === t.e) {
+        const u = tiles[k + 1]!;
+        const e = t.e + 1n;
+        next[dest] = e.toString();
         delta += 1n << e;
+        for (const src of [t.src, u.src]) if (src !== dest) moves.push({ to: dest, seq: seq++, ev: { type: "move", from: src, to: dest, exponent: t.e.toString() } });
+        merges.push({ to: dest, ev: { type: "merge", sources: [t.src, u.src], to: dest, exponent: e.toString(), value: (1n << e).toString() } });
         k++;
-      } else merged.push(tiles[k]!);
+      } else {
+        next[dest] = t.e.toString();
+        if (t.src !== dest) moves.push({ to: dest, seq: seq++, ev: { type: "move", from: t.src, to: dest, exponent: t.e.toString() } });
+      }
     }
-    merged.forEach((e, p) => {
-      next[line[p]!] = e.toString();
-    });
   }
   const changed = next.some((c, i) => c !== cells[i]);
-  return { cells: next, changed, scoreDelta: delta };
+  moves.sort((x, y) => x.to - y.to || x.seq - y.seq);
+  merges.sort((x, y) => x.to - y.to);
+  return { cells: next, changed, scoreDelta: delta, events: [...moves.map((m) => m.ev), ...merges.map((m) => m.ev)] };
 }
 
 export function isDead(cells: readonly Cell[], size: number): boolean {
@@ -132,20 +150,26 @@ function stamp(rules: ORules, cells: Cell[], score: string, moves: number, revis
   };
 }
 
-export type OMove = { state: OState; changed: boolean; scoreDelta: bigint; spawn: Spawn | null };
+export type OMove = { state: OState; changed: boolean; scoreDelta: bigint; spawn: Spawn | null; events: OEvent[] };
 
 /** The oracle never mutates `state`; it rebuilds an rng from the stored words. */
 export function applyMove(state: OState, dir: Dir, rules: ORules): OMove {
   if (state.status !== "active") throw new Error("move on non-active state");
   const s = slide(state.board.cells, state.board.size, dir);
-  if (!s.changed) return { state, changed: false, scoreDelta: 0n, spawn: null };
+  if (!s.changed) return { state, changed: false, scoreDelta: 0n, spawn: null, events: [] };
   const rng = new OracleRng(state.rng.words);
   const cells = s.cells.slice();
   const sp = spawn(cells, rng, rules.spawnFourTenths);
   const score = (BigInt(state.score) + s.scoreDelta).toString();
   const celebrated = state.celebrated2048 || maxExponent(cells) >= 11n;
   const next = stamp(rules, cells, score, state.acceptedMoves + 1, state.revision + 1, rng, celebrated);
-  return { state: next, changed: true, scoreDelta: s.scoreDelta, spawn: sp };
+  const events: OEvent[] = [...s.events, { type: "spawn", index: sp.index, exponent: sp.exponent }];
+  const prevMax = maxExponent(state.board.cells);
+  const newMax = maxExponent(cells);
+  for (let e = prevMax + 1n; e <= newMax; e++) if (e >= 11n) events.push({ type: "milestone", exponent: e.toString() });
+  if (isDead(cells, rules.boardSize)) events.push({ type: "game-over" });
+  else if (rules.moveCap !== null && next.acceptedMoves >= rules.moveCap) events.push({ type: "move-cap" });
+  return { state: next, changed: true, scoreDelta: s.scoreDelta, spawn: sp, events };
 }
 
 /**
@@ -170,4 +194,10 @@ export function canonical(state: OState): string {
 
 export function checksum(state: OState): string {
   return createHash("sha256").update(canonical(state), "utf8").digest("hex");
+}
+
+/** Build a state with an explicit board/score/rng for constructed-scenario tests. */
+export function makeState(rules: ORules, cells: Cell[], opts: { score?: string; acceptedMoves?: number; revision?: number; words?: Words; celebrated2048?: boolean } = {}): OState {
+  const rng = new OracleRng(opts.words ?? deriveWords("constructed"));
+  return stamp(rules, cells, opts.score ?? "0", opts.acceptedMoves ?? 0, opts.revision ?? opts.acceptedMoves ?? 0, rng, opts.celebrated2048 ?? false);
 }
