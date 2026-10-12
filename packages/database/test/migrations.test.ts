@@ -18,6 +18,19 @@ describe("migrations", () => {
     expect(again.currentVersion).toBe(LATEST_SCHEMA_VERSION);
   });
 
+  it("upgrades a schema-1 database in place without losing data", () => {
+    const dir = tempDir();
+    const db = track(GameDb.open(join(dir, "v1.sqlite3")));
+    migrate(db.raw, { migrations: MIGRATIONS.slice(0, 1) });
+    db.raw.prepare("INSERT INTO guests (id, display_name, created_at) VALUES (?, 'g', 't')").run("g".repeat(36));
+    expect(db.raw.pragma("user_version", { simple: true })).toBe(1);
+    const r = migrate(db.raw);
+    expect(r.applied).toEqual([2]);
+    expect(db.raw.pragma("user_version", { simple: true })).toBe(2);
+    expect(db.raw.prepare("SELECT count(*) AS n FROM guests").get()).toEqual({ n: 1 });
+    expect(db.raw.prepare("SELECT count(*) AS n FROM replay_imports").get()).toEqual({ n: 0 });
+  });
+
   it("uses WAL, foreign keys and a busy timeout on the live connection", () => {
     const { db } = openMigrated();
     expect(db.raw.pragma("journal_mode", { simple: true })).toBe("wal");
@@ -30,7 +43,7 @@ describe("migrations", () => {
     const names = (db.raw.prepare("SELECT name FROM sqlite_master WHERE type='table'").all() as { name: string }[]).map((r) => r.name);
     for (const t of [
       "schema_migrations", "users", "sessions", "profiles", "rulesets", "seasons", "challenges", "challenge_attempts", "games",
-      "game_commands", "game_moves", "game_snapshots", "matches", "match_seats", "ratings", "rating_events", "bot_runs", "replay_exports",
+      "game_commands", "game_moves", "game_snapshots", "matches", "match_seats", "ratings", "rating_events", "bot_runs", "replay_exports", "replay_imports",
     ]) expect(names).toContain(t);
   });
 

@@ -3,7 +3,7 @@ import { copyFileSync, existsSync, readFileSync, readdirSync, truncateSync, writ
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { CLASSIC_RULES, ENGINE_VERSION } from "@2048/contracts";
-import { GameDb, RestoreError, backupDatabase, createRepos, restoreDatabase, validateDatabaseFile } from "../src/index.ts";
+import { GameDb, LATEST_SCHEMA_VERSION, RestoreError, backupDatabase, createRepos, restoreDatabase, validateDatabaseFile } from "../src/index.ts";
 import { runCli } from "../src/cli.ts";
 import { openMigrated, tempDir, track } from "./helpers.ts";
 
@@ -38,7 +38,7 @@ describe("backup and restore", { timeout: 30_000 }, () => {
     expect(existsSync(`${path}-wal`)).toBe(true); // unflushed WAL content must still be in the backup
     const backup = join(dir, "bk", "one.sqlite3");
     const result = await backupDatabase(db.raw, backup);
-    expect(result.migrations).toBe(1);
+    expect(result.migrations).toBe(LATEST_SCHEMA_VERSION);
     expect(existsSync(`${backup}.partial`)).toBe(false);
     expect(validateDatabaseFile(backup).ok).toBe(true);
     await expect(backupDatabase(db.raw, backup)).rejects.toThrow(/Refusing to overwrite/);
@@ -128,7 +128,7 @@ describe("cli", { timeout: 30_000 }, () => {
     const env = { DATABASE_PATH: join(dir, "data", "game.sqlite3") };
     const m = await run(["migrate"], env);
     expect(m.code).toBe(0);
-    expect(m.out).toMatch(/schema version 1/);
+    expect(m.out).toMatch(/schema version 2/);
     expect((await run(["migrate"], env)).out).toMatch(/up to date/);
 
     const dest = join(dir, "snap.sqlite3");

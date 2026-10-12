@@ -36,7 +36,10 @@ describe("static web client", { timeout: 30_000 }, () => {
     const root = await get("/");
     expect(root.statusCode).toBe(200);
     expect(root.body).toContain("<title>2048</title>");
-    expect(String(root.headers["content-security-policy"])).toContain("default-src 'self'");
+    const csp = String(root.headers["content-security-policy"]);
+    expect(csp).toContain("default-src 'self'");
+    expect(csp).toContain("connect-src 'self' ws://127.0.0.1:*");
+    expect(csp).not.toContain("[::1]"); // Chrome rejects bracketed IPv6 sources
     const js = await get("/assets/app.js", "*/*");
     expect(js.statusCode).toBe(200);
     expect(js.body).toBe("console.log(1)");

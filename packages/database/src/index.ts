@@ -1,6 +1,10 @@
 import type { Database as SqliteDatabase } from "better-sqlite3";
 import { accountRepo } from "./repos/users.ts";
 import { gameRepo } from "./repos/games.ts";
+import { competitionRepo } from "./repos/competition.ts";
+import { botRunRepo } from "./repos/bots.ts";
+import { replayRepo } from "./repos/replays.ts";
+import { exportRepo } from "./repos/export.ts";
 
 export { GameDb, WriteQueue, configureConnection, DEFAULT_BUSY_TIMEOUT_MS } from "./connection.ts";
 export type { OpenOptions, WriteQueueOptions } from "./connection.ts";
@@ -19,6 +23,14 @@ export type { UserRow, GuestRow, SessionRow, ProfileRow, AccountRepo } from "./r
 
 /** Prepared-statement repositories bound to one connection. Call inside GameDb.write()/read() callbacks. */
 export function createRepos(db: SqliteDatabase) {
-  return { accounts: accountRepo(db), games: gameRepo(db) };
+  return { accounts: accountRepo(db), games: gameRepo(db), competition: competitionRepo(db), bots: botRunRepo(db), replays: replayRepo(db), exports: exportRepo(db) };
 }
 export type Repos = ReturnType<typeof createRepos>;
+export { casualBoard, botBoard, challengeBoard, ladderBoard } from "./repos/competition.ts";
+export type {
+  SeasonRow, ChallengeRow, AttemptRow, MatchRow, SeatRow, RatingRow, ProfileStatsRaw, CompetitionRepo,
+} from "./repos/competition.ts";
+export type { BoardQuery, BoardRow } from "./repos/board.ts";
+export type { BotRunRow, BotRunStatus, BotRunRepo } from "./repos/bots.ts";
+export type { ReplayListRow, ReplayImportRow, ReplayRepo } from "./repos/replays.ts";
+export type { ExportRepo, ExportLimits } from "./repos/export.ts";

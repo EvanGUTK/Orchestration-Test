@@ -5,15 +5,28 @@ import Fastify, { LogController, type FastifyError, type FastifyInstance, type F
 import fastifyCookie from "@fastify/cookie";
 import fastifyRateLimit from "@fastify/rate-limit";
 import fastifyStatic from "@fastify/static";
-import { API_BASE, DomainError, ERROR_HTTP_STATUS, type ErrorCode } from "@2048/contracts";
-import { LATEST_SCHEMA_VERSION, WriteQueue, mapSqliteError, type GameDb } from "@2048/database";
+import fastifyWebsocket from "@fastify/websocket";
+import { API_BASE, WS_PROTOCOL_VERSION, DomainError, ERROR_HTTP_STATUS, type ErrorCode, type WsEnvelope } from "@2048/contracts";
+import { LATEST_SCHEMA_VERSION, WriteQueue, createRepos, mapSqliteError, type GameDb } from "@2048/database";
 import { trustedHosts, type ServerConfig } from "./config.ts";
 import { envelope, forbidden, unauthenticated } from "./errors.ts";
 import { AccountService, csrfMatches, type Principal } from "./services/accounts.ts";
-import { GameService } from "./services/games.ts";
+import { BotRunManager } from "./services/bots.ts";
+import { CompetitionService } from "./services/competition.ts";
+import { GameService, type Owner } from "./services/games.ts";
+import { attemptHook } from "./services/hooks.ts";
+import { EventHub } from "./services/hub.ts";
+import { MatchService } from "./services/matches.ts";
+import { ReplayService } from "./services/replays.ts";
+import { SeasonService } from "./services/seasons.ts";
 import { PasswordHasher } from "./services/passwords.ts";
 import { registerAuthRoutes } from "./routes/auth.ts";
 import { registerGameRoutes } from "./routes/games.ts";
+import { registerCompetitionRoutes } from "./routes/competition.ts";
+import { registerMatchRoutes } from "./routes/matches.ts";
+import { registerBotRoutes } from "./routes/bots.ts";
+import { registerReplayRoutes } from "./routes/replays.ts";
+import { registerEventRoutes } from "./routes/events.ts";
 import { registerSystemRoutes } from "./routes/system.ts";
 
 export const SESSION_COOKIE = "sid";
@@ -25,6 +38,15 @@ export type AppServices = {
   config: ServerConfig;
   accounts: AccountService;
   games: GameService;
+  seasons: SeasonService;
+  competition: CompetitionService;
+  matches: MatchService;
+  bots: BotRunManager;
+  replays: ReplayService;
+  hub: EventHub;
+  isTrustedOrigin(origin: string): boolean;
+  /** Authoritative current snapshot of a subscribable resource, if newer than `lastSequence`. */
+  snapshotFor(owner: Owner, accountId: string, resourceId: string, lastSequence: number): WsEnvelope | null;
 };
 
 export type BuildOptions = {
@@ -33,6 +55,9 @@ export type BuildOptions = {
   logger?: boolean | { level: string };
   /** Port actually bound (config.port may be 0 in tests). */
   boundPort?: () => number;
+  /** Rebuild unfinished bot runs at boot (default true). */
+  recoverBots?: boolean;
+  now?: () => Date;
 };
 
 const MUTATING = new Set(["POST", "PUT", "PATCH", "DELETE"]);
@@ -92,8 +117,11 @@ export function clearSessionCookie(app: AppServices, reply: FastifyReply, kind: 
   });
 }
 
-function statusForFastifyError(err: FastifyError): { status: number; code: ErrorCode; message: string } {
+function statusForFastifyError(err: FastifyError, url: string): { status: number; code: ErrorCode; message: string } {
   const status = typeof err.statusCode === "number" ? err.statusCode : 500;
+  if (status === 413 && url.startsWith(`${API_PREFIX}/replays/import`)) {
+    return { status: 400, code: "IMPORT_INVALID", message: "Replay file is too large to import" };
+  }
   if (status === 413) return { status, code: "VALIDATION_ERROR", message: "Request body is too large" };
   if (status === 415) return { status, code: "VALIDATION_ERROR", message: "Content-Type must be application/json" };
   if (status === 429) return { status, code: "RATE_LIMITED", message: "Too many requests; slow down" };
@@ -115,10 +143,27 @@ export async function buildApp(options: BuildOptions): Promise<{ app: FastifyIns
   });
 
   const queue = new WriteQueue(db, { maxPending: config.limits.writeQueueMax });
+  const hub = new EventHub();
+  const publish = (items: Parameters<typeof hub.publish>[0]) => hub.publish(items);
   const hasher = new PasswordHasher(config.argon2);
-  const accounts = new AccountService({ db, queue, config, hasher });
-  const games = new GameService({ db, queue, config });
-  const services: AppServices = { db, queue, config, accounts, games };
+  const accounts = new AccountService({ db, queue, config, hasher, ...(options.now ? { now: options.now } : {}) });
+  const clock = options.now ? { now: options.now } : {};
+  const games = new GameService({ db, queue, config, publish, ...clock });
+  const seasons = new SeasonService({ db, queue, games, ...clock });
+  const competition = new CompetitionService({ db, queue, seasons, games, ...clock });
+  const bots = new BotRunManager({ db, queue, games, config, publish, ...clock });
+  const matches = new MatchService({ db, queue, seasons, games, bots, publish, ...clock });
+  const replays = new ReplayService({ db, queue, ...clock });
+  games.setHooks({
+    afterChange(ctx) {
+      attemptHook(ctx);
+      matches.afterChange(ctx);
+    },
+  });
+  seasons.ensureCurrentSync();
+  hub.recovering = true;
+  if (options.recoverBots !== false) bots.recover();
+  hub.recovering = false;
 
   const trusted = () => trustedHosts(config, options.boundPort?.() ?? config.port);
   const trustedOrigin = (origin: string): boolean => {
@@ -132,10 +177,38 @@ export async function buildApp(options: BuildOptions): Promise<{ app: FastifyIns
     return u.protocol === "http:" && u.origin === origin && trusted().has(u.host);
   };
 
+  const wsEnvelope = (type: WsEnvelope["type"], resourceId: string, sequence: number, payload: unknown): WsEnvelope => ({
+    protocolVersion: WS_PROTOCOL_VERSION, type, resourceId, sequence, payload,
+  });
+  const services: AppServices = {
+    db, queue, config, accounts, games, seasons, competition, matches, bots, replays, hub,
+    isTrustedOrigin: trustedOrigin,
+    snapshotFor(owner, accountId, resourceId, lastSequence) {
+      try {
+        const g = games.canRead(owner, resourceId) ? games.get(owner, resourceId) : null;
+        if (g) return g.state.revision > lastSequence ? wsEnvelope("game.updated", g.id, g.state.revision, { game: g }) : null;
+        if (matches.canRead(accountId, resourceId)) {
+          const principal = { kind: "user", userId: accountId } as Principal;
+          const m = matches.get(principal, resourceId);
+          const seq = db.read((raw) => createRepos(raw).competition.match(resourceId)?.sequence ?? 0);
+          return m.status === "finished" && seq > lastSequence ? wsEnvelope("match.finished", m.id, seq, { match: m }) : null;
+        }
+        if (bots.canRead(accountId, resourceId)) {
+          const run = bots.snapshot(resourceId);
+          return run ? wsEnvelope(run.status === "running" || run.status === "paused" ? "bot.progress" : "bot.finished", run.id, Date.now(), { run }) : null;
+        }
+      } catch {
+        return null;
+      }
+      return null;
+    },
+  };
+
   await app.register(fastifyCookie);
+  await app.register(fastifyWebsocket, { options: { maxPayload: 16 * 1024 } });
 
   // JSON-only bodies. An empty body is `{}` so bodyless POSTs with a JSON content type work.
-  app.addContentTypeParser("application/json", { parseAs: "string", bodyLimit: config.bodyLimit }, (_req, body, done) => {
+  app.addContentTypeParser("application/json", { parseAs: "string" }, (_req, body, done) => {
     const text = typeof body === "string" ? body : body.toString("utf8");
     if (text.trim() === "") return done(null, {});
     try {
@@ -188,7 +261,7 @@ export async function buildApp(options: BuildOptions): Promise<{ app: FastifyIns
       if (mapped.code === "INTERNAL_ERROR") req.log.error({ err: mapped }, "internal error");
       return reply.status(status).send(envelope(mapped.code, mapped.message, req.id, mapped.details));
     }
-    const f = statusForFastifyError(err as FastifyError);
+    const f = statusForFastifyError(err as FastifyError, req.url);
     if (f.status >= 500) req.log.error({ err }, "unhandled error");
     return reply.status(f.status).send(envelope(f.code, f.message, req.id));
   });
@@ -220,6 +293,11 @@ export async function buildApp(options: BuildOptions): Promise<{ app: FastifyIns
       registerSystemRoutes(api, services);
       registerAuthRoutes(api, services);
       registerGameRoutes(api, services);
+      registerCompetitionRoutes(api, services);
+      registerMatchRoutes(api, services);
+      registerBotRoutes(api, services);
+      registerReplayRoutes(api, services);
+      registerEventRoutes(api, services);
     },
     { prefix: API_PREFIX },
   );
@@ -234,7 +312,11 @@ export async function buildApp(options: BuildOptions): Promise<{ app: FastifyIns
     }
   }, 3_600_000);
   purge.unref();
-  app.addHook("onClose", async () => clearInterval(purge));
+  app.addHook("onClose", async () => {
+    clearInterval(purge);
+    hub.closeAll(1001, "server shutting down");
+    await bots.shutdown();
+  });
 
   return { app, services };
 }
@@ -245,7 +327,7 @@ const CSP = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",
   "font-src 'self' data:",
-  "connect-src 'self' ws://127.0.0.1:* ws://localhost:* ws://[::1]:*",
+  "connect-src 'self' ws://127.0.0.1:*",
   "object-src 'none'",
   "base-uri 'none'",
   "form-action 'self'",

@@ -136,8 +136,9 @@ CREATE TABLE games (
 CREATE INDEX idx_games_owner_status ON games(owner_user_id, status, updated_at DESC, id DESC) WHERE owner_user_id IS NOT NULL;
 CREATE INDEX idx_games_guest_status ON games(owner_guest_id, status, updated_at DESC, id DESC) WHERE owner_guest_id IS NOT NULL;
 CREATE INDEX idx_games_match ON games(match_id) WHERE match_id IS NOT NULL;
-CREATE INDEX idx_games_rank_score ON games(mode, ruleset_version, status, length(score) DESC, score DESC, created_at, id);
-CREATE INDEX idx_games_rank_exponent ON games(mode, ruleset_version, status, length(max_exponent) DESC, max_exponent DESC, created_at, id);
+-- Boards order by (length, lexical) of canonical decimals: exact, never REAL. Created order and id make the order total.
+CREATE INDEX idx_games_board ON games(mode, ruleset_version, length(score) DESC, score DESC, length(max_exponent) DESC, max_exponent DESC, created_at, id);
+CREATE INDEX idx_games_owner_best ON games(owner_user_id, mode, ruleset_version, length(score) DESC, score DESC, length(max_exponent) DESC, max_exponent DESC, created_at, id) WHERE owner_user_id IS NOT NULL;
 
 CREATE TABLE challenge_attempts (
   id TEXT PRIMARY KEY,
@@ -204,7 +205,7 @@ BEGIN SELECT RAISE(ABORT, 'rating_events are append-only'); END;
 CREATE TABLE game_commands (
   game_id TEXT NOT NULL REFERENCES games(id) ON DELETE CASCADE,
   command_id TEXT NOT NULL CHECK (length(command_id) BETWEEN 1 AND 128),
-  kind TEXT NOT NULL CHECK (kind IN ('move', 'undo', 'forfeit')),
+  kind TEXT NOT NULL CHECK (kind IN ('move', 'undo', 'forfeit', 'end')),
   request_hash TEXT NOT NULL CHECK (length(request_hash) = 64),
   response_json TEXT NOT NULL CHECK (json_valid(response_json)),
   revision_after INTEGER NOT NULL CHECK (revision_after >= 0),
@@ -216,7 +217,7 @@ CREATE TABLE game_moves (
   game_id TEXT NOT NULL REFERENCES games(id) ON DELETE CASCADE,
   revision INTEGER NOT NULL CHECK (revision >= 1),
   command_id TEXT NOT NULL,
-  kind TEXT NOT NULL CHECK (kind IN ('move', 'undo', 'forfeit')),
+  kind TEXT NOT NULL CHECK (kind IN ('move', 'undo', 'forfeit', 'end')),
   direction TEXT CHECK (direction IN ('up', 'right', 'down', 'left')),
   accepted_moves INTEGER NOT NULL CHECK (accepted_moves >= 0),
   events_json TEXT NOT NULL CHECK (json_valid(events_json)),

@@ -51,6 +51,12 @@ export function registerAuthRoutes(app: FastifyInstance, s: AppServices): void {
     return { ok: true };
   });
 
+  app.delete("/auth/sessions", async (req) => {
+    const p = requirePrincipal(s, req, { userOnly: true });
+    await s.accounts.revokeOtherSessions(p);
+    return { ok: true };
+  });
+
   app.patch("/profile", async (req) => {
     const p = requirePrincipal(s, req, { userOnly: true });
     const body = parse(patchProfileSchema, req.body);

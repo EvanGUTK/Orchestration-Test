@@ -14,13 +14,15 @@ export type GameMeta = {
   challengeId: string | null;
   matchId: string | null;
   seat: 0 | 1 | null;
+  botLabel: string | null;
   createdAt: string;
   updatedAt: string;
 };
 
 export type StoredGame = GameMeta & { state: GameState };
 
-export type CommandKind = "move" | "undo" | "forfeit";
+/** "end" = the system ended the game (a bot run finished its budget or was cancelled). */
+export type CommandKind = "move" | "undo" | "forfeit" | "end";
 export type CommandRow = {
   gameId: string;
   commandId: string;
@@ -63,6 +65,7 @@ function meta(r: Raw): GameMeta {
     challengeId: (r.challenge_id as string | null) ?? null,
     matchId: (r.match_id as string | null) ?? null,
     seat: (r.seat as 0 | 1 | null) ?? null,
+    botLabel: (r.bot_label as string | null) ?? null,
     createdAt: r.created_at as string,
     updatedAt: r.updated_at as string,
   };
@@ -97,8 +100,8 @@ export type ListGamesFilter = {
 export function gameRepo(db: SqliteDatabase) {
   const insert = db.prepare(`INSERT INTO games (
     id, owner_user_id, owner_guest_id, mode, ruleset_version, engine_version, seed, board_size, cells_json, rng_json,
-    score, max_exponent, accepted_moves, revision, status, celebrated2048, challenge_id, match_id, seat, created_at, updated_at
-  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+    score, max_exponent, accepted_moves, revision, status, celebrated2048, challenge_id, match_id, seat, bot_label, created_at, updated_at
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
   const update = db.prepare(`UPDATE games SET cells_json = ?, rng_json = ?, score = ?, max_exponent = ?, accepted_moves = ?,
     revision = ?, status = ?, celebrated2048 = ?, updated_at = ? WHERE id = ?`);
   const byId = db.prepare("SELECT * FROM games WHERE id = ?");
@@ -111,6 +114,11 @@ export function gameRepo(db: SqliteDatabase) {
     `INSERT INTO game_moves (game_id, revision, command_id, kind, direction, accepted_moves, events_json, checksum, created_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   );
+  const moveAt = db.prepare("SELECT checksum, kind FROM game_moves WHERE game_id = ? AND revision = ?");
+  const allMoves = db.prepare(
+    "SELECT game_id, revision, command_id, kind, direction, accepted_moves, checksum, created_at FROM game_moves WHERE game_id = ? ORDER BY revision",
+  );
+  const allSnaps = db.prepare("SELECT * FROM game_snapshots WHERE game_id = ? ORDER BY revision");
   const movesAfter = db.prepare(
     "SELECT * FROM game_moves WHERE game_id = ? AND revision > ? AND kind = 'move' ORDER BY revision ASC LIMIT ?",
   );
@@ -133,12 +141,12 @@ export function gameRepo(db: SqliteDatabase) {
       rulesetInsert.run(rules.version, JSON.stringify(rules), digest, at);
     },
 
-    insertGame(g: Omit<GameMeta, "updatedAt" | "engineVersion" | "rulesetVersion"> & { state: GameState }): void {
+    insertGame(g: Omit<GameMeta, "updatedAt" | "engineVersion" | "rulesetVersion" | "botLabel"> & { botLabel?: string | null; state: GameState }): void {
       const s = g.state;
       insert.run(
         g.id, g.ownerUserId, g.ownerGuestId, g.mode, s.rulesetVersion, s.engineVersion, g.seed, s.board.size,
         JSON.stringify(s.board.cells), JSON.stringify(s.rng), s.score, maxExponentOf(s.board.cells), s.acceptedMoves,
-        s.revision, s.status, s.celebrated2048 ? 1 : 0, g.challengeId, g.matchId, g.seat, g.createdAt, g.createdAt,
+        s.revision, s.status, s.celebrated2048 ? 1 : 0, g.challengeId, g.matchId, g.seat, g.botLabel ?? null, g.createdAt, g.createdAt,
       );
     },
 
@@ -196,6 +204,33 @@ export function gameRepo(db: SqliteDatabase) {
     },
     insertMove(m: MoveRow): void {
       moveInsert.run(m.gameId, m.revision, m.commandId, m.kind, m.direction, m.acceptedMoves, m.eventsJson, m.checksum, m.createdAt);
+    },
+    /** Complete move log in revision order (moves, undo markers, forfeit/end markers). */
+    allMoves(gameId: string): MoveRow[] {
+      return (allMoves.all(gameId) as Raw[]).map((r) => ({
+        gameId: r.game_id as string,
+        revision: r.revision as number,
+        commandId: r.command_id as string,
+        kind: r.kind as CommandKind,
+        direction: (r.direction as MoveRow["direction"]) ?? null,
+        acceptedMoves: r.accepted_moves as number,
+        eventsJson: "[]",
+        checksum: r.checksum as string,
+        createdAt: r.created_at as string,
+      }));
+    },
+    snapshots(gameId: string): SnapshotRow[] {
+      return (allSnaps.all(gameId) as Raw[]).map((r) => ({
+        gameId: r.game_id as string,
+        revision: r.revision as number,
+        stateJson: r.state_json as string,
+        stateChecksum: r.state_checksum as string,
+        createdAt: r.created_at as string,
+      }));
+    },
+    checksumAt(gameId: string, revision: number): string | undefined {
+      const r = moveAt.get(gameId, revision) as { checksum: string } | undefined;
+      return r?.checksum;
     },
     movesAfter(gameId: string, afterRevision: number, limit: number): MoveRow[] {
       return (movesAfter.all(gameId, afterRevision, limit) as Raw[]).map((r) => ({

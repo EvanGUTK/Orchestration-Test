@@ -1,28 +1,77 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
+import type { Database as SqliteDatabase } from "better-sqlite3";
 import * as engine from "@2048/engine";
 import { createRepos, type GameDb, type StoredGame, type WriteQueue } from "@2048/database";
 import {
   CLASSIC_RULES, DomainError, SNAPSHOT_INTERVAL, customRules, resolveRules,
-  type Direction, type EventsPage, type GameState, type GameView, type MoveResponse, type Page, type Ruleset,
+  type Direction, type EventsPage, type GameMode, type GameState, type GameView, type MoveResponse, type Page, type Ruleset,
 } from "@2048/contracts";
 import type { ServerConfig } from "../config.ts";
 import { forbidden, notFound, validation } from "../errors.ts";
 import type { Principal } from "./accounts.ts";
+import { Outbox, type Publisher } from "./outbox.ts";
 
 export type Owner = { userId: string } | { guestId: string };
 export const ownerOf = (p: Principal): Owner => (p.kind === "user" ? { userId: p.userId } : { guestId: p.userId });
 
 const sha256 = (s: string) => createHash("sha256").update(s, "utf8").digest("hex");
-const rulesDigest = (r: Ruleset) => sha256(JSON.stringify(r));
+export const rulesDigest = (r: Ruleset) => sha256(JSON.stringify(r));
+
+export type MoveKind = "move" | "undo" | "forfeit" | "end";
+
+/** Called inside the command transaction after a CHANGED transition was persisted (never for no-ops). */
+export type ChangeContext = {
+  raw: SqliteDatabase;
+  game: StoredGame; // state before the change
+  next: GameState;
+  kind: MoveKind;
+  at: string;
+  outbox: Outbox;
+};
+export type GameHooks = { afterChange(ctx: ChangeContext): void };
 
 export type CreateGameInput = {
   mode: "classic" | "practice" | "bot-exhibition";
   custom?: { boardSize?: number | undefined; seed?: string | undefined; spawnFourTenths?: number | undefined } | undefined;
 };
 
-type MoveKind = "move" | "undo" | "forfeit";
+export type GameServiceDeps = { db: GameDb; queue: WriteQueue; config: ServerConfig; now?: () => Date; publish?: Publisher };
 
-export type GameServiceDeps = { db: GameDb; queue: WriteQueue; config: ServerConfig; now?: () => Date };
+/** Everything needed to persist a brand-new game inside an existing transaction. */
+export type NewGameRecord = {
+  owner: { userId: string } | { guestId: string } | null;
+  mode: GameMode;
+  rules: Ruleset;
+  seed: string;
+  at: string;
+  challengeId?: string | null;
+  matchId?: string | null;
+  seat?: 0 | 1 | null;
+  botLabel?: string | null;
+};
+
+/** Insert game + ruleset + revision-0 snapshot. Used by solo creation, ranked attempts, duels and bot runs. */
+export function createGameRecord(raw: SqliteDatabase, n: NewGameRecord): StoredGame {
+  const r = createRepos(raw).games;
+  const state = engine.newGame(n.rules, n.seed);
+  const id = randomUUID();
+  r.ensureRuleset(n.rules, rulesDigest(n.rules), n.at);
+  r.insertGame({
+    id,
+    ownerUserId: n.owner && "userId" in n.owner ? n.owner.userId : null,
+    ownerGuestId: n.owner && "guestId" in n.owner ? n.owner.guestId : null,
+    mode: n.mode,
+    seed: n.seed,
+    challengeId: n.challengeId ?? null,
+    matchId: n.matchId ?? null,
+    seat: n.seat ?? null,
+    botLabel: n.botLabel ?? null,
+    createdAt: n.at,
+    state,
+  });
+  r.insertSnapshot({ gameId: id, revision: 0, stateJson: engine.serialize(state), stateChecksum: engine.stateChecksum(state), createdAt: n.at });
+  return r.get(id)!;
+}
 
 function owns(g: StoredGame, o: Owner): boolean {
   return "userId" in o ? g.ownerUserId === o.userId : g.ownerGuestId === o.guestId;
@@ -39,15 +88,33 @@ function decodeCursor(c: string): { updatedAt: string; id: string } {
   return { updatedAt, id };
 }
 
+type TransitionResult = {
+  next: GameState | null; // null => valid no-op
+  direction: Direction | null;
+  scoreDelta: string;
+  events: MoveResponse["events"];
+};
+
+type Actor = Owner | "system";
+
 export class GameService {
   readonly #d: GameServiceDeps;
+  #hooks: GameHooks | null = null;
 
   constructor(deps: GameServiceDeps) {
     this.#d = deps;
   }
 
+  setHooks(hooks: GameHooks): void {
+    this.#hooks = hooks;
+  }
+
   #now(): string {
     return (this.#d.now?.() ?? new Date()).toISOString();
+  }
+
+  #publish(outbox: Outbox): void {
+    if (outbox.items.length > 0) this.#d.publish?.(outbox.items);
   }
 
   /** Load a stored game and validate its state; corruption surfaces as INTERNAL_ERROR, not a bad answer. */
@@ -60,7 +127,7 @@ export class GameService {
     }
   }
 
-  #view(g: StoredGame, undoAvailable: number): GameView {
+  view(g: StoredGame, undoAvailable: number): GameView {
     const hideSeed = (g.mode === "ranked" || g.mode === "duel") && g.state.status === "active";
     return {
       id: g.id,
@@ -78,10 +145,22 @@ export class GameService {
     };
   }
 
+  /** GameView for a stored game, validating state first. */
+  viewIn(raw: SqliteDatabase, g: StoredGame): GameView {
+    return this.view(this.#checked(g), createRepos(raw).games.undoDepth(g.id));
+  }
+
   #rulesFor(g: StoredGame): Ruleset {
     const rules = resolveRules(g.rulesetVersion);
     if (!rules) throw new DomainError("INTERNAL_ERROR", "Unknown ruleset on stored game", { ruleset: g.rulesetVersion });
     return rules;
+  }
+
+  /** Owner, or (read-only) a human seat of the same match so split boards and finished replays work. */
+  #canRead(raw: SqliteDatabase, g: StoredGame, o: Owner): boolean {
+    if (owns(g, o)) return true;
+    if (!g.matchId || !("userId" in o)) return false;
+    return createRepos(raw).competition.seats(g.matchId).some((s) => s.accountId === o.userId);
   }
 
   async create(owner: Owner, input: CreateGameInput): Promise<GameView> {
@@ -100,12 +179,9 @@ export class GameService {
       }
       seed = c.seed ?? randomBytes(16).toString("hex");
     } else {
-      throw validation("Bot exhibition games are created through the bot runs API");
+      throw validation("Bot exhibition games are created through POST /bots/runs");
     }
-    const state = engine.newGame(rules, seed);
-    const id = randomUUID();
     const at = this.#now();
-    const ownerFields = "userId" in owner ? { ownerUserId: owner.userId, ownerGuestId: null } : { ownerUserId: null, ownerGuestId: owner.guestId };
     const limit = this.#d.config.limits.maxActiveGamesPerOwner;
     return this.#d.queue.submit((raw) => {
       const r = createRepos(raw).games;
@@ -113,20 +189,24 @@ export class GameService {
       if (active.length >= limit) {
         throw new DomainError("RESOURCE_LIMIT", `Too many active games (limit ${limit}); finish or forfeit one first`);
       }
-      r.ensureRuleset(rules, rulesDigest(rules), at);
-      r.insertGame({ id, ...ownerFields, mode: input.mode, seed, challengeId: null, matchId: null, seat: null, createdAt: at, state });
-      r.insertSnapshot({ gameId: id, revision: 0, stateJson: engine.serialize(state), stateChecksum: engine.stateChecksum(state), createdAt: at });
-      const stored = r.get(id)!;
-      return this.#view(stored, 0);
+      const stored = createGameRecord(raw, { owner, mode: input.mode, rules, seed, at });
+      return this.view(stored, 0);
     });
   }
 
   get(owner: Owner, gameId: string): GameView {
     return this.#d.db.read((raw) => {
-      const r = createRepos(raw).games;
-      const g = r.get(gameId);
-      if (!g || !owns(g, owner)) throw notFound("Game not found");
-      return this.#view(this.#checked(g), r.undoDepth(gameId));
+      const g = createRepos(raw).games.get(gameId);
+      if (!g || !this.#canRead(raw, g, owner)) throw notFound("Game not found");
+      return this.viewIn(raw, g);
+    });
+  }
+
+  /** Authorization check used by the realtime layer. */
+  canRead(owner: Owner, gameId: string): boolean {
+    return this.#d.db.read((raw) => {
+      const g = createRepos(raw).games.get(gameId);
+      return !!g && this.#canRead(raw, g, owner);
     });
   }
 
@@ -142,7 +222,7 @@ export class GameService {
       const page = rows.slice(0, q.limit);
       const last = page[page.length - 1];
       return {
-        items: page.map((g) => this.#view(g, r.undoDepth(g.id))),
+        items: page.map((g) => this.view(g, r.undoDepth(g.id))),
         nextCursor: rows.length > q.limit && last ? encodeCursor(last) : null,
       };
     });
@@ -152,7 +232,7 @@ export class GameService {
     return this.#d.db.read((raw) => {
       const r = createRepos(raw).games;
       const g = r.get(gameId);
-      if (!g || !owns(g, owner)) throw notFound("Game not found");
+      if (!g || !this.#canRead(raw, g, owner)) throw notFound("Game not found");
       const rows = r.movesAfter(gameId, q.cursor, q.limit);
       const last = rows[rows.length - 1];
       return {
@@ -169,29 +249,27 @@ export class GameService {
 
   /**
    * Shared command pipeline, one atomic transaction:
-   * stored-response replay (idempotency) -> ownership -> revision check -> pure transition -> persist.
+   * stored-response replay (idempotency) -> ownership -> revision check -> pure transition -> persist -> hooks.
    * `hashInput` is the normalized payload; the same command id with a different payload is IDEMPOTENCY_CONFLICT.
+   * Realtime events are collected in an outbox and published only after COMMIT.
    */
-  #command(
-    owner: Owner,
+  async #command(
+    actor: Actor,
     gameId: string,
     commandId: string,
     kind: MoveKind,
-    expectedRevision: number,
+    expectedRevision: number | null,
     hashInput: string,
-    transition: (g: StoredGame, rules: Ruleset, repos: ReturnType<typeof createRepos>["games"], at: string) => {
-      next: GameState | null; // null => valid no-op
-      direction: Direction | null;
-      scoreDelta: string;
-      events: MoveResponse["events"];
-      undoAfter: (r: ReturnType<typeof createRepos>["games"]) => number;
-    },
+    transition: (g: StoredGame, rules: Ruleset, repos: ReturnType<typeof createRepos>["games"], at: string) => TransitionResult,
   ): Promise<MoveResponse> {
     const requestHash = sha256(`${kind}\n${hashInput}`);
-    return this.#d.queue.submit((raw) => {
-      const r = createRepos(raw).games;
+    const outbox = new Outbox();
+    const response = await this.#d.queue.submit((raw) => {
+      const repos = createRepos(raw);
+      const r = repos.games;
       const stored = r.get(gameId);
-      if (!stored || !owns(stored, owner)) throw notFound("Game not found");
+      if (!stored) throw notFound("Game not found");
+      if (actor !== "system" && !owns(stored, actor)) throw notFound("Game not found");
 
       const prior = r.getCommand(gameId, commandId);
       if (prior) {
@@ -202,25 +280,24 @@ export class GameService {
       }
 
       const g = this.#checked(stored);
-      if (expectedRevision !== g.state.revision) {
+      if (expectedRevision !== null && expectedRevision !== g.state.revision) {
         throw new DomainError("REVISION_CONFLICT", "The game changed; reload and retry", { currentRevision: g.state.revision });
       }
       const at = this.#now();
       const rules = this.#rulesFor(g);
       const t = transition(g, rules, r, at);
 
-      let response: MoveResponse;
       if (t.next === null) {
-        response = {
-          game: this.#view(g, r.undoDepth(gameId)),
+        const noop: MoveResponse = {
+          game: this.view(g, r.undoDepth(gameId)),
           changed: false,
           scoreDelta: "0",
           events: [],
           sequence: g.state.revision,
           code: "NO_CHANGE",
         };
-        r.insertCommand({ gameId, commandId, kind, requestHash, responseJson: JSON.stringify(response), revisionAfter: g.state.revision }, at);
-        return response;
+        r.insertCommand({ gameId, commandId, kind, requestHash, responseJson: JSON.stringify(noop), revisionAfter: g.state.revision }, at);
+        return noop;
       }
 
       const next = t.next;
@@ -232,33 +309,29 @@ export class GameService {
       if (kind === "move" && next.acceptedMoves % SNAPSHOT_INTERVAL === 0) {
         r.insertSnapshot({ gameId, revision: next.revision, stateJson: engine.serialize(next), stateChecksum: engine.stateChecksum(next), createdAt: at });
       }
-      response = {
-        game: this.#view({ ...g, state: next, updatedAt: at }, t.undoAfter(r)),
+      const changed: MoveResponse = {
+        game: this.view({ ...g, state: next, updatedAt: at }, r.undoDepth(gameId)),
         changed: true,
         scoreDelta: t.scoreDelta,
         events: t.events,
         sequence: next.revision,
       };
-      r.insertCommand({ gameId, commandId, kind, requestHash, responseJson: JSON.stringify(response), revisionAfter: next.revision }, at);
-      return response;
+      r.insertCommand({ gameId, commandId, kind, requestHash, responseJson: JSON.stringify(changed), revisionAfter: next.revision }, at);
+      outbox.push("game.updated", gameId, next.revision, { game: changed.game });
+      this.#hooks?.afterChange({ raw, game: g, next, kind, at, outbox });
+      return changed;
     });
+    this.#publish(outbox);
+    return response;
   }
 
-  move(owner: Owner, gameId: string, req: { commandId: string; expectedRevision: number; direction: Direction }): Promise<MoveResponse> {
+  move(owner: Actor, gameId: string, req: { commandId: string; expectedRevision: number | null; direction: Direction }): Promise<MoveResponse> {
     return this.#command(owner, gameId, req.commandId, "move", req.expectedRevision, `${req.direction}\n${req.expectedRevision}`, (g, rules, r) => {
       if (g.state.status !== "active") throw forbidden(`The game is ${g.state.status}`);
       const result = engine.applyMove(g.state, req.direction, rules);
-      if (!result.changed) {
-        return { next: null, direction: req.direction, scoreDelta: "0", events: [], undoAfter: () => r.undoDepth(g.id) };
-      }
+      if (!result.changed) return { next: null, direction: req.direction, scoreDelta: "0", events: [] };
       if (rules.undoLimit > 0) r.pushUndo(g.id, g.state, rules.undoLimit);
-      return {
-        next: result.state,
-        direction: req.direction,
-        scoreDelta: result.scoreDelta,
-        events: result.events,
-        undoAfter: () => r.undoDepth(g.id),
-      };
+      return { next: result.state, direction: req.direction, scoreDelta: result.scoreDelta, events: result.events };
     });
   }
 
@@ -272,7 +345,7 @@ export class GameService {
       r.popUndo(g.id, top.acceptedMoves);
       // Restore the full earlier state (board, score, PRNG, counters) but keep revision monotone.
       const restored: GameState = { ...previous, revision: g.state.revision + 1, status: "active" };
-      return { next: restored, direction: null, scoreDelta: "0", events: [], undoAfter: () => r.undoDepth(g.id) };
+      return { next: restored, direction: null, scoreDelta: "0", events: [] };
     });
   }
 
@@ -280,8 +353,19 @@ export class GameService {
     return this.#command(owner, gameId, req.commandId, "forfeit", req.expectedRevision, `${req.expectedRevision}`, (g, _rules, r) => {
       if (g.state.status !== "active") throw forbidden(`The game is already ${g.state.status}`);
       r.clearUndo(g.id);
-      const next: GameState = { ...g.state, status: "forfeited", revision: g.state.revision + 1 };
-      return { next, direction: null, scoreDelta: "0", events: [], undoAfter: () => 0 };
+      return { next: { ...g.state, status: "forfeited", revision: g.state.revision + 1 }, direction: null, scoreDelta: "0", events: [] };
+    });
+  }
+
+  /**
+   * System-side termination (a bot run ended or was cancelled). Idempotent per commandId; a game that is
+   * already terminal is left untouched. `completed` = the run reached its budget, `forfeited` = it was cancelled.
+   */
+  systemEnd(gameId: string, status: "completed" | "forfeited", commandId: string): Promise<MoveResponse | null> {
+    return this.#command("system", gameId, commandId, "end", null, status, (g, _rules, r) => {
+      if (g.state.status !== "active") return { next: null, direction: null, scoreDelta: "0", events: [] };
+      r.clearUndo(g.id);
+      return { next: { ...g.state, status, revision: g.state.revision + 1 }, direction: null, scoreDelta: "0", events: [] };
     });
   }
 }

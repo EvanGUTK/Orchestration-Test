@@ -129,6 +129,7 @@ export function accountRepo(db: SqliteDatabase) {
      */
     anonymizeUser(userId: string, at: string): void {
       db.prepare("DELETE FROM games WHERE owner_user_id = ? AND mode IN ('classic', 'practice', 'bot-exhibition')").run(userId);
+      db.prepare("DELETE FROM replay_imports WHERE owner_user_id = ?").run(userId);
       db.prepare("DELETE FROM sessions WHERE user_id = ?").run(userId);
       db.prepare("DELETE FROM profiles WHERE user_id = ?").run(userId);
       db.prepare(

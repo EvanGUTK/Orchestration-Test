@@ -113,9 +113,11 @@ describe("schema constraints", () => {
     expect(ordered).toEqual(expected);
     // The expression index must be usable for the ranking order (no full sort).
     const plan = db.raw
-      .prepare("EXPLAIN QUERY PLAN SELECT id FROM games WHERE mode = 'classic' AND ruleset_version = 'classic-v1' AND status = 'active' ORDER BY length(score) DESC, score DESC, created_at, id LIMIT 25")
+      .prepare("EXPLAIN QUERY PLAN SELECT id FROM games WHERE mode = 'classic' AND ruleset_version = 'classic-v1' ORDER BY length(score) DESC, score DESC, length(max_exponent) DESC, max_exponent DESC, created_at, id LIMIT 25")
       .all() as { detail: string }[];
-    expect(plan.map((p) => p.detail).join(" ")).toContain("idx_games_rank_score");
+    const detail = plan.map((p) => p.detail).join(" ");
+    expect(detail).toContain("idx_games_board");
+    expect(detail).not.toContain("TEMP B-TREE");
   });
 
   it("keeps rulesets and rating events immutable", () => {

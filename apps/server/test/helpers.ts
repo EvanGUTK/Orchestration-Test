@@ -8,6 +8,7 @@ import { buildApp, loadConfig, type AppServices } from "../src/index.ts";
 
 export const PORT = 5511;
 export const HOST_HEADER = `127.0.0.1:${PORT}`;
+export const hostFor = (port: number) => `127.0.0.1:${port}`;
 export const ORIGIN = `http://127.0.0.1:${PORT}`;
 
 const cleanups: (() => Promise<void> | void)[] = [];
@@ -17,7 +18,19 @@ afterEach(async () => {
 
 export type TestEnv = { app: FastifyInstance; services: AppServices; db: GameDb; dir: string; dbPath: string };
 
-export async function startApp(env: Record<string, string> = {}, existing?: { dir: string }): Promise<TestEnv> {
+export async function until<T>(fn: () => T | Promise<T>, ok: (v: T) => boolean, timeoutMs = 20_000, everyMs = 25): Promise<T> {
+  const start = Date.now();
+  for (;;) {
+    const v = await fn();
+    if (ok(v)) return v;
+    if (Date.now() - start > timeoutMs) throw new Error(`timed out waiting; last value: ${JSON.stringify(v).slice(0, 300)}`);
+    await new Promise((r) => setTimeout(r, everyMs));
+  }
+}
+
+export type StartOptions = { now?: () => Date; listen?: boolean };
+
+export async function startApp(env: Record<string, string> = {}, existing?: { dir: string }, extra: StartOptions = {}): Promise<TestEnv & { port: number }> {
   const dir = existing?.dir ?? mkdtempSync(join(tmpdir(), "2048-server-test-"));
   const dbPath = join(dir, "game.sqlite3");
   const config = loadConfig({
@@ -26,14 +39,19 @@ export async function startApp(env: Record<string, string> = {}, existing?: { di
   });
   const db = GameDb.open(dbPath);
   migrate(db.raw);
-  const { app, services } = await buildApp({ db, config });
+  let port = PORT;
+  const { app, services } = await buildApp({ db, config, boundPort: () => port, ...(extra.now ? { now: extra.now } : {}) });
+  if (extra.listen) {
+    await app.listen({ host: "127.0.0.1", port: 0 });
+    port = (app.server.address() as { port: number }).port;
+  }
   await app.ready();
   cleanups.push(async () => {
     await app.close();
     db.close();
     if (!existing) rmSync(dir, { recursive: true, force: true });
   });
-  return { app, services, db, dir, dbPath };
+  return { app, services, db, dir, dbPath, port };
 }
 
 export async function stopApp(t: TestEnv): Promise<void> {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { legalMoves, stateChecksum } from "@2048/engine";
+import { LATEST_SCHEMA_VERSION } from "@2048/database";
 import type { Direction, GameState, GameView, MoveResponse } from "@2048/contracts";
 import { Client, cmd, startApp, stopApp, type ErrorBody, type TestEnv } from "./helpers.ts";
 
@@ -378,7 +379,7 @@ describe("api envelope and operations", { timeout: 60_000 }, () => {
     const c = new Client(t.app);
     expect((await c.get("/health")).body).toEqual({ status: "ok" });
     const ready = await c.get("/ready");
-    expect(ready.body).toMatchObject({ status: "ready", schemaVersion: 1, migrations: 1 });
+    expect(ready.body).toMatchObject({ status: "ready", schemaVersion: LATEST_SCHEMA_VERSION, migrations: LATEST_SCHEMA_VERSION });
     const un = await c.get("/games");
     expect(un.status).toBe(401);
     expect(un.body.error).toMatchObject({ code: "UNAUTHENTICATED", requestId: expect.stringMatching(/^[0-9a-f-]{36}$/) });

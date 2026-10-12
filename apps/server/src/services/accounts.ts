@@ -201,6 +201,13 @@ export class AccountService {
     });
   }
 
+  /** "Sign out everywhere else": revoke every session of this account except the current one. */
+  async revokeOtherSessions(p: Principal): Promise<void> {
+    const user = this.#requireUser(p);
+    const at = this.#now().toISOString();
+    await this.#d.queue.submit((raw) => void createRepos(raw).accounts.revokeOtherSessions(user.userId, user.sessionId, at));
+  }
+
   async patchProfile(p: Principal, patch: { displayName?: string | undefined; preferences?: Partial<Preferences> | undefined }): Promise<Identity> {
     const user = this.#requireUser(p);
     const at = this.#now().toISOString();

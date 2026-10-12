@@ -42,30 +42,34 @@ describe("accounts and sessions", { timeout: 30_000 }, () => {
 
   it("normalizes usernames and rejects duplicates in any case variant", async () => {
     const { app } = await startApp();
-    expect((await new Client(app).register("Bob.Smith")).status).toBe(201);
-    for (const variant of ["bob.smith", "BOB.SMITH", " Bob.Smith "]) {
+    expect((await new Client(app).register("Bob_Smith")).status).toBe(201);
+    for (const variant of ["bob_smith", "BOB_SMITH", " Bob_Smith "]) {
       const r = await new Client(app).register(variant);
       expect(r.status).toBe(400);
       expect(r.body.error.code).toBe("VALIDATION_ERROR");
     }
-    expect((await new Client(app).login("BOB.smith")).status).toBe(200);
+    expect((await new Client(app).login("BOB_smith")).status).toBe(200);
   });
 
   it("enforces input limits and text-safe display names", async () => {
     const { app } = await startApp();
     const c = new Client(app);
     const bad = async (b: Record<string, unknown>) => (await c.post("/auth/register", b)).status;
-    expect(await bad({ username: "ab", displayName: "x", password: "longenough1" })).toBe(400);
-    expect(await bad({ username: "a".repeat(40), displayName: "x", password: "longenough1" })).toBe(400);
-    expect(await bad({ username: "has space", displayName: "x", password: "longenough1" })).toBe(400);
-    expect(await bad({ username: "okname", displayName: "<script>", password: "longenough1" })).toBe(400);
-    expect(await bad({ username: "okname", displayName: "bad\u0000name", password: "longenough1" })).toBe(400);
-    expect(await bad({ username: "okname", displayName: "x".repeat(33), password: "longenough1" })).toBe(400);
-    expect(await bad({ username: "okname", displayName: "", password: "longenough1" })).toBe(400);
-    expect(await bad({ username: "okname", displayName: "x", password: "short" })).toBe(400);
+    expect(await bad({ username: "ab", displayName: "x", password: "longenough123" })).toBe(400);
+    expect(await bad({ username: "a".repeat(25), displayName: "x", password: "longenough123" })).toBe(400);
+    expect(await bad({ username: "dot.name", displayName: "x", password: "longenough123" })).toBe(400);
+    expect(await bad({ username: "dash-name", displayName: "x", password: "longenough123" })).toBe(400);
+    expect(await bad({ username: "ünïcode", displayName: "x", password: "longenough123" })).toBe(400);
+    expect(await bad({ username: "a".repeat(24), displayName: "x".repeat(48), password: "p".repeat(128) })).toBe(201);
+    expect(await bad({ username: "has space", displayName: "x", password: "longenough123" })).toBe(400);
+    expect(await bad({ username: "okname", displayName: "<script>", password: "longenough123" })).toBe(400);
+    expect(await bad({ username: "okname", displayName: "bad\u0000name", password: "longenough123" })).toBe(400);
+    expect(await bad({ username: "okname", displayName: "x".repeat(49), password: "longenough123" })).toBe(400);
+    expect(await bad({ username: "okname", displayName: "", password: "longenough123" })).toBe(400);
+    expect(await bad({ username: "okname", displayName: "x", password: "short-11-ch" })).toBe(400);
     expect(await bad({ username: "okname", displayName: "x", password: "p".repeat(129) })).toBe(400);
-    expect(await bad({ username: "okname", displayName: "x", password: "longenough1", admin: true })).toBe(400);
-    expect(await bad({ username: "okname", displayName: "Zoë 🎮", password: "longenough1" })).toBe(201);
+    expect(await bad({ username: "okname", displayName: "x", password: "longenough123", admin: true })).toBe(400);
+    expect(await bad({ username: "okname", displayName: "Zoë 🎮", password: "longenough123" })).toBe(201);
   });
 
   it("gives identical generic failures for unknown users and wrong passwords", async () => {
@@ -102,12 +106,26 @@ describe("accounts and sessions", { timeout: 30_000 }, () => {
     await b.login("frank");
     expect((await b.get("/auth/me")).status).toBe(200);
 
-    expect((await a.post("/auth/password", { oldPassword: "wrong-wrong", newPassword: "brand new secret" })).status).toBe(401);
-    expect((await a.post("/auth/password", { oldPassword: "correct horse battery", newPassword: "brand new secret" })).status).toBe(200);
+    expect((await a.post("/auth/password", { oldPassword: "wrong-wrong", newPassword: "brand new secret!" })).status).toBe(401);
+    expect((await a.post("/auth/password", { oldPassword: "correct horse battery", newPassword: "brand new secret!" })).status).toBe(200);
     expect((await a.get("/auth/me")).status).toBe(200);
     expect((await b.get("/auth/me")).status).toBe(401);
     expect((await new Client(app).login("frank", "correct horse battery")).status).toBe(401);
-    expect((await new Client(app).login("frank", "brand new secret")).status).toBe(200);
+    expect((await new Client(app).login("frank", "brand new secret!")).status).toBe(200);
+  });
+
+  it("clears all other sessions on request and keeps the current one", async () => {
+    const { app } = await startApp();
+    const a = new Client(app);
+    await a.register("sessionuser");
+    const b = new Client(app);
+    await b.login("sessionuser");
+    const c = new Client(app);
+    await c.login("sessionuser");
+    expect((await a.del("/auth/sessions")).status).toBe(200);
+    expect((await a.get("/auth/me")).status).toBe(200);
+    expect((await b.get("/auth/me")).status).toBe(401);
+    expect((await c.get("/auth/me")).status).toBe(401);
   });
 
   it("patches profile with an allowlist and validates preferences", async () => {
@@ -170,9 +188,9 @@ describe("CSRF, Origin, Host", { timeout: 30_000 }, () => {
     expect((await new Client(app, "http://localhost:9999").login("x", "y")).status).toBe(403);
     expect((await new Client(app, "null").login("x", "y")).status).toBe(403);
     const ok = new Client(app, "http://localhost:5411");
-    expect((await ok.register("trusted-web")).status).toBe(201);
+    expect((await ok.register("trusted_web")).status).toBe(201);
     const noOrigin = new Client(app, null);
-    expect((await noOrigin.login("trusted-web")).status).toBe(200);
+    expect((await noOrigin.login("trusted_web")).status).toBe(200);
   });
 
   it("rejects sec-fetch-site cross-site without Origin", async () => {
