@@ -1,6 +1,6 @@
 import type { Database as SqliteDatabase } from "better-sqlite3";
 import type { MatchKind, MatchOutcome, MatchStatus, RatingEvent } from "@2048/contracts";
-import { beforeChain, boardPage, type BoardQuery, type SortKey } from "./board.ts";
+import { boardPage, type BoardQuery, type SortKey } from "./board.ts";
 
 type Raw = Record<string, unknown>;
 
@@ -52,29 +52,20 @@ const GAME_KEYS: SortKey[] = [
   { alias: "me", dir: "DESC" }, { alias: "created_at", dir: "ASC" }, { alias: "id", dir: "ASC" },
 ];
 
-const gameBetter = (a: string, b: string) =>
-  beforeChain([
-    { a: `length(${a}.score)`, b: `length(${b}.score)`, dir: "DESC" },
-    { a: `${a}.score`, b: `${b}.score`, dir: "DESC" },
-    { a: `length(${a}.max_exponent)`, b: `length(${b}.max_exponent)`, dir: "DESC" },
-    { a: `${a}.max_exponent`, b: `${b}.max_exponent`, dir: "DESC" },
-    { a: `${a}.created_at`, b: `${b}.created_at`, dir: "ASC" },
-    { a: `${a}.id`, b: `${b}.id`, dir: "ASC" },
-  ]);
-
-/** Best classic game per registered account (casual board). */
+/**
+ * Casual board: every finished classic game (one entry per game, so a player can hold several places and
+ * `account` filters become "my best games"). Total order: score, max exponent, then created_at and id.
+ */
 export function casualBoard(ruleset: string, range?: { from: string; to: string | null }): BoardQuery {
-  const rangeSql = (t: string) => (range ? ` AND ${t}.created_at >= ?${range.to ? ` AND ${t}.created_at < ?` : ""}` : "");
+  const rangeSql = range ? ` AND g.created_at >= ?${range.to ? " AND g.created_at < ?" : ""}` : "";
   const rangeParams = range ? (range.to ? [range.from, range.to] : [range.from]) : [];
   return {
     sql: `SELECT g.id AS id, g.owner_user_id AS account_id, u.display_name AS display_name, u.deleted_at AS deleted_at, g.score AS score,
             g.max_exponent AS max_exponent, g.max_exponent AS me, g.created_at AS created_at, length(g.score) AS sl, length(g.max_exponent) AS el,
             g.id AS game_id
           FROM games g JOIN users u ON u.id = g.owner_user_id
-          WHERE g.mode = 'classic' AND g.ruleset_version = ?${rangeSql("g")}
-            AND NOT EXISTS (SELECT 1 FROM games h WHERE h.owner_user_id = g.owner_user_id AND h.mode = 'classic'
-                            AND h.ruleset_version = g.ruleset_version${rangeSql("h")} AND ${gameBetter("h", "g")})`,
-    params: [ruleset, ...rangeParams, ...rangeParams],
+          WHERE g.mode = 'classic' AND g.ruleset_version = ? AND g.status IN ('completed', 'forfeited')${rangeSql}`,
+    params: [ruleset, ...rangeParams],
     keys: GAME_KEYS,
   };
 }

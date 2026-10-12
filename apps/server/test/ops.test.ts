@@ -83,3 +83,60 @@ describe("backpressure", { timeout: 30_000 }, () => {
     expect((await new Client(t.app).post("/auth/guest")).status).toBe(201);
   });
 });
+
+describe("resource pressure", { timeout: 30_000 }, () => {
+  it("answers disk-full with RESOURCE_LIMIT and keeps the last valid game state (DB-06)", async () => {
+    const t = await startApp();
+    const c = new Client(t.app);
+    await c.register("disk_full");
+    const g = (await c.post("/games", { mode: "classic" })).body;
+    const before = (await c.get(`/games/${g.id}`)).body;
+    t.db.raw.exec("CREATE TABLE filler (v TEXT)");
+    t.db.raw.prepare("INSERT INTO filler VALUES ('seed')").run();
+    const pages = t.db.raw.pragma("page_count", { simple: true }) as number;
+    t.db.raw.pragma(`max_page_count = ${pages}`); // the file cannot grow any more
+    // fill the remaining free pages so the next write needs a new one
+    const big = "x".repeat(4000);
+    try {
+      for (;;) t.db.raw.prepare("INSERT INTO filler VALUES (?)").run(big);
+    } catch {
+      /* SQLITE_FULL reached */
+    }
+    let status = 0;
+    let body: { error?: { code?: string } } = {};
+    for (let i = 0; i < 40 && status !== 503; i++) {
+      const r = await c.post(`/games/${g.id}/moves`, { commandId: `disk-full-${i}-padding`, expectedRevision: (await c.get(`/games/${g.id}`)).body.state.revision, direction: ["left", "up", "right", "down"][i % 4] });
+      status = r.status;
+      body = r.body;
+    }
+    expect(status).toBe(503);
+    expect(body.error?.code).toBe("RESOURCE_LIMIT");
+    t.db.raw.pragma("max_page_count = 1073741823");
+    t.db.raw.exec("DROP TABLE filler");
+    expect(t.db.integrityCheck()).toEqual(["ok"]);
+    const after = (await c.get(`/games/${g.id}`)).body;
+    expect(after.state.revision).toBeGreaterThanOrEqual(before.state.revision);
+    // and the game is playable again once space is back
+    const rev = after.state.revision;
+    const ok = await c.post(`/games/${g.id}/moves`, { commandId: "after-space-restored", expectedRevision: rev, direction: "left" });
+    expect([200]).toContain(ok.status);
+  });
+
+  it("refuses a merge that would exceed the exponent resource limit and preserves the game (ENG-09)", async () => {
+    const t = await startApp();
+    const c = new Client(t.app);
+    await c.register("limit_user");
+    const g = (await c.post("/games", { mode: "practice", custom: { seed: "limit" } })).body;
+    const cells = Array<string | null>(16).fill(null);
+    cells[0] = "1000000";
+    cells[1] = "1000000";
+    t.db.raw.prepare("UPDATE games SET cells_json = ?, max_exponent = '1000000' WHERE id = ?").run(JSON.stringify(cells), g.id);
+    const r = await c.post(`/games/${g.id}/moves`, { commandId: "limit-merge-0001", expectedRevision: 0, direction: "left" });
+    expect(r.status).toBe(503);
+    expect(r.body.error.code).toBe("RESOURCE_LIMIT");
+    const after = (await c.get(`/games/${g.id}`)).body;
+    expect(after.state.revision).toBe(0);
+    expect(after.state.board.cells[0]).toBe("1000000");
+    expect(t.db.raw.prepare("SELECT count(*) AS n FROM game_commands").get()).toEqual({ n: 0 });
+  });
+});

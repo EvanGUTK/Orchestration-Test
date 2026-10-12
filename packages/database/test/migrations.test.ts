@@ -124,3 +124,36 @@ describe("single-writer wrapper", { timeout: 30_000 }, () => {
     }
   });
 });
+
+describe("preflight backup for destructive migrations", { timeout: 30_000 }, () => {
+  it("backs up an existing database before a destructive migration, but not on a fresh one or a safe one", async () => {
+    const { migrateWithPreflight } = await import("../src/index.ts");
+    const dir = tempDir();
+    const db = track(GameDb.open(join(dir, "pre.sqlite3")));
+    const v1 = { version: 1, name: "one", sql: "CREATE TABLE a (x INTEGER) STRICT;" };
+    const safe = { version: 2, name: "safe", sql: "CREATE TABLE b (y INTEGER) STRICT;" };
+    const drop = { version: 3, name: "drop", sql: "DROP TABLE a;", destructive: true };
+    const drop2 = { version: 2, name: "drop2", sql: "DROP TABLE a;", destructive: true };
+    const reasons: string[] = [];
+    const backup = async (reason: string) => {
+      reasons.push(reason);
+      return `/backups/${reason}.sqlite3`;
+    };
+    expect((await migrateWithPreflight(db.raw, { migrations: [v1, drop2], backup })).preflightBackup).toBeNull(); // fresh db
+    expect(reasons).toEqual([]);
+    const db2 = track(GameDb.open(join(dir, "pre2.sqlite3")));
+    await migrateWithPreflight(db2.raw, { migrations: [v1], backup });
+    expect((await migrateWithPreflight(db2.raw, { migrations: [v1, safe], backup })).preflightBackup).toBeNull();
+    const r = await migrateWithPreflight(db2.raw, { migrations: [v1, safe, drop], backup });
+    expect(r.preflightBackup).toBe("/backups/pre-migrate-v2-to-v3.sqlite3");
+    expect(r.applied).toEqual([3]);
+    // a failing destructive step rolls back and leaves the earlier version usable
+    const db3 = track(GameDb.open(join(dir, "pre3.sqlite3")));
+    await migrateWithPreflight(db3.raw, { migrations: [v1], backup });
+    db3.raw.prepare("INSERT INTO a VALUES (7)").run();
+    const broken = { version: 2, name: "broken", sql: "DROP TABLE a; SELECT * FROM missing_table;", destructive: true };
+    await expect(migrateWithPreflight(db3.raw, { migrations: [v1, broken], backup })).rejects.toThrow(/rolled back/);
+    expect(db3.raw.prepare("SELECT x FROM a").get()).toEqual({ x: 7 });
+    expect(readAppliedMigrations(db3.raw)).toHaveLength(1);
+  });
+});

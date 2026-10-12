@@ -138,7 +138,6 @@ CREATE INDEX idx_games_guest_status ON games(owner_guest_id, status, updated_at 
 CREATE INDEX idx_games_match ON games(match_id) WHERE match_id IS NOT NULL;
 -- Boards order by (length, lexical) of canonical decimals: exact, never REAL. Created order and id make the order total.
 CREATE INDEX idx_games_board ON games(mode, ruleset_version, length(score) DESC, score DESC, length(max_exponent) DESC, max_exponent DESC, created_at, id);
-CREATE INDEX idx_games_owner_best ON games(owner_user_id, mode, ruleset_version, length(score) DESC, score DESC, length(max_exponent) DESC, max_exponent DESC, created_at, id) WHERE owner_user_id IS NOT NULL;
 
 CREATE TABLE challenge_attempts (
   id TEXT PRIMARY KEY,

@@ -1,12 +1,14 @@
 import type { FastifyInstance } from "fastify";
 import type { WebSocket } from "ws";
-import { WS_PROTOCOL_VERSION, type WsClientMessage, type WsEnvelope } from "@2048/contracts";
+import { DomainError, WS_PROTOCOL_VERSION, type WsClientMessage, type WsEnvelope } from "@2048/contracts";
 import { principalsOf, type AppServices } from "../app.ts";
 import { forbidden, unauthenticated } from "../errors.ts";
 import type { HubConnection } from "../services/hub.ts";
 import { ownerOf } from "../services/games.ts";
 
 const HEARTBEAT_MS = 20_000;
+/** Hard cap on simultaneous sockets for this single-machine server. */
+export const MAX_WS_CONNECTIONS = 256;
 const MAX_MESSAGES_PER_WINDOW = 200;
 const WINDOW_MS = 10_000;
 let nextId = 1;
@@ -43,6 +45,7 @@ export function registerEventRoutes(app: FastifyInstance, s: AppServices): void 
         if (typeof origin !== "string" || !s.isTrustedOrigin(origin)) throw forbidden("Cross-origin WebSocket rejected");
         const { user, guest } = principalsOf(s, req);
         if (!user && !guest) throw unauthenticated();
+        if (s.hub.size >= MAX_WS_CONNECTIONS) throw new DomainError("RESOURCE_LIMIT", "Too many open event connections");
       },
     },
     (socket: WebSocket, req) => {

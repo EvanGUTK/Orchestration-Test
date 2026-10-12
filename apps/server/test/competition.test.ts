@@ -214,7 +214,7 @@ describe("leaderboards", { timeout: 60_000 }, () => {
     expect(t.db.raw.prepare("SELECT count(*) AS n FROM games WHERE id = ?").get(b.game.id)).toEqual({ n: 1 });
   });
 
-  it("keeps casual, challenge, practice and bot results on separate boards with exact decimal ordering", async () => {
+  it("keeps casual, practice and bot results on separate boards with exact decimal ordering", async () => {
     const t = await startApp({}, undefined, { now: OCT });
     const reader = new Client(t.app);
     const p1 = await user(t, "casual_a");
@@ -230,11 +230,17 @@ describe("leaderboards", { timeout: 60_000 }, () => {
     set(g2.id, "100", "6");
     set(g3.id, "12345678901234567890123", "40");
     set(practice.id, "99999999999999999999999999", "50");
+    // only finished games are results; a game still in progress is not on the board yet
+    expect((await reader.get<Page<LeaderboardEntry>>("/leaderboards?kind=casual")).body.items).toEqual([]);
+    t.db.raw.prepare("UPDATE games SET status = 'completed' WHERE id IN (?, ?, ?, ?)").run(g1.id, g2.id, g3.id, practice.id);
     const board = await reader.get<Page<LeaderboardEntry>>("/leaderboards?kind=casual");
     expect(board.body.items.map((x) => [x.rank, x.displayName, x.score, x.gameId])).toEqual([
       [1, "casual_b", "12345678901234567890123", g3.id],
       [2, "casual_a", "100", g2.id],
+      [3, "casual_a", "99", g1.id],
     ]);
+    const mineOnly = await reader.get<Page<LeaderboardEntry>>(`/leaderboards?kind=casual&account=${board.body.items[1]!.accountId}`);
+    expect(mineOnly.body.items.map((x) => [x.rank, x.score])).toEqual([[2, "100"], [3, "99"]]);
     expect((await reader.get<Page<LeaderboardEntry>>("/leaderboards?kind=bot")).body.items).toEqual([]);
     expect((await reader.get<Page<LeaderboardEntry>>("/leaderboards?kind=duel-elo")).body.items).toEqual([]);
     const other = await reader.get<Page<LeaderboardEntry>>("/leaderboards?kind=casual&ruleset=custom-v1:5:1:2:none");

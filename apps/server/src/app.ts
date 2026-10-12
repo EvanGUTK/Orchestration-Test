@@ -52,7 +52,7 @@ export type AppServices = {
 export type BuildOptions = {
   db: GameDb;
   config: ServerConfig;
-  logger?: boolean | { level: string };
+  logger?: boolean | { level: string; redact?: string[] };
   /** Port actually bound (config.port may be 0 in tests). */
   boundPort?: () => number;
   /** Rebuild unfinished bot runs at boot (default true). */
@@ -138,6 +138,9 @@ export async function buildApp(options: BuildOptions): Promise<{ app: FastifyIns
     requestIdHeader: false,
     logController: new LogController({ disableRequestLogging: true }),
     trustProxy: false,
+    // Slow or stalled clients cannot hold sockets forever (slowloris-style floods); health stays responsive.
+    requestTimeout: 30_000,
+    keepAliveTimeout: 10_000,
     // Reject pathological URLs early; this is a local single-user server.
     routerOptions: { ignoreTrailingSlash: true, maxParamLength: 200 },
   });

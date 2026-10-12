@@ -108,3 +108,25 @@ export function migrate(
   const currentVersion = readAppliedMigrations(db).length;
   return { applied, currentVersion, total: known.length };
 }
+
+/**
+ * Boot-time migration with a safety net: when an EXISTING database (at least one migration applied) is about to
+ * receive a migration flagged `destructive`, a consistent backup is written first (SQLite backup API) and its
+ * path is returned. A failed migration rolls back completely and leaves the previous schema version in place;
+ * restore the preflight backup (`npm run db:restore -- <file>`, server stopped) to return to the old build.
+ */
+export async function migrateWithPreflight(
+  db: SqliteDatabase,
+  options: { migrations?: readonly Migration[]; backup: (reason: string) => Promise<string> },
+): Promise<MigrationReport & { preflightBackup: string | null }> {
+  const known = options.migrations ?? MIGRATIONS;
+  db.exec(CREATE_MIGRATIONS_TABLE);
+  const appliedCount = readAppliedMigrations(db).length;
+  const pending = pendingMigrations(db, known);
+  let preflightBackup: string | null = null;
+  if (appliedCount > 0 && pending.some((m) => m.destructive)) {
+    preflightBackup = await options.backup(`pre-migrate-v${appliedCount}-to-v${known[known.length - 1]!.version}`);
+  }
+  const report = migrate(db, { migrations: known });
+  return { ...report, preflightBackup };
+}

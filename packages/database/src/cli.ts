@@ -1,7 +1,7 @@
 import { resolve } from "node:path";
 import { GameDb } from "./connection.ts";
 import { backupDatabase, defaultBackupPath, restoreDatabase } from "./backup.ts";
-import { migrate, pendingMigrations } from "./migrate.ts";
+import { migrateWithPreflight, pendingMigrations } from "./migrate.ts";
 import { MigrationError, RestoreError } from "./errors.ts";
 
 const USAGE = `Usage: node packages/database/src/cli.ts <command> [args]
@@ -33,12 +33,15 @@ export async function runCli(argv: readonly string[], env: Record<string, string
         const db = GameDb.open(active);
         try {
           const before = pendingMigrations(db.raw).length;
-          const report = migrate(db.raw);
+          const report = await migrateWithPreflight(db.raw, {
+            backup: async (reason) => (await backupDatabase(db.raw, defaultBackupPath(active, reason))).path,
+          });
           io.out(
             before === 0
               ? `Database ${active} is up to date at schema version ${report.currentVersion}.`
               : `Applied migrations [${report.applied.join(", ")}]; ${active} is now at schema version ${report.currentVersion}.`,
           );
+          if (report.preflightBackup) io.out(`Preflight backup: ${report.preflightBackup}`);
         } finally {
           db.close();
         }

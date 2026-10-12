@@ -1,4 +1,4 @@
-import { GameDb, migrate } from "@2048/database";
+import { GameDb, backupDatabase, defaultBackupPath, migrateWithPreflight } from "@2048/database";
 import { buildApp } from "./app.ts";
 import { loadConfig } from "./config.ts";
 
@@ -8,7 +8,9 @@ async function main(): Promise<void> {
   const db = GameDb.open(config.databasePath);
   let report;
   try {
-    report = migrate(db.raw);
+    report = await migrateWithPreflight(db.raw, {
+      backup: async (reason) => (await backupDatabase(db.raw, defaultBackupPath(config.databasePath, reason))).path,
+    });
     const integrity = db.integrityCheck();
     if (integrity.length !== 1 || integrity[0] !== "ok") {
       throw new Error(`database integrity check failed: ${integrity.slice(0, 3).join("; ")}`);
@@ -17,7 +19,15 @@ async function main(): Promise<void> {
     db.close();
     throw err;
   }
-  const { app } = await buildApp({ db, config, logger: { level: config.logLevel } });
+  const { app } = await buildApp({
+    db,
+    config,
+    // Never log credentials: cookies, CSRF tokens and Set-Cookie are redacted even if a serializer is widened later.
+    logger: {
+      level: config.logLevel,
+      redact: ["req.headers.cookie", "req.headers.authorization", 'req.headers["x-csrf-token"]', 'res.headers["set-cookie"]'],
+    },
+  });
   const shutdown = async (signal: string) => {
     app.log.info({ signal }, "shutting down");
     try {
