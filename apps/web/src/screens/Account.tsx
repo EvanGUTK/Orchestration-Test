@@ -1,7 +1,8 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import type { Preferences } from "@2048/contracts";
+import type { GameView, Preferences, ProfileStats } from "@2048/contracts";
 import { compareDecimal } from "@2048/contracts";
+import { isApiError } from "../api/client.ts";
 import { Field, EmptyState, ErrorPanel, PageHeading, Spinner } from "../components/common.tsx";
 import { groupDecimal, maxExponentOf, tileLabel } from "../format.ts";
 import { parseBindingText } from "../input/keys.ts";
@@ -10,8 +11,86 @@ import { useApp } from "../state/app.tsx";
 import { useAsync } from "../state/useAsync.ts";
 
 // --- profile -----------------------------------------------------------------------
+type StatsResult = { kind: "server"; stats: ProfileStats } | { kind: "derived"; games: GameView[]; truncated: boolean };
+
+function StatsView(props: { result: StatsResult }) {
+  const { result } = props;
+  if (result.kind === "derived") {
+    const { games, truncated } = result;
+    if (games.length === 0) return <p className="muted">No games yet. Statistics are computed from your saved games, nothing is estimated.</p>;
+    let bestScore = "0";
+    const best: (string | null)[] = [];
+    for (const g of games) {
+      if (compareDecimal(g.state.score, bestScore) > 0) bestScore = g.state.score;
+      best.push(maxExponentOf(g.state.board.cells));
+    }
+    const top = maxExponentOf(best);
+    return (
+      <>
+        <dl className="stats">
+          <Stat label="Games" value={`${games.length}${truncated ? "+" : ""}`} />
+          <Stat label="Finished" value={String(games.filter((g) => g.state.status !== "active").length)} />
+          <Stat label="Best score" value={groupDecimal(bestScore)} title={bestScore} />
+          <Stat label="Best tile" value={top ? tileLabel(top, "numbers") : "-"} />
+        </dl>
+        <p className="muted">Computed from your games because the server has no statistics endpoint yet.</p>
+      </>
+    );
+  }
+  const st = result.stats;
+  if (st.gamesPlayed === 0) return <p className="muted">No games yet. Play one and your statistics will appear here.</p>;
+  return (
+    <>
+      <dl className="stats">
+        <Stat label="Games" value={String(st.gamesPlayed)} />
+        <Stat label="Best score" value={st.bestScore ? groupDecimal(st.bestScore) : "-"} title={st.bestScore ?? undefined} />
+        <Stat label="Best tile" value={st.maxExponent ? tileLabel(st.maxExponent, "numbers") : "-"} />
+        <Stat label="Duels W / D / L" value={`${st.duels.won} / ${st.duels.drawn} / ${st.duels.lost}`} />
+        <Stat label="Elo" value={st.duels.rating === null ? "-" : String(st.duels.rating)} />
+        <Stat label="Bot runs" value={String(st.bot.runs)} />
+      </dl>
+      {st.scoreDistribution.length > 0 ? (
+        <div className="table-wrap">
+          <table className="table">
+            <caption>Score distribution</caption>
+            <thead>
+              <tr>
+                <th scope="col">Score range</th>
+                <th scope="col">Games</th>
+              </tr>
+            </thead>
+            <tbody>
+              {st.scoreDistribution.map((b) => (
+                <tr key={b.bucketLabel}>
+                  <td>{b.bucketLabel}</td>
+                  <td>{b.count}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : null}
+      {st.maxTileCounts.length > 0 ? (
+        <p>
+          Highest tiles reached:{" "}
+          {st.maxTileCounts.map((m) => `${tileLabel(m.exponent, "numbers")} x${m.count}`).join(", ")}
+        </p>
+      ) : null}
+    </>
+  );
+}
+
+function Stat(props: { label: string; value: string; title?: string | undefined }) {
+  return (
+    <div>
+      <dt>{props.label}</dt>
+      <dd title={props.title}>{props.value}</dd>
+    </div>
+  );
+}
+
 export function ProfileScreen() {
-  const { identity, api, setIdentity, signOut } = useApp();
+  const { identity, isUser, api, setIdentity, refreshIdentity, signOut } = useApp();
   const navigate = useNavigate();
   const [displayName, setDisplayName] = useState(identity?.displayName ?? "");
   const [nameMessage, setNameMessage] = useState<string | null>(null);
@@ -25,22 +104,28 @@ export function ProfileScreen() {
   const [deleteError, setDeleteError] = useState<unknown>(null);
 
   const stats = useAsync(
-    async (signal) => {
-      if (!identity) return null;
-      const games = [];
+    async (signal): Promise<StatsResult | null> => {
+      if (!isUser) return null;
+      try {
+        return { kind: "server", stats: await api.profileStats(signal) };
+      } catch (error) {
+        if (!(isApiError(error) && error.routeMissing)) throw error;
+      }
+      // Server has no stats endpoint yet: derive what we honestly can from finished and active games.
+      const games: GameView[] = [];
       let cursor: string | undefined;
       for (let i = 0; i < 5; i++) {
-        const page = await api.listGames(cursor, signal);
+        const page = await api.listGames(cursor, signal, "all");
         games.push(...page.items);
-        if (!page.nextCursor) return { games, truncated: false };
+        if (!page.nextCursor) return { kind: "derived", games, truncated: false };
         cursor = page.nextCursor;
       }
-      return { games, truncated: true };
+      return { kind: "derived", games, truncated: true };
     },
     [api, identity?.userId],
   );
 
-  if (!identity) {
+  if (!identity || !isUser) {
     return (
       <>
         <PageHeading title="Profile" />
@@ -92,30 +177,12 @@ export function ProfileScreen() {
     setDeleteError(null);
     try {
       await api.deleteProfile({ password: deletePassword });
-      setIdentity(null);
+      await refreshIdentity();
       navigate("/");
     } catch (e) {
       setDeleteError(e);
     }
   };
-
-  let summary: { played: number; completed: number; bestScore: string; bestTile: string | null; truncated: boolean } | null = null;
-  if (stats.status === "ready" && stats.data) {
-    const { games, truncated } = stats.data;
-    let bestScore = "0";
-    const cells: (string | null)[] = [];
-    for (const g of games) {
-      if (compareDecimal(g.state.score, bestScore) > 0) bestScore = g.state.score;
-      cells.push(maxExponentOf(g.state.board.cells));
-    }
-    summary = {
-      played: games.length,
-      completed: games.filter((g) => g.state.status !== "active").length,
-      bestScore,
-      bestTile: maxExponentOf(cells),
-      truncated,
-    };
-  }
 
   return (
     <>
@@ -131,32 +198,15 @@ export function ProfileScreen() {
       <section className="panel" aria-label="Statistics">
         <h2 className="panel-title">Statistics</h2>
         {stats.status === "loading" ? (
-          <Spinner label="Loading your games" />
+          <Spinner label="Loading statistics" />
         ) : stats.status === "error" ? (
           <ErrorPanel error={stats.error} onRetry={stats.reload} />
-        ) : summary && summary.played > 0 ? (
-          <dl className="stats">
-            <div>
-              <dt>Games</dt>
-              <dd>{summary.played}{summary.truncated ? "+" : ""}</dd>
-            </div>
-            <div>
-              <dt>Finished</dt>
-              <dd>{summary.completed}</dd>
-            </div>
-            <div>
-              <dt>Best score</dt>
-              <dd title={summary.bestScore}>{groupDecimal(summary.bestScore)}</dd>
-            </div>
-            <div>
-              <dt>Best tile</dt>
-              <dd>{summary.bestTile ? tileLabel(summary.bestTile, "numbers") : "-"}</dd>
-            </div>
-          </dl>
-        ) : (
-          <p className="muted">No games yet. Statistics are computed from your saved games, nothing is estimated.</p>
-        )}
-        <p className="muted">Win, draw and loss records and Elo are on the <Link to="/leaderboards">leaderboards</Link>.</p>
+        ) : stats.data ? (
+          <StatsView result={stats.data} />
+        ) : null}
+        <p className="muted">
+          Rankings are on the <Link to="/leaderboards">leaderboards</Link>.
+        </p>
       </section>
 
       <form className="panel form" onSubmit={(e) => void saveName(e)} aria-label="Display name">
@@ -238,7 +288,7 @@ const SPEED_OPTIONS: { value: Preferences["botSpeed"]; label: string }[] = [
 ];
 
 export function SettingsScreen() {
-  const { prefs, updatePrefs, identity } = useApp();
+  const { prefs, updatePrefs, isUser } = useApp();
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [bindingText, setBindingText] = useState<Record<string, string>>(() =>
@@ -289,7 +339,7 @@ export function SettingsScreen() {
 
   return (
     <>
-      <PageHeading title="Settings" subtitle={identity ? "Saved to your account." : "Saved in this browser for guests."} />
+      <PageHeading title="Settings" subtitle={isUser ? "Saved to your account." : "Saved in this browser."} />
       <div className="panel form" role="group" aria-label="Appearance and behaviour">
         {select("s-theme", "Theme", "theme", THEME_OPTIONS)}
         {select("s-motion", "Motion", "motion", MOTION_OPTIONS)}
@@ -327,7 +377,7 @@ export function SettingsScreen() {
 
 // --- data export / backup ----------------------------------------------------------
 export function DataScreen() {
-  const { identity, api } = useApp();
+  const { isUser, api } = useApp();
   const [error, setError] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<string | null>(null);
@@ -360,7 +410,7 @@ export function DataScreen() {
       <PageHeading title="Data and backup" subtitle="Your data lives in a SQLite file on this machine." />
       <section className="panel" aria-label="Export">
         <h2 className="panel-title">Export my profile</h2>
-        {identity ? (
+        {isUser ? (
           <>
             <p className="muted">Downloads your profile, preferences and results as JSON. Credentials and session data are excluded.</p>
             <button type="button" className="btn btn-primary" disabled={busy} onClick={() => void exportData()}>
@@ -371,7 +421,7 @@ export function DataScreen() {
           </>
         ) : (
           <p className="muted">
-            <Link to="/login">Sign in</Link> to export an account. Guest games live only in this browser storage.
+            <Link to="/login">Sign in</Link> to export an account. Guest games are not exportable.
           </p>
         )}
       </section>

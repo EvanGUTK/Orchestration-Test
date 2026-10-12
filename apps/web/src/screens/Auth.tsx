@@ -1,9 +1,10 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { ApiRequestError, describeError } from "../api/client.ts";
-import { Field, PageHeading } from "../components/common.tsx";
+import { ErrorPanel, Field, PageHeading } from "../components/common.tsx";
 import { Link, useNavigate } from "../router.tsx";
 import { useApp } from "../state/app.tsx";
+import { useStartGame } from "../state/startGame.ts";
 
 export const USERNAME_PATTERN = /^[a-z0-9_]{3,24}$/;
 
@@ -18,19 +19,21 @@ export function validateRegistration(input: { username: string; displayName: str
 }
 
 export function WelcomeScreen() {
-  const { identity, serverStatus } = useApp();
+  const { identity, isUser, serverStatus } = useApp();
+  const { start, busy, error } = useStartGame();
   return (
     <>
       <PageHeading title="2048 Infinite" subtitle="There is no final tile. Everything runs and stays on this machine." />
       <div className="card-grid">
         <section className="panel">
           <h2 className="panel-title">Play now</h2>
-          <p className="muted">A guest game runs entirely in this browser and is never ranked. It is saved here so you can resume it.</p>
-          <Link to="/play" className="btn btn-primary">
-            {identity ? "Quick classic game (this browser)" : "Play as guest"}
-          </Link>
+          <p className="muted">A guest game is casual and never ranked. It is saved so you can resume it, on the local server when it is running or in this browser when it is not.</p>
+          <button type="button" className="btn btn-primary" disabled={busy} onClick={() => void start("classic")}>
+            {busy ? "Starting..." : isUser ? "Quick classic game" : "Play as guest"}
+          </button>
+          {error ? <ErrorPanel error={error} /> : null}
         </section>
-        {identity ? (
+        {isUser && identity ? (
           <section className="panel">
             <h2 className="panel-title">Welcome back, {identity.displayName}</h2>
             <p className="muted">Server games are saved, can be ranked, and can be replayed.</p>

@@ -70,7 +70,7 @@ describe("App shell", () => {
       </AppProvider>,
     );
     expect(screen.getByRole("heading", { name: "2048 Infinite", level: 1 })).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Play as guest" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Play as guest" })).toBeTruthy();
     expect(screen.getByRole("navigation", { name: "Main" })).toBeTruthy();
     expect(screen.getByText(/Server offline/)).toBeTruthy();
   });
@@ -204,6 +204,49 @@ describe("App shell", () => {
     await u.click(screen.getByRole("button", { name: "Start practice" }));
     await waitFor(() => expect(window.location.hash.startsWith("#/play")).toBe(true));
     await waitFor(() => expect(document.querySelectorAll(".board-cell").length).toBe(25));
+  });
+});
+
+describe("identity bootstrap", () => {
+  it("falls back to a server guest when there is no session, and to local play when offline", async () => {
+    const seen: string[] = [];
+    const guest: Identity = { ...user, kind: "guest", displayName: "Guest 1A2B" };
+    const api = client((url, init) => {
+      seen.push(`${init.method} ${url}`);
+      if (url.endsWith("/auth/me")) return jsonResponse({ error: { code: "UNAUTHENTICATED", message: "x", requestId: "r" } }, 401);
+      if (url.endsWith("/auth/guest")) return jsonResponse(guest, 201);
+      return jsonResponse({}, 404);
+    });
+    window.location.hash = "#/modes";
+    const view = render(
+      <AppProvider client={api}>
+        <App />
+      </AppProvider>,
+    );
+    expect(await screen.findByText("Guest 1A2B")).toBeTruthy();
+    expect(seen).toEqual(["GET /api/v1/auth/me", "POST /api/v1/auth/guest"]);
+    view.unmount();
+    const offline = client(() => {
+      throw new TypeError("fetch failed");
+    });
+    render(
+      <AppProvider client={offline}>
+        <App />
+      </AppProvider>,
+    );
+    expect(await screen.findByText("Guest (offline)")).toBeTruthy();
+    expect(screen.getByText("Server offline")).toBeTruthy();
+  });
+
+  it("treats a missing server route as an actionable state, not a crash", async () => {
+    window.location.hash = "#/replays";
+    const api = client(() => jsonResponse({ error: { code: "NOT_FOUND", message: "Not found", requestId: "r" } }, 404));
+    render(
+      <AppProvider client={api} initialIdentity={user} skipBootstrap>
+        <App />
+      </AppProvider>,
+    );
+    expect((await screen.findAllByText("Not available on this server yet")).length).toBeGreaterThan(0);
   });
 });
 

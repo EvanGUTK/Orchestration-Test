@@ -1,0 +1,173 @@
+{
+ "schemaVersion": 1,
+ "checksumVersion": 1,
+ "engineVersion": "engine-1.0.0",
+ "cases": [
+  {
+   "id": "fresh-4x4",
+   "rulesetVersion": "classic-v1",
+   "size": 4,
+   "cells": [
+    "1",
+    null,
+    null,
+    null,
+    null,
+    null,
+    "2",
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+   ],
+   "score": "0",
+   "acceptedMoves": 0,
+   "revision": 0,
+   "rngWords": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "status": "active",
+   "celebrated2048": false,
+   "canonicalJson": "{\"schemaVersion\":1,\"engineVersion\":\"engine-1.0.0\",\"rulesetVersion\":\"classic-v1\",\"board\":{\"size\":4,\"cells\":[\"1\",null,null,null,null,null,\"2\",null,null,null,null,null,null,null,null,null]},\"score\":\"0\",\"acceptedMoves\":0,\"revision\":0,\"rng\":{\"algorithm\":\"xoshiro128ss-v1\",\"words\":[1,2,3,4]},\"status\":\"active\",\"celebrated2048\":false}",
+   "checksum": "1f5159d94f85e885988860e2e673130c9516fc94aa97c64baccd83433f18e835"
+  },
+  {
+   "id": "above-2^53-score",
+   "rulesetVersion": "classic-v1",
+   "size": 4,
+   "cells": [
+    "54",
+    "54",
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    "1"
+   ],
+   "score": "18014398509481984",
+   "acceptedMoves": 17,
+   "revision": 17,
+   "rngWords": [
+    4294967295,
+    0,
+    1,
+    2
+   ],
+   "status": "active",
+   "celebrated2048": false,
+   "canonicalJson": "{\"schemaVersion\":1,\"engineVersion\":\"engine-1.0.0\",\"rulesetVersion\":\"classic-v1\",\"board\":{\"size\":4,\"cells\":[\"54\",\"54\",null,null,null,null,null,null,null,null,null,null,null,null,null,\"1\"]},\"score\":\"18014398509481984\",\"acceptedMoves\":17,\"revision\":17,\"rng\":{\"algorithm\":\"xoshiro128ss-v1\",\"words\":[4294967295,0,1,2]},\"status\":\"active\",\"celebrated2048\":false}",
+   "checksum": "cd454252f22ba3261d9d47622a1b87e8db6f350d9f8ddd0aaf5f579b61a00cf8"
+  },
+  {
+   "id": "exponent-4096",
+   "rulesetVersion": "custom-v1:3:1:2:none",
+   "size": 3,
+   "cells": [
+    "4096",
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    "255"
+   ],
+   "score": "20000000000000000000000000000000000000000",
+   "acceptedMoves": 120,
+   "revision": 120,
+   "rngWords": [
+    5,
+    6,
+    7,
+    8
+   ],
+   "status": "active",
+   "celebrated2048": true,
+   "canonicalJson": "{\"schemaVersion\":1,\"engineVersion\":\"engine-1.0.0\",\"rulesetVersion\":\"custom-v1:3:1:2:none\",\"board\":{\"size\":3,\"cells\":[\"4096\",null,null,null,null,null,null,null,\"255\"]},\"score\":\"20000000000000000000000000000000000000000\",\"acceptedMoves\":120,\"revision\":120,\"rng\":{\"algorithm\":\"xoshiro128ss-v1\",\"words\":[5,6,7,8]},\"status\":\"active\",\"celebrated2048\":true}",
+   "checksum": "291ac6b176107f71038653dcae86bc2a000712833a4323334030b0de01801115"
+  },
+  {
+   "id": "dead-board-completed",
+   "rulesetVersion": "custom-v1:3:1:2:none",
+   "size": 3,
+   "cells": [
+    "1",
+    "2",
+    "1",
+    "2",
+    "1",
+    "2",
+    "1",
+    "2",
+    "1"
+   ],
+   "score": "36",
+   "acceptedMoves": 33,
+   "revision": 33,
+   "rngWords": [
+    9,
+    9,
+    9,
+    9
+   ],
+   "status": "completed",
+   "celebrated2048": false,
+   "canonicalJson": "{\"schemaVersion\":1,\"engineVersion\":\"engine-1.0.0\",\"rulesetVersion\":\"custom-v1:3:1:2:none\",\"board\":{\"size\":3,\"cells\":[\"1\",\"2\",\"1\",\"2\",\"1\",\"2\",\"1\",\"2\",\"1\"]},\"score\":\"36\",\"acceptedMoves\":33,\"revision\":33,\"rng\":{\"algorithm\":\"xoshiro128ss-v1\",\"words\":[9,9,9,9]},\"status\":\"completed\",\"celebrated2048\":false}",
+   "checksum": "8efc26316a91754973d2af7ae2f833d92084d9718cd660ef41bc2a083a1bdf91"
+  },
+  {
+   "id": "2048-celebrated",
+   "rulesetVersion": "classic-v1",
+   "size": 4,
+   "cells": [
+    "11",
+    "10",
+    "9",
+    "8",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "score": "20480",
+   "acceptedMoves": 900,
+   "revision": 900,
+   "rngWords": [
+    11,
+    12,
+    13,
+    14
+   ],
+   "status": "active",
+   "celebrated2048": true,
+   "canonicalJson": "{\"schemaVersion\":1,\"engineVersion\":\"engine-1.0.0\",\"rulesetVersion\":\"classic-v1\",\"board\":{\"size\":4,\"cells\":[\"11\",\"10\",\"9\",\"8\",\"1\",\"2\",\"3\",\"4\",\"5\",\"6\",\"7\",\"1\",\"2\",\"3\",\"4\",\"5\"]},\"score\":\"20480\",\"acceptedMoves\":900,\"revision\":900,\"rng\":{\"algorithm\":\"xoshiro128ss-v1\",\"words\":[11,12,13,14]},\"status\":\"active\",\"celebrated2048\":true}",
+   "checksum": "0a0908e9feedea1c18063381797abd48d2a22354d8785e4defc178d2c9915b97"
+  }
+ ]
+}

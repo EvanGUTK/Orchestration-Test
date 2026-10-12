@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
-import type { Direction, DomainEvent, GameState, ReplayView } from "@2048/contracts";
+import type { Direction, DomainEvent, GameState, ReplaySummary, ReplayView } from "@2048/contracts";
 import { REPLAY_SCHEMA_VERSION } from "@2048/contracts";
 import { ApiRequestError } from "../api/client.ts";
 import { BoardView } from "../components/Board.tsx";
 import { ErrorPanel, Field, PageHeading, Spinner } from "../components/common.tsx";
 import { ScoreCard } from "../components/GamePlay.tsx";
 import { getEngine } from "../engine/port.ts";
-import { groupDecimal, maxExponentOf, tileLabel, tileSpoken } from "../format.ts";
+import { formatDate, groupDecimal, maxExponentOf, tileLabel, tileSpoken } from "../format.ts";
 import { advanceTiles, createIdSource, tilesFromBoard } from "../game/tiles.ts";
 import type { TileView } from "../game/tiles.ts";
 import { Link, useNavigate } from "../router.tsx";
@@ -220,6 +220,68 @@ export function ReplayPlayer(props: { replay: ReplayView; title?: string }) {
 }
 
 // --- screens -----------------------------------------------------------------------
+function ReplayList() {
+  const { api } = useApp();
+  const [extra, setExtra] = useState<ReplaySummary[]>([]);
+  const [cursor, setCursor] = useState<string | null>(null);
+  const [moreError, setMoreError] = useState<unknown>(null);
+  const list = useAsync(
+    async (signal) => {
+      const page = await api.replays(undefined, signal);
+      setExtra([]);
+      setCursor(page.nextCursor);
+      return page.items;
+    },
+    [api],
+  );
+  const more = async () => {
+    if (!cursor) return;
+    setMoreError(null);
+    try {
+      const page = await api.replays(cursor);
+      setExtra((prev) => [...prev, ...page.items]);
+      setCursor(page.nextCursor);
+    } catch (e) {
+      setMoreError(e);
+    }
+  };
+  const items = [...(list.data ?? []), ...extra];
+  return (
+    <section className="panel" aria-label="My finished games">
+      <h2 className="panel-title">My finished games</h2>
+      {list.status === "loading" ? (
+        <Spinner label="Loading replays" />
+      ) : list.status === "error" ? (
+        <ErrorPanel error={list.error} onRetry={list.reload} />
+      ) : items.length === 0 ? (
+        <p className="muted">No finished games yet. Finish or forfeit a game and it will be listed here.</p>
+      ) : (
+        <ul className="list">
+          {items.map((item) => (
+            <li key={item.gameId} className="list-item">
+              <div>
+                <strong>{item.mode}</strong> <span className="tag">{item.rulesetVersion}</span>
+                <div className="muted">
+                  Score {groupDecimal(item.finalScore)}, best {tileLabel(item.maxExponent, "numbers")}, {item.acceptedMoves} moves, {formatDate(item.createdAt)}
+                </div>
+              </div>
+              <Link to={`/replays/${item.gameId}`} className="btn">
+                Replay
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+      {cursor ? (
+        <button type="button" className="btn" onClick={() => void more()}>
+          Load more
+        </button>
+      ) : null}
+      {moreError ? <ErrorPanel error={moreError} onRetry={() => void more()} /> : null}
+    </section>
+  );
+}
+
 export function ReplayHomeScreen() {
   const { api, identity } = useApp();
   const navigate = useNavigate();
@@ -274,6 +336,7 @@ export function ReplayHomeScreen() {
         </button>
         {!identity ? <p className="muted">Sign in to open server replays. You can still load a file below.</p> : null}
       </form>
+      {identity ? <ReplayList /> : null}
       <section className="panel" aria-label="Replay file">
         <h2 className="panel-title">Load a replay file</h2>
         <Field id="r-file" label="Replay JSON file" hint="Validated here before anything is shown. Up to 8 MB.">

@@ -196,11 +196,26 @@ export function build() {
     games.push({ rulesetVersion: rules.version, boardSize: rules.size, spawnFourTenths: rules.fourTenths,
       moveCap: rules.moveCap, seed, initial, steps, finalChecksum: checksum(st) });
   }
-  return { prng, games: { schemaVersion: 1, engineVersion: ENGINE_VERSION, checksumVersion: 1, games } };
+  const mk = (id, size, cells, score, acceptedMoves, words, status, celebrated, rulesetVersion = "classic-v1") => {
+    const st = { rulesetVersion, size, cells, score, acceptedMoves, revision: acceptedMoves, words, status, celebrated };
+    return { id, rulesetVersion, size, cells, score, acceptedMoves, revision: acceptedMoves, rngWords: words,
+      status, celebrated2048: celebrated, canonicalJson: canonical(st), checksum: checksum(st) };
+  };
+  const n = null;
+  const canonicalCases = [
+    mk("fresh-4x4", 4, ["1", n, n, n, n, n, "2", n, n, n, n, n, n, n, n, n], "0", 0, [1, 2, 3, 4], "active", false),
+    mk("above-2^53-score", 4, ["54", "54", n, n, n, n, n, n, n, n, n, n, n, n, n, "1"], "18014398509481984", 17, [4294967295, 0, 1, 2], "active", false),
+    mk("exponent-4096", 3, ["4096", n, n, n, n, n, n, n, "255"], "2" + "0".repeat(40), 120, [5, 6, 7, 8], "active", true, "custom-v1:3:1:2:none"),
+    mk("dead-board-completed", 3, ["1", "2", "1", "2", "1", "2", "1", "2", "1"], "36", 33, [9, 9, 9, 9], "completed", false, "custom-v1:3:1:2:none"),
+    mk("2048-celebrated", 4, ["11", "10", "9", "8", "1", "2", "3", "4", "5", "6", "7", "1", "2", "3", "4", "5"], "20480", 900, [11, 12, 13, 14], "active", true),
+  ];
+  return { prng,
+    canonical: { schemaVersion: 1, checksumVersion: 1, engineVersion: ENGINE_VERSION, cases: canonicalCases },
+    games: { schemaVersion: 1, engineVersion: ENGINE_VERSION, checksumVersion: 1, games } };
 }
 
 const json = (v) => JSON.stringify(v, null, 1) + "\n";
-const files = { "prng-v1.json": (b) => json(b.prng), "games-v1.json": (b) => json(b.games) };
+const files = { "prng-v1.json": (b) => json(b.prng), "games-v1.json": (b) => json(b.games), "canonical-v1.json": (b) => json(b.canonical) };
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   const built = build();

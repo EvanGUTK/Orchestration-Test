@@ -1,7 +1,16 @@
 import { describe, expect, it } from "vitest";
 import {
-  CLASSIC_RULES, addDecimal, canonicalStateJson, compareDecimal, customRules, formatTile,
-  isDecimal, isExponent, resolveRules, tileValue, ENGINE_VERSION,
+  CLASSIC_RULES,
+  addDecimal,
+  canonicalStateJson,
+  compareDecimal,
+  customRules,
+  formatTile,
+  isDecimal,
+  isExponent,
+  resolveRules,
+  tileValue,
+  ENGINE_VERSION,
 } from "../src/index.ts";
 import type { GameState } from "../src/index.ts";
 
@@ -44,11 +53,16 @@ describe("rulesets", () => {
 describe("canonical state json", () => {
   it("has the frozen key order and no whitespace", () => {
     const state: GameState = {
-      schemaVersion: 1, engineVersion: ENGINE_VERSION, rulesetVersion: "classic-v1",
+      schemaVersion: 1,
+      engineVersion: ENGINE_VERSION,
+      rulesetVersion: "classic-v1",
       board: { size: 3, cells: ["1", null, "256", null, null, null, null, null, null] },
-      score: "18014398509481984", acceptedMoves: 3, revision: 3,
+      score: "18014398509481984",
+      acceptedMoves: 3,
+      revision: 3,
       rng: { algorithm: "xoshiro128ss-v1", words: [1, 2, 3, 4294967295] },
-      status: "active", celebrated2048: false,
+      status: "active",
+      celebrated2048: false,
     };
     expect(canonicalStateJson(state)).toBe(
       '{"schemaVersion":1,"engineVersion":"engine-1.0.0","rulesetVersion":"classic-v1",' +
@@ -57,5 +71,44 @@ describe("canonical state json", () => {
         '"rng":{"algorithm":"xoshiro128ss-v1","words":[1,2,3,4294967295]},' +
         '"status":"active","celebrated2048":false}',
     );
+  });
+});
+
+describe("canonical golden literals", () => {
+  it("canonicalStateJson reproduces every canonical-v1.json case", async () => {
+    const { readFileSync } = await import("node:fs");
+    const golden = JSON.parse(
+      readFileSync(new URL("../golden/canonical-v1.json", import.meta.url), "utf8"),
+    ) as {
+      cases: Array<{
+        id: string;
+        rulesetVersion: string;
+        size: number;
+        cells: (string | null)[];
+        score: string;
+        acceptedMoves: number;
+        revision: number;
+        rngWords: [number, number, number, number];
+        status: GameState["status"];
+        celebrated2048: boolean;
+        canonicalJson: string;
+      }>;
+    };
+    expect(golden.cases.length).toBeGreaterThanOrEqual(5);
+    for (const c of golden.cases) {
+      const state: GameState = {
+        schemaVersion: 1,
+        engineVersion: ENGINE_VERSION,
+        rulesetVersion: c.rulesetVersion,
+        board: { size: c.size, cells: c.cells },
+        score: c.score,
+        acceptedMoves: c.acceptedMoves,
+        revision: c.revision,
+        rng: { algorithm: "xoshiro128ss-v1", words: c.rngWords },
+        status: c.status,
+        celebrated2048: c.celebrated2048,
+      };
+      expect(canonicalStateJson(state), c.id).toBe(c.canonicalJson);
+    }
   });
 });

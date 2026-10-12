@@ -9,7 +9,9 @@ export type ServerStatus = "checking" | "online" | "offline";
 
 export type AppContextValue = {
   api: ApiClient;
-  identity: Identity | null; // null => local guest (browser only)
+  /** Server identity (registered user or server guest). null => offline, local-only guest. */
+  identity: Identity | null;
+  isUser: boolean;
   serverStatus: ServerStatus;
   prefs: Preferences;
   updatePrefs(patch: Partial<Preferences>): Promise<void>;
@@ -42,21 +44,29 @@ export function AppProvider(props: { children: ReactNode; client?: ApiClient; in
 
   const adopt = useCallback((next: Identity | null) => {
     setIdentityState(next);
-    setPrefs(next ? normalisePreferences(next.preferences) : loadGuestPreferences());
+    // Preferences live on the account for registered users; guests keep them in this browser.
+    setPrefs(next && next.kind === "user" ? normalisePreferences(next.preferences) : loadGuestPreferences());
   }, []);
 
+  /** Resolve who we are: existing session, else a server guest, else offline local play. */
   const refreshIdentity = useCallback(async () => {
     try {
-      const me = await client.me();
+      adopt(await client.me());
       setServerStatus("online");
-      adopt(me.kind === "user" ? me : null);
+      return;
     } catch (error) {
-      if (isApiError(error) && !error.isNetwork) {
-        setServerStatus("online"); // server answered; just not signed in
-        adopt(null);
-      } else {
+      if (isApiError(error) && error.isNetwork) {
         setServerStatus("offline");
+        adopt(null);
+        return;
       }
+    }
+    try {
+      adopt(await client.guest());
+      setServerStatus("online");
+    } catch (error) {
+      setServerStatus(isApiError(error) && !error.isNetwork ? "online" : "offline");
+      adopt(null);
     }
   }, [client, adopt]);
 
@@ -69,7 +79,7 @@ export function AppProvider(props: { children: ReactNode; client?: ApiClient; in
     async (patch: Partial<Preferences>) => {
       const next = normalisePreferences({ ...prefs, ...patch });
       setPrefs(next);
-      if (identityRef.current) {
+      if (identityRef.current?.kind === "user") {
         try {
           const updated = await client.patchProfile({ preferences: patch });
           setIdentityState((current) => (current ? { ...current, preferences: normalisePreferences(updated.preferences) } : current));
@@ -103,13 +113,15 @@ export function AppProvider(props: { children: ReactNode; client?: ApiClient; in
   const signOut = useCallback(async () => {
     try {
       await client.logout();
+    } catch (error) {
+      if (!(isApiError(error) && error.code === "UNAUTHENTICATED")) throw error;
     } finally {
-      adopt(null);
+      await refreshIdentity();
     }
-  }, [client, adopt]);
+  }, [client, refreshIdentity]);
 
   const value = useMemo<AppContextValue>(
-    () => ({ api: client, identity, serverStatus, prefs, updatePrefs, signIn, register, signOut, refreshIdentity, setIdentity: adopt }),
+    () => ({ api: client, identity, isUser: identity?.kind === "user", serverStatus, prefs, updatePrefs, signIn, register, signOut, refreshIdentity, setIdentity: adopt }),
     [client, identity, serverStatus, prefs, updatePrefs, signIn, register, signOut, refreshIdentity, adopt],
   );
   return <AppContext.Provider value={value}>{props.children}</AppContext.Provider>;

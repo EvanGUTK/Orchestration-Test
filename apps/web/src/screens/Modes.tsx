@@ -1,7 +1,7 @@
-import { useState } from "react";
 import { ErrorPanel, PageHeading } from "../components/common.tsx";
-import { Link, useNavigate } from "../router.tsx";
+import { Link } from "../router.tsx";
 import { useApp } from "../state/app.tsx";
+import { useStartGame } from "../state/startGame.ts";
 
 type ModeCard = { title: string; text: string; to?: string; action?: "classic"; needsAccount?: boolean; tag: string };
 
@@ -17,35 +17,17 @@ const MODES: ModeCard[] = [
 ];
 
 export function ModesScreen() {
-  const { identity, api } = useApp();
-  const navigate = useNavigate();
-  const [error, setError] = useState<unknown>(null);
-  const [busy, setBusy] = useState(false);
-
-  const startClassic = async () => {
-    if (!identity) {
-      navigate(`/play?new=1&t=${Date.now()}`);
-      return;
-    }
-    setBusy(true);
-    setError(null);
-    try {
-      const game = await api.createGame({ mode: "classic" });
-      navigate(`/play/${game.id}`);
-    } catch (e) {
-      setError(e);
-    } finally {
-      setBusy(false);
-    }
-  };
+  const { identity, isUser } = useApp();
+  const { start, busy, error } = useStartGame();
+  const startClassic = () => start("classic");
 
   return (
     <>
-      <PageHeading title="Choose a mode" subtitle={identity ? `Signed in as ${identity.displayName}` : "Playing as a guest. Sign in to unlock ranked modes."} />
+      <PageHeading title="Choose a mode" subtitle={isUser && identity ? `Signed in as ${identity.displayName}` : "Playing as a guest. Sign in to unlock ranked modes."} />
       {error ? <ErrorPanel error={error} onRetry={() => void startClassic()} /> : null}
       <ul className="card-grid" aria-label="Game modes">
         {MODES.map((mode) => {
-          const locked = mode.needsAccount && !identity;
+          const locked = mode.needsAccount && !isUser;
           return (
             <li key={mode.title} className="panel mode-card">
               <span className="tag">{mode.tag}</span>

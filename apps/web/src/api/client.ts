@@ -1,4 +1,4 @@
-import { API_BASE, ERROR_CODES } from "@2048/contracts";
+import { API_BASE, CSRF_HEADER, ERROR_CODES } from "@2048/contracts";
 import type {
   ApiError,
   BotRunRequest,
@@ -10,6 +10,8 @@ import type {
   DeleteProfileRequest,
   ErrorCode,
   EventsPage,
+  ProfileStats,
+  ReplaySummary,
   ForfeitRequest,
   GameView,
   HealthResponse,
@@ -33,6 +35,8 @@ export class ApiRequestError extends Error {
   readonly status: number;
   readonly requestId: string | null;
   readonly details: unknown;
+  /** True when the server has no such route at all (generic "Not found"), as opposed to a missing resource. */
+  routeMissing = false;
   constructor(
     code: ErrorCode | "NETWORK" | "BAD_RESPONSE",
     message: string,
@@ -65,8 +69,7 @@ export type ApiClientOptions = {
   fetchImpl?: typeof fetch;
 };
 
-/** Header carrying the CSRF token returned in `Identity.csrfToken` on mutating requests. */
-export const CSRF_HEADER = "x-csrf-token";
+export { CSRF_HEADER };
 
 export class ApiClient {
   private readonly baseUrl: string;
@@ -118,13 +121,15 @@ export class ApiClient {
     if (!response.ok) {
       const envelope = (json as Partial<ApiError> | null)?.error;
       if (envelope && isErrorCode(envelope.code)) {
-        throw new ApiRequestError(
+        const failure = new ApiRequestError(
           envelope.code,
           typeof envelope.message === "string" ? envelope.message : envelope.code,
           response.status,
           typeof envelope.requestId === "string" ? envelope.requestId : null,
           envelope.details,
         );
+        if (response.status === 404 && envelope.message === "Not found") failure.routeMissing = true;
+        throw failure;
       }
       if (response.status === 502 || response.status === 503 || response.status === 504) {
         // A dev proxy or gateway answered because the API process is not up; treat as unreachable.
@@ -162,6 +167,15 @@ export class ApiClient {
     this.csrfToken = identity.csrfToken ?? null;
     return identity;
   }
+  /** Server guest session (opaque HttpOnly cookie). Idempotent: returns the existing guest if one is present. */
+  async guest(): Promise<Identity> {
+    const identity = await this.request<Identity>("POST", "/auth/guest");
+    this.csrfToken = identity.csrfToken ?? null;
+    return identity;
+  }
+  profileStats(signal?: AbortSignal): Promise<ProfileStats> {
+    return this.get("/profile/stats", signal);
+  }
   async register(body: RegisterRequest): Promise<Identity> {
     const identity = await this.request<Identity>("POST", "/auth/register", body);
     this.csrfToken = identity.csrfToken ?? null;
@@ -193,8 +207,8 @@ export class ApiClient {
   createGame(body: CreateGameRequest): Promise<GameView> {
     return this.request("POST", "/games", body);
   }
-  listGames(cursor?: string, signal?: AbortSignal): Promise<Page<GameView>> {
-    return this.get(`/games${ApiClient.query({ cursor })}`, signal);
+  listGames(cursor?: string, signal?: AbortSignal, status: "active" | "completed" | "forfeited" | "all" = "active"): Promise<Page<GameView>> {
+    return this.get(`/games${ApiClient.query({ status, cursor })}`, signal);
   }
   getGame(id: string, signal?: AbortSignal): Promise<GameView> {
     return this.get(`/games/${encodeURIComponent(id)}`, signal);
@@ -208,8 +222,8 @@ export class ApiClient {
   forfeit(id: string, body: ForfeitRequest): Promise<GameView> {
     return this.request("POST", `/games/${encodeURIComponent(id)}/forfeit`, body);
   }
-  gameEvents(id: string, after: number, limit = 100): Promise<EventsPage> {
-    return this.get(`/games/${encodeURIComponent(id)}/events${ApiClient.query({ after, limit })}`);
+  gameEvents(id: string, cursor: number, limit = 100): Promise<EventsPage> {
+    return this.get(`/games/${encodeURIComponent(id)}/events${ApiClient.query({ cursor, limit })}`);
   }
 
   // --- competition --------------------------------------------------------------
@@ -226,6 +240,9 @@ export class ApiClient {
       })}`,
       signal,
     );
+  }
+  replays(cursor?: string, signal?: AbortSignal): Promise<Page<ReplaySummary>> {
+    return this.get(`/replays${ApiClient.query({ cursor })}`, signal);
   }
   challenges(signal?: AbortSignal): Promise<Challenge[] | Page<Challenge>> {
     return this.get("/challenges", signal);
@@ -247,8 +264,14 @@ export class ApiClient {
   startBotRun(body: BotRunRequest): Promise<BotRunView> {
     return this.request("POST", "/bots/runs", body);
   }
+  getBotRun(id: string, signal?: AbortSignal): Promise<BotRunView> {
+    return this.get(`/bots/runs/${encodeURIComponent(id)}`, signal);
+  }
+  botRunAction(id: string, action: "pause" | "resume" | "step" | "cancel"): Promise<BotRunView> {
+    return this.request("POST", `/bots/runs/${encodeURIComponent(id)}/${action}`);
+  }
   cancelBotRun(id: string): Promise<BotRunView> {
-    return this.request("POST", `/bots/runs/${encodeURIComponent(id)}/cancel`);
+    return this.botRunAction(id, "cancel");
   }
   getReplay(id: string, signal?: AbortSignal): Promise<ReplayView> {
     return this.get(`/replays/${encodeURIComponent(id)}`, signal);
@@ -269,6 +292,13 @@ export function challengeItems(result: Challenge[] | Page<Challenge>): Challenge
 /** User-facing sentence plus recovery hint for an error code. */
 export function describeError(error: unknown): { title: string; detail: string; action: string } {
   if (isApiError(error)) {
+    if (error.routeMissing) {
+      return {
+        title: "Not available on this server yet",
+        detail: "This feature's endpoint is not implemented by the running server.",
+        action: "Nothing is lost. Try again after the server is updated.",
+      };
+    }
     switch (error.code) {
       case "NETWORK":
         return { title: "Cannot reach the game server", detail: error.message, action: "Check that the local server is running, then retry." };
