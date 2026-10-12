@@ -13,3 +13,4 @@ export * from "./season.js";
 export * from "./bot-league.js";
 export * from "./profile-stats.js";
 export * from "./challenge-catalog.js";
+export * from "./human-vs-bot.js";

@@ -10,28 +10,18 @@ import type {
   Ruleset,
 } from "@g2048/contracts";
 import { performance } from "node:perf_hooks";
-import { Worker } from "node:worker_threads";
 import { BOT_VERSION, deriveBotRng, difficultyOf, validateBotConfig } from "../choose-move.js";
 import type { ChooseMoveResult } from "../choose-move.js";
 import { engineAdapter } from "../engine-adapter.js";
 import type { EnginePort } from "../engine-port.js";
 import type { BotGameEnd } from "../play.js";
-import type { BotWorkerData, ChooseRequest, WorkerReply } from "./protocol.js";
-import { WORKER_EXEC_ARGV, WORKER_URL } from "./worker-url.js";
+import { BotRunnerError, BotWorkerPool } from "./pool.js";
+import type { BotPoolErrorCode, BotPoolTask } from "./pool.js";
+
+export { BotRunnerError };
 
 export type BotRunStatus = "queued" | "running" | "paused" | "finished" | "cancelled" | "failed";
-export type BotRunnerErrorCode =
-  "RUNNER_BUSY" | "DUPLICATE_RUN" | "NOT_PAUSED" | "CANCELLED" | "VALIDATION_ERROR";
-
-export class BotRunnerError extends Error {
-  readonly code: BotRunnerErrorCode;
-
-  constructor(code: BotRunnerErrorCode, message: string) {
-    super(message);
-    this.name = "BotRunnerError";
-    this.code = code;
-  }
-}
+export type BotRunnerErrorCode = BotPoolErrorCode;
 
 export type BotRunParams = {
   readonly runId: string;
@@ -89,31 +79,38 @@ export type BotRunHandle = {
   resume(): void;
   /** While paused: play exactly one move; resolves with it, or null if the run ended. */
   step(): Promise<BotRunProgress | null>;
-  /** Abort the in-flight search, stop the worker, and resolve the (cancelled) result. */
+  /** Abort the in-flight search and resolve the (cancelled) result. */
   cancel(): Promise<BotRunResult>;
   readonly result: Promise<BotRunResult>;
 };
 
 export type BotRunnerOptions = {
-  /** Max simultaneously running bot workers; default LIMITS.concurrentBotRunsMax. */
+  /** Max simultaneously active bot-lab runs; default LIMITS.concurrentBotRunsMax. */
   readonly maxConcurrent?: number;
   /** Engine used on the caller's thread to apply moves; defaults to @g2048/engine. */
   readonly enginePort?: EnginePort;
   /** Clock for latency metrics; defaults to performance.now. */
   readonly now?: () => number;
+  /**
+   * Shared process-wide worker pool (see createBotServices). Bot-lab decisions run as "lab"
+   * jobs. When omitted, the runner owns a private pool and shuts it down with itself.
+   */
+  readonly pool?: BotWorkerPool;
 };
 
 /**
- * Runs bot games with every search in a dedicated worker_threads worker, so a slow bot
- * never blocks the caller's event loop. Moves are applied on the caller's thread with the
- * pure engine; the worker only decides. Concurrency is bounded: start() beyond the limit
- * fails fast with RUNNER_BUSY (explicit busy response, no unbounded queue).
+ * Runs bot-lab games. Every search is a "lab" job on the shared BotWorkerPool (worker_threads),
+ * so a slow bot never blocks the caller's event loop and never takes the slots reserved for
+ * duel seats. Moves are applied on the caller's thread with the pure engine; workers only
+ * decide. Active runs are bounded: start() beyond the limit fails fast with RUNNER_BUSY.
  */
 export class BotRunner {
   private readonly runs = new Map<string, BotRun>();
   readonly maxConcurrent: number;
   private readonly port: EnginePort;
   private readonly now: () => number;
+  private readonly pool: BotWorkerPool;
+  private readonly ownsPool: boolean;
 
   constructor(options: BotRunnerOptions = {}) {
     const max = options.maxConcurrent ?? LIMITS.concurrentBotRunsMax;
@@ -123,6 +120,8 @@ export class BotRunner {
     this.maxConcurrent = max;
     this.port = options.enginePort ?? engineAdapter;
     this.now = options.now ?? (() => performance.now());
+    this.ownsPool = options.pool === undefined;
+    this.pool = options.pool ?? new BotWorkerPool();
   }
 
   get activeRuns(): number {
@@ -139,29 +138,24 @@ export class BotRunner {
       throw new BotRunnerError("VALIDATION_ERROR", "maxMoves must be an integer in 1..100000");
     }
     const config = validateBotConfig(params.config);
-    const run = new BotRun({ ...params, config }, this.port, this.now, onProgress);
+    const run = new BotRun({ ...params, config }, this.pool, this.port, this.now, onProgress);
     this.runs.set(params.runId, run);
     void run.result.finally(() => this.runs.delete(params.runId));
     return run;
   }
 
-  /** Cancel every active run. */
+  /** Cancel every active run (and stop the pool if this runner owns it). */
   async shutdown(): Promise<void> {
     await Promise.all([...this.runs.values()].map((run) => run.cancel()));
+    if (this.ownsPool) await this.pool.shutdown();
   }
 }
-
-type Pending = { resolve: (reply: WorkerReply) => void; reject: (error: Error) => void };
 
 class BotRun implements BotRunHandle {
   readonly runId: string;
   readonly result: Promise<BotRunResult>;
   private currentStatus: BotRunStatus = "queued";
-  private readonly worker: Worker;
-  private readonly cancelFlag: Int32Array;
-  private readonly ready: Promise<void>;
-  private readonly pending = new Map<number, Pending>();
-  private nextId = 1;
+  private task: BotPoolTask | null = null;
   private cancelRequested = false;
   private wantPaused: boolean;
   private gate: (() => void) | null = null;
@@ -178,6 +172,7 @@ class BotRun implements BotRunHandle {
 
   constructor(
     private readonly params: BotRunParams,
+    private readonly pool: BotWorkerPool,
     private readonly port: EnginePort,
     private readonly now: () => number,
     private readonly onProgress: ((progress: BotRunProgress) => void) | undefined,
@@ -187,33 +182,6 @@ class BotRun implements BotRunHandle {
     this.botSeed = params.botSeed ?? params.seed;
     this.state = port.newGame(params.rules, params.seed);
     this.rng = deriveBotRng(port, this.botSeed);
-    const cancelBuffer = new SharedArrayBuffer(4);
-    this.cancelFlag = new Int32Array(cancelBuffer);
-    this.worker = new Worker(WORKER_URL, {
-      workerData: { cancelBuffer } satisfies BotWorkerData,
-      execArgv: WORKER_EXEC_ARGV,
-    });
-    this.ready = new Promise<void>((resolve, reject) => {
-      const onReady = (message: WorkerReply): void => {
-        if (message.type === "ready") resolve();
-      };
-      this.worker.once("message", onReady);
-      this.worker.once("error", reject);
-      this.worker.once("exit", (code) => reject(new Error(`bot worker exited with code ${code}`)));
-    });
-    this.worker.on("message", (reply: WorkerReply) => {
-      if (reply.type === "ready") return;
-      const pending = this.pending.get(reply.id);
-      if (pending === undefined) return;
-      this.pending.delete(reply.id);
-      pending.resolve(reply);
-    });
-    const failAll = (error: Error): void => {
-      for (const p of this.pending.values()) p.reject(error);
-      this.pending.clear();
-    };
-    this.worker.on("error", failAll);
-    this.worker.on("exit", (code) => failAll(new Error(`bot worker exited with code ${code}`)));
     this.result = this.loop();
   }
 
@@ -245,9 +213,8 @@ class BotRun implements BotRunHandle {
   async cancel(): Promise<BotRunResult> {
     if (!this.isEnded()) {
       this.cancelRequested = true;
-      Atomics.store(this.cancelFlag, 0, 1); // aborts the in-flight search at its next node
+      this.task?.cancel(); // aborts the in-flight search at its next node
       this.openGate();
-      await this.worker.terminate();
     }
     return this.result;
   }
@@ -266,28 +233,26 @@ class BotRun implements BotRunHandle {
     release?.();
   }
 
-  private request(): Promise<WorkerReply> {
-    const id = this.nextId;
-    this.nextId += 1;
-    const message: ChooseRequest = {
-      type: "choose",
-      id,
+  private async decide(): Promise<ChooseMoveResult> {
+    const task = this.pool.submit("lab", {
       state: this.state,
       rules: this.params.rules,
       config: this.params.config,
       botRng: this.rng,
-    };
-    return new Promise((resolve, reject) => {
-      this.pending.set(id, { resolve, reject });
-      this.worker.postMessage(message);
     });
+    this.task = task;
+    try {
+      return (await task.promise).result;
+    } finally {
+      this.task = null;
+    }
   }
 
   private async loop(): Promise<BotRunResult> {
     let end: BotGameEnd | "error" | null = null;
     let error: string | undefined;
     try {
-      await this.ready;
+      await Promise.resolve();
       if (!this.cancelRequested) this.currentStatus = this.wantPaused ? "paused" : "running";
       while (end === null) {
         if (this.cancelRequested) {
@@ -312,16 +277,13 @@ class BotRun implements BotRunHandle {
         }
         const stepping = this.wantPaused ? this.stepResolvers.shift() : undefined;
         const started = this.now();
-        const reply = await this.request();
+        const result = await this.decide();
         const latency = this.now() - started;
         if (this.cancelRequested) {
           stepping?.(null);
           end = "cancelled";
           break;
         }
-        if (reply.type === "error") throw new Error(reply.message);
-        if (reply.type !== "result") continue;
-        const result: ChooseMoveResult = reply.result;
         if (result.kind === "no-legal-move") {
           stepping?.(null);
           end = "dead-board";
@@ -357,7 +319,6 @@ class BotRun implements BotRunHandle {
     }
     this.currentStatus = end === "cancelled" ? "cancelled" : end === "error" ? "failed" : "finished";
     for (const resolve of this.stepResolvers.splice(0)) resolve(null);
-    await this.worker.terminate();
     const { config } = this.params;
     return {
       runId: this.runId,
