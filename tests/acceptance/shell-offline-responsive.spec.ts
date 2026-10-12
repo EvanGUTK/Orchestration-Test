@@ -24,6 +24,12 @@ test.describe("production shell", () => {
     page.on("request", (r: Request) => {
       if (!isLoopback(r.url())) external.push(r.url());
     });
+    // An anonymous visitor legitimately probes GET /api/v1/auth/me and receives 401; the browser logs that as a
+    // generic "Failed to load resource" console error without a URL. Allow exactly that one case, nothing else.
+    const failedResponses: string[] = [];
+    page.on("response", (r) => {
+      if (r.status() >= 400) failedResponses.push(`${r.status()} ${new URL(r.url()).pathname}`);
+    });
     page.on("console", (m) => {
       if (m.type() === "error") consoleErrors.push(m.text());
     });
@@ -33,7 +39,10 @@ test.describe("production shell", () => {
     expect(res?.status()).toBe(200);
     await page.waitForLoadState("networkidle");
     expect(external, "no request may leave the machine").toEqual([]);
-    expect(consoleErrors).toEqual([]);
+    const onlyAnonymousProbe = failedResponses.every((f) => f === "401 /api/v1/auth/me");
+    expect(failedResponses.filter((f) => f !== "401 /api/v1/auth/me"), "unexpected failing requests").toEqual([]);
+    const unexpected = consoleErrors.filter((e) => !(onlyAnonymousProbe && /^Failed to load resource: the server responded with a status of 401/.test(e)));
+    expect(unexpected).toEqual([]);
     expect(await page.title()).not.toBe("");
     expect(await page.locator("html").getAttribute("lang")).toMatch(/^[a-z]{2}/);
     await expect(page.getByRole("main")).toHaveCount(1);

@@ -2,16 +2,21 @@
  * OPS-04 / DB-08: 100,000 leaderboard entries with high decimal scores; p95 of first/filter page < 200 ms;
  * exact, stable ordering; cursor pagination returns every entry exactly once.
  *
- * Seeding needs the (backend-owned) schema, so this harness expects a seeder module:
- *   PERF_LEADERBOARD_SEEDER=<path to .ts module exporting  seed(dbPath: string, entries: Entry[]): Promise<void> | void >
- * until chief/backend provide one (question filed in QUALITY-001 result). Without it the live part is SKIPPED LOUDLY;
- * the dataset/ordering oracle self-checks below always run.
+ * Seeding: a private temp database is migrated by the real server boot, the server is stopped, completed casual games
+ * are bulk-inserted with node:sqlite (support/seed-leaderboard.ts), and the server is restarted on that file.
+ * PERF_LEADERBOARD_SEEDER=<module exporting seed(dbPath, entries)> overrides the built-in seeder.
+ * The dataset/ordering oracle self-checks always run; the live part needs GET /leaderboards (fails fast if missing).
  */
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { runDbCli, withDb } from "../integration/support/db.ts";
 import { ApiClient } from "../acceptance/support/client.ts";
 import { serverAvailable, startServer, type ServerHandle } from "../acceptance/support/server-process.ts";
 import { compareEntries, floatOrder, generateEntries, sortedEntries, type Entry } from "./support/leaderboard-oracle.ts";
+import { seedCompletedGames } from "./support/seed-leaderboard.ts";
 import { summarize, writeReport } from "./support/stats.ts";
 
 const N = Number(process.env.OPS04_ENTRIES ?? 100_000);
@@ -28,8 +33,26 @@ describe("OPS-04 dataset oracle self-check", () => {
   });
 });
 
-const live = serverAvailable() && !!seederPath;
-if (!live) console.warn("OPS-04 live part SKIPPED: needs apps/server and PERF_LEADERBOARD_SEEDER (not a pass)");
+describe("OPS-04 seeder self-check (schema accepts the dataset; SQL ranking order == oracle)", () => {
+  it("seeds 5000 entries into a migrated temp DB and the index order equals the oracle order", () => {
+    const dir = mkdtempSync(join(tmpdir(), "q2048-seed-"));
+    try {
+      const path = join(dir, "game.sqlite3");
+      expect(runDbCli(path, ["migrate"]).code).toBe(0);
+      const entries = generateEntries(5000, "seedcheck");
+      seedCompletedGames(path, entries);
+      const got = withDb(path, (db) =>
+        (db.prepare("SELECT id FROM games ORDER BY length(score) DESC, score DESC, length(max_exponent) DESC, max_exponent DESC, created_at, id").all() as { id: string }[]).map((r) => r.id),
+      );
+      expect(got).toEqual(sortedEntries(entries).map((e) => e.id));
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+const live = serverAvailable();
+if (!live) console.warn("OPS-04 live part SKIPPED: apps/server missing (not a pass)");
 
 describe.skipIf(!live)("OPS-04 100k leaderboard", () => {
   let server: ServerHandle;
@@ -38,9 +61,13 @@ describe.skipIf(!live)("OPS-04 100k leaderboard", () => {
     entries = generateEntries(N);
     // start once to migrate, stop, seed the DB directly, start again
     server = await startServer({ timeoutMs: 60_000 });
+    const probe = await new ApiClient(server.baseUrl).get("/leaderboards?kind=casual&limit=1");
+    expect(probe.status, `GET /leaderboards must exist before seeding 100k rows: ${probe.raw}`).toBe(200);
     await server.kill("SIGTERM");
-    const mod = (await import(pathToFileURL(seederPath!).href)) as { seed: (db: string, e: Entry[]) => Promise<void> | void };
-    await mod.seed(server.dbPath, entries);
+    if (seederPath) {
+      const mod = (await import(pathToFileURL(seederPath).href)) as { seed: (db: string, e: Entry[]) => Promise<void> | void };
+      await mod.seed(server.dbPath, entries);
+    } else seedCompletedGames(server.dbPath, entries);
     await server.restart();
   }, 600_000);
   afterAll(async () => {

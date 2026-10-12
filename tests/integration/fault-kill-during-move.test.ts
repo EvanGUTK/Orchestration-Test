@@ -25,7 +25,7 @@ async function allEvents(c: ApiClient, id: string) {
   const out: { sequence: number; direction: Dir }[] = [];
   let cursor: number | null = 0;
   while (cursor !== null) {
-    const r: Awaited<ReturnType<typeof c.get<EventsPage>>> = await c.get<EventsPage>(`/games/${id}/events?after=${cursor}&limit=100`);
+    const r: Awaited<ReturnType<typeof c.get<EventsPage>>> = await c.get<EventsPage>(`/games/${id}/events?cursor=${cursor}&limit=100`);
     expect(r.status, r.raw).toBe(200);
     out.push(...r.body.events);
     cursor = r.body.nextCursor;
