@@ -1,8 +1,10 @@
 import { practiceRuleset, RULESETS } from "@g2048/contracts";
-import type { Board, Cell, Direction, GameState, Ruleset } from "@g2048/contracts";
+import type { Board, Cell, Direction, GameState, ReplayFile, Ruleset } from "@g2048/contracts";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { applyMove, newGame } from "./game.js";
+import { replay, verifyReplay } from "./replay.js";
+import { checksum, deserialize, serialize } from "./serialize.js";
 import { isGameOver, legalMoves, slide } from "./slide.js";
 
 const DIRS: readonly Direction[] = ["up", "right", "down", "left"];
@@ -200,6 +202,53 @@ describe("applyMove properties (ENG-03, ENG-08)", () => {
         },
       ),
       { numRuns: 60 },
+    );
+  });
+});
+
+describe("replay/serialize properties (ENG-04)", () => {
+  it("recorded random games verify, replay to the same checksums, and survive reload", () => {
+    fc.assert(
+      fc.property(
+        fc.string({ maxLength: 12 }),
+        fc.array(directionArb, { maxLength: 80 }),
+        (seed, directions) => {
+          const rules = RULESETS["classic-v1"];
+          const initial = newGame(rules, seed);
+          let state = initial;
+          const played: Direction[] = [];
+          const moves: ReplayFile["moves"] = [];
+          for (const direction of directions) {
+            if (state.status !== "active") break;
+            const result = applyMove(deserialize(serialize(state)), direction, rules);
+            played.push(direction);
+            if (result.changed) {
+              state = result.state;
+              moves.push({ revision: state.revision, direction, checksum: checksum(state) });
+            }
+          }
+          const replayed = replay(initial, played, rules);
+          expect(replayed.final).toEqual(state);
+          const file: ReplayFile = {
+            replaySchemaVersion: 1,
+            engineVersion: initial.engineVersion,
+            rulesetVersion: rules.version,
+            seed,
+            initialState: initial,
+            initialChecksum: checksum(initial),
+            moves,
+            finalChecksum: checksum(state),
+            meta: {
+              mode: "classic",
+              displayName: null,
+              createdAt: "2026-10-12T00:00:00.000Z",
+              source: "local",
+            },
+          };
+          expect(verifyReplay(file, rules)).toEqual({ ok: true, final: state });
+        },
+      ),
+      { numRuns: 40 },
     );
   });
 });

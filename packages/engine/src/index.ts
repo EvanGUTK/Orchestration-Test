@@ -6,3 +6,6 @@ export { sha256, sha256Hex, toHex, utf8Bytes } from "./sha256.js";
 export { deriveRandomState, nextUint32, uniform, validateRandomState, wordsFromDigest } from "./rng.js";
 export { MAX_SCORE_DIGITS, validateGameState, validateRuleset, VERSION_ID_PATTERN } from "./state.js";
 export { applyMove, forfeit, MAX_SEED_LENGTH, newGame, spawn } from "./game.js";
+export { canonicalJson, checksum, deserialize, MAX_STATE_JSON_LENGTH, serialize } from "./serialize.js";
+export { replay, verifyReplay } from "./replay.js";
+export type { VerifyReplayResult } from "./replay.js";
