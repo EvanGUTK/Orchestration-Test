@@ -1,6 +1,7 @@
 // Cookie-jar + CSRF client over Fastify inject, per CONTRACT-001 "HTTP / WebSocket / DB":
 // mutating requests carry a same-origin `Origin` and `x-csrf-token` (from GET /auth/me);
 // cookies `sid` (account) and `gid` (guest) are HttpOnly; SameSite=Strict; Path=/.
+import { request as httpRequest } from "node:http";
 import { API_BASE } from "@g2048/contracts";
 import type { MeResponse } from "@g2048/contracts";
 import type { App } from "./app.js";
@@ -44,12 +45,56 @@ export type SendOptions = {
 
 const MUTATING = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
+/** A real loopback server (child process) instead of an in-process inject target. */
+export type RemoteTarget = { port: number };
+
+type RawResponse = {
+  status: number;
+  body: string;
+  headers: Record<string, string | string[] | number | undefined>;
+};
+
+function httpSend(
+  port: number,
+  method: string,
+  url: string,
+  headers: Record<string, string>,
+  body?: string,
+): Promise<RawResponse> {
+  return new Promise((resolve, reject) => {
+    const req = httpRequest(
+      { host: "127.0.0.1", port, method, path: url, headers, timeout: 30_000 },
+      (res) => {
+        const chunks: Buffer[] = [];
+        res.on("data", (c: Buffer) => chunks.push(c));
+        res.on("end", () =>
+          resolve({
+            status: res.statusCode ?? 0,
+            body: Buffer.concat(chunks).toString("utf8"),
+            headers: res.headers,
+          }),
+        );
+        res.on("error", reject);
+      },
+    );
+    req.on("timeout", () => req.destroy(new Error(`timeout ${method} ${url}`)));
+    req.on("error", reject);
+    if (body !== undefined) req.write(body);
+    req.end();
+  });
+}
+
 /** One browser profile: its own cookie jar and CSRF token. */
 export class Client {
   readonly jar = new Map<string, string>();
   csrfToken: string | null = null;
+  readonly host: string;
+  readonly origin: string;
 
-  constructor(private readonly app: App) {}
+  constructor(private readonly target: App | RemoteTarget) {
+    this.host = "inject" in target ? HOST : `127.0.0.1:${target.port}`;
+    this.origin = `http://${this.host}`;
+  }
 
   cookieHeader(): string {
     return [...this.jar].map(([k, v]) => `${k}=${v}`).join("; ");
@@ -57,9 +102,13 @@ export class Client {
 
   async send<T = unknown>(method: string, path: string, opts: SendOptions = {}): Promise<Res<T>> {
     const upper = method.toUpperCase();
-    const headers: Record<string, string> = { host: opts.host ?? HOST, ...opts.headers };
+    const headers: Record<string, string> = { host: opts.host ?? this.host, ...opts.headers };
+    // Browsers label every request with Sec-Fetch-Site; tests that omit Origin model a non-browser client.
+    if (opts.origin === undefined) headers["sec-fetch-site"] = "same-origin";
+    else if (opts.origin !== null)
+      headers["sec-fetch-site"] = opts.origin === this.origin ? "same-origin" : "cross-site";
     if (MUTATING.has(upper)) {
-      if (opts.origin === undefined) headers.origin = ORIGIN;
+      if (opts.origin === undefined) headers.origin = this.origin;
       else if (opts.origin !== null) headers.origin = opts.origin;
       if (opts.csrf === undefined) {
         // GET /auth/me may set the guest `gid` cookie together with the token it belongs to.
@@ -70,18 +119,26 @@ export class Client {
     // Read the jar only after every awaited step above, so cookies set by refreshCsrf() are sent.
     if (this.jar.size) headers.cookie = this.cookieHeader();
     const url = path.startsWith("/api/") ? path : `${API_BASE}${path}`;
-    const res = await this.app.inject({
-      method: upper as "GET",
-      url,
-      headers,
-      remoteAddress: opts.remoteAddress ?? "127.0.0.1",
-      ...(opts.body === undefined
-        ? {}
-        : {
-            payload: JSON.stringify(opts.body),
-            headers: { ...headers, "content-type": "application/json" },
-          }),
-    });
+    const payload =
+      opts.body === undefined
+        ? undefined
+        : typeof opts.body === "string"
+          ? opts.body
+          : JSON.stringify(opts.body);
+    if (payload !== undefined) headers["content-type"] ??= "application/json";
+    let res: RawResponse;
+    if ("inject" in this.target) {
+      const r = await this.target.inject({
+        method: upper as "GET",
+        url,
+        headers,
+        remoteAddress: opts.remoteAddress ?? "127.0.0.1",
+        ...(payload === undefined ? {} : { payload }),
+      });
+      res = { status: r.statusCode, body: r.body, headers: r.headers };
+    } else {
+      res = await httpSend(this.target.port, upper, url, headers, payload);
+    }
     const raw = res.headers["set-cookie"];
     const list = raw === undefined ? [] : Array.isArray(raw) ? raw : [String(raw)];
     const cookies = list.map(parseSetCookie);
@@ -98,7 +155,7 @@ export class Client {
     } catch {
       json = undefined;
     }
-    return { status: res.statusCode, json: json as T, text: res.body, headers: res.headers, cookies };
+    return { status: res.status, json: json as T, text: res.body, headers: res.headers, cookies };
   }
 
   get<T = unknown>(path: string, opts?: SendOptions) {

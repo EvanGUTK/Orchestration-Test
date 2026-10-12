@@ -7,6 +7,8 @@ import { migrate, openDatabase } from "@g2048/database";
 import { buildApp } from "@g2048/server";
 
 export type App = Awaited<ReturnType<typeof buildApp>>;
+/** Extra buildApp options a test may set (writer queue size, rate-limit window, clock, ...). */
+export type ExtraAppOptions = Omit<Parameters<typeof buildApp>[0], "db" | "webDist">;
 
 export type TestApp = {
   app: App;
@@ -42,19 +44,22 @@ export function makeTempDir(prefix = "g2048-int-"): { dir: string; cleanup(): vo
 }
 
 /** Opens (and migrates) a database at `dbPath`, then builds the app on it. */
-export async function openTestApp(dbPath: string): Promise<{ app: App; db: DatabaseSync }> {
+export async function openTestApp(
+  dbPath: string,
+  extra: ExtraAppOptions = {},
+): Promise<{ app: App; db: DatabaseSync }> {
   assertPrivatePath(dbPath);
   const db = openDatabase(dbPath);
   migrate(db);
-  const app = await buildApp({ db, webDist: null, logger: false });
+  const app = await buildApp({ logger: false, ...extra, db, webDist: null });
   await app.ready();
   return { app, db };
 }
 
-export async function createTestApp(): Promise<TestApp> {
+export async function createTestApp(extra: ExtraAppOptions = {}): Promise<TestApp> {
   const tmp = makeTempDir();
   const dbPath = join(tmp.dir, "game.sqlite3");
-  const { app, db } = await openTestApp(dbPath);
+  const { app, db } = await openTestApp(dbPath, extra);
   return {
     app,
     db,
