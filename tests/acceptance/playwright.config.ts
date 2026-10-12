@@ -1,7 +1,13 @@
 // M0 skeleton created by chief; owned by the quality lane from CONTRACT-001 onward.
+import { mkdirSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { defineConfig, devices } from "@playwright/test";
 
 const port = process.env.E2E_PORT ?? "5612";
+// Private, throwaway data for the e2e server (never $DATABASE_PATH). Created here so a clean checkout
+// boots without depending on the server creating its own data directory. E2E_DATA_DIR overrides.
+const dataDir = process.env.E2E_DATA_DIR ?? fileURLToPath(new URL("../../build/e2e-data", import.meta.url));
+mkdirSync(dataDir, { recursive: true });
 
 export default defineConfig({
   testDir: "./e2e",
@@ -22,8 +28,8 @@ export default defineConfig({
     env: {
       HOST: "127.0.0.1",
       API_PORT: port,
-      DATA_DIR: "build/e2e-data",
-      DATABASE_PATH: `build/e2e-data/e2e-${Date.now()}.sqlite3`,
+      DATA_DIR: dataDir,
+      DATABASE_PATH: `${dataDir}/e2e-${Date.now()}.sqlite3`,
     },
   },
 });
