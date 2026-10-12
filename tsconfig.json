@@ -1,0 +1,6 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": { "types": ["node"], "lib": ["ES2023", "DOM", "DOM.Iterable"], "jsx": "react-jsx" },
+  "include": ["apps/*/src", "apps/*/test", "packages/*/src", "packages/*/test", "packages/*/golden", "tests/**/*.ts", "vitest.config.ts"],
+  "exclude": ["**/node_modules", "**/dist"]
+}

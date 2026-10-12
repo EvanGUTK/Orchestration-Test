@@ -1,0 +1,34 @@
+{
+  "name": "2048-infinite",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "2048 Infinite — local-only 2048 with accounts, ranked challenges, bots, and duels",
+  "engines": { "node": ">=24" },
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "build": "npm run build -w @2048/web",
+    "start": "node apps/server/src/main.ts",
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --project unit",
+    "test:integration": "vitest run --project integration --passWithNoTests",
+    "test:e2e": "playwright test --config tests/acceptance/playwright.config.ts",
+    "test:performance": "vitest run --project performance --passWithNoTests",
+    "db:migrate": "node packages/database/src/cli.ts migrate",
+    "db:backup": "node packages/database/src/cli.ts backup",
+    "db:restore": "node packages/database/src/cli.ts restore",
+    "golden:verify": "node packages/contracts/golden/generate.mjs --check"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.0",
+    "@playwright/test": "1.64.0",
+    "@types/node": "^24.0.0",
+    "eslint": "^10.12.0",
+    "prettier": "3.9.10",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.71.2",
+    "vitest": "5.0.4"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "name": "@2048/server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": { "typecheck": "tsc -p tsconfig.json" },
+  "dependencies": { "@2048/contracts": "*", "@2048/engine": "*", "@2048/bots": "*", "@2048/competition": "*", "@2048/database": "*", "fastify": "5.12.5", "@fastify/cookie": "11.1.3", "@fastify/websocket": "11.3.4", "@fastify/static": "10.1.6", "@fastify/rate-limit": "11.2.1", "argon2": "0.45.1", "zod": "4.6.7" },
+  "devDependencies": { "@types/ws": "8.18.2" }
+}

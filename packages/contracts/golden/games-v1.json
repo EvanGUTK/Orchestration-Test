@@ -1,0 +1,4364 @@
+{
+ "schemaVersion": 1,
+ "engineVersion": "engine-1.0.0",
+ "checksumVersion": 1,
+ "games": [
+  {
+   "rulesetVersion": "classic-v1",
+   "boardSize": 4,
+   "spawnFourTenths": 1,
+   "moveCap": null,
+   "seed": "golden-1",
+   "initial": {
+    "cells": [
+     null,
+     null,
+     null,
+     null,
+     "1",
+     null,
+     null,
+     "1",
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "rngWords": [
+     3475936922,
+     1324704924,
+     2189577915,
+     1095926321
+    ],
+    "spawns": [
+     {
+      "index": 4,
+      "exponent": "1"
+     },
+     {
+      "index": 7,
+      "exponent": "1"
+     }
+    ],
+    "checksum": "74a4d411e74344801fc62ae6b9c31af5336d905ea20d5deab32273baa544a0fb"
+   },
+   "steps": [
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 1,
+     "acceptedMoves": 1,
+     "score": "4",
+     "status": "active",
+     "rngWords": [
+      4242908407,
+      1689595051,
+      3566594582,
+      1722155491
+     ],
+     "checksum": "6aa663665714813503df92595244154833d84a946e501e9fedecbd79800b3ac5"
+    },
+    {
+     "direction": "up",
+     "changed": false,
+     "scoreDelta": "0",
+     "revision": 1,
+     "acceptedMoves": 1,
+     "score": "4",
+     "status": "active",
+     "rngWords": [
+      4242908407,
+      1689595051,
+      3566594582,
+      1722155491
+     ],
+     "checksum": "6aa663665714813503df92595244154833d84a946e501e9fedecbd79800b3ac5"
+    },
+    {
+     "direction": "left",
+     "changed": false,
+     "scoreDelta": "0",
+     "revision": 1,
+     "acceptedMoves": 1,
+     "score": "4",
+     "status": "active",
+     "rngWords": [
+      4242908407,
+      1689595051,
+      3566594582,
+      1722155491
+     ],
+     "checksum": "6aa663665714813503df92595244154833d84a946e501e9fedecbd79800b3ac5"
+    },
+    {
+     "direction": "up",
+     "changed": false,
+     "scoreDelta": "0",
+     "revision": 1,
+     "acceptedMoves": 1,
+     "score": "4",
+     "status": "active",
+     "rngWords": [
+      4242908407,
+      1689595051,
+      3566594582,
+      1722155491
+     ],
+     "checksum": "6aa663665714813503df92595244154833d84a946e501e9fedecbd79800b3ac5"
+    },
+    {
+     "direction": "down",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 2,
+     "acceptedMoves": 2,
+     "score": "4",
+     "status": "active",
+     "rngWords": [
+      727296997,
+      4028298004,
+      907740510,
+      2031277741
+     ],
+     "checksum": "4ac7d0fcd9d18d7dedc04bd05d5ff8bfda3ee0dfbc775a5014eeb19eae90cd7a"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 3,
+     "acceptedMoves": 3,
+     "score": "4",
+     "status": "active",
+     "rngWords": [
+      237248443,
+      1739412808,
+      978212583,
+      2895068515
+     ],
+     "checksum": "8d0885f6ababe148841dfcd7d4b0700f92154a30dccb51b398225dc0827859bd"
+    },
+    {
+     "direction": "down",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 4,
+     "acceptedMoves": 4,
+     "score": "4",
+     "status": "active",
+     "rngWords": [
+      2239772125,
+      4160860888,
+      637437644,
+      840067588
+     ],
+     "checksum": "67992666a04b6d9acca3c624114f23855e6885fbf444c222044f554616330603"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 5,
+     "acceptedMoves": 5,
+     "score": "8",
+     "status": "active",
+     "rngWords": [
+      2301233816,
+      3036147673,
+      311131152,
+      3476868661
+     ],
+     "checksum": "13702520c7a5b6063822588c71968941bd39447288a9a71d6094ec77843b99b5"
+    },
+    {
+     "direction": "right",
+     "changed": true,
+     "scoreDelta": "8",
+     "revision": 6,
+     "acceptedMoves": 6,
+     "score": "16",
+     "status": "active",
+     "rngWords": [
+      2226704891,
+      2848552621,
+      732777980,
+      3486809010
+     ],
+     "checksum": "ad6e428776c272da89513db3df8654551a244a33bb3de27999ff6a58a4d8d8a7"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 7,
+     "acceptedMoves": 7,
+     "score": "20",
+     "status": "active",
+     "rngWords": [
+      202493310,
+      3649171529,
+      1720209123,
+      2693584757
+     ],
+     "checksum": "a5bb2318de7c6aa3c2347a6321b69aab2ca12481d4f7d034f57de590d2df0cae"
+    },
+    {
+     "direction": "right",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 8,
+     "acceptedMoves": 8,
+     "score": "24",
+     "status": "active",
+     "rngWords": [
+      2940041822,
+      2944239627,
+      746738655,
+      209774289
+     ],
+     "checksum": "f78498ca6f731342af98b1a59404e7c53701fc900eed2f9ffa6f94752b6d93ab"
+    },
+    {
+     "direction": "down",
+     "changed": true,
+     "scoreDelta": "8",
+     "revision": 9,
+     "acceptedMoves": 9,
+     "score": "32",
+     "status": "active",
+     "rngWords": [
+      3413401617,
+      1487768207,
+      4046208773,
+      2745478717
+     ],
+     "checksum": "3fbb9a6da5f316896a26aee1c9eea0da6e95cbbf15fb08c2b3711a2116b7c5e6"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 10,
+     "acceptedMoves": 10,
+     "score": "32",
+     "status": "active",
+     "rngWords": [
+      464324320,
+      868601900,
+      3130733495,
+      2182224222
+     ],
+     "checksum": "616a298846a223dd5baf03de05d8284db87b11199049c86be663c3c8c2b2b85f"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 11,
+     "acceptedMoves": 11,
+     "score": "36",
+     "status": "active",
+     "rngWords": [
+      2260909927,
+      304039870,
+      1730565317,
+      3280447845
+     ],
+     "checksum": "d00a632cec981c4a517d798be1415886941e4c74db929e9c0b34c11cf0204250"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 12,
+     "acceptedMoves": 12,
+     "score": "36",
+     "status": "active",
+     "rngWords": [
+      1675043628,
+      2076862978,
+      2137652766,
+      1804894628
+     ],
+     "checksum": "0acd5e79848a8f3b0b21eb6359490c00cea910e75f5933c53af7d05fc65884bd"
+    },
+    {
+     "direction": "right",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 13,
+     "acceptedMoves": 13,
+     "score": "40",
+     "status": "active",
+     "rngWords": [
+      3818934072,
+      2627184264,
+      311259576,
+      1279104129
+     ],
+     "checksum": "e013a572e33998b68af4a4199352bcec98b1db6a1e8818a82768f412009f1b66"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "20",
+     "revision": 14,
+     "acceptedMoves": 14,
+     "score": "60",
+     "status": "active",
+     "rngWords": [
+      253799356,
+      2161167289,
+      2556052401,
+      1454664161
+     ],
+     "checksum": "a9eb9d63956062a3dbac8edc6738f95827c494bf1e68a40c8a945a8dd02691d5"
+    },
+    {
+     "direction": "down",
+     "changed": true,
+     "scoreDelta": "8",
+     "revision": 15,
+     "acceptedMoves": 15,
+     "score": "68",
+     "status": "active",
+     "rngWords": [
+      3959221475,
+      4160991325,
+      3153001449,
+      3341302165
+     ],
+     "checksum": "d245dd55d3590a43903eeb2e7e38603e719d823b5033446cef7ef24f5b64cbbd"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 16,
+     "acceptedMoves": 16,
+     "score": "72",
+     "status": "active",
+     "rngWords": [
+      545817477,
+      733245302,
+      2699781665,
+      4281694114
+     ],
+     "checksum": "0d1a221401cc70670d8ded22c084fa4105a3365902e388755a6decdf18b09cc2"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "8",
+     "revision": 17,
+     "acceptedMoves": 17,
+     "score": "80",
+     "status": "active",
+     "rngWords": [
+      1461237543,
+      3076724775,
+      3013687029,
+      2305013016
+     ],
+     "checksum": "b3818becaecbc5997113ebacb854617b74207497de690c217a62808e42bb5edc"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "16",
+     "revision": 18,
+     "acceptedMoves": 18,
+     "score": "96",
+     "status": "active",
+     "rngWords": [
+      1068202525,
+      407587903,
+      4272046026,
+      2600479413
+     ],
+     "checksum": "e8a4ebd394014d2d8d501269ed6de9907f970ad5b1c1bf1402fd6decaa300a65"
+    },
+    {
+     "direction": "right",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 19,
+     "acceptedMoves": 19,
+     "score": "96",
+     "status": "active",
+     "rngWords": [
+      1050034533,
+      842215080,
+      1868756800,
+      3002045459
+     ],
+     "checksum": "827242febedc78e97e6942bca26932991c5d964bd8598fa6e2d2b12ad9eb782d"
+    },
+    {
+     "direction": "down",
+     "changed": true,
+     "scoreDelta": "40",
+     "revision": 20,
+     "acceptedMoves": 20,
+     "score": "136",
+     "status": "active",
+     "rngWords": [
+      945340245,
+      3928262006,
+      114427899,
+      2451856432
+     ],
+     "checksum": "ca4bd89d8a7d138b1f82b6ecc1105b208e62f36c068d35e87f13fb29b25af7e5"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 21,
+     "acceptedMoves": 21,
+     "score": "136",
+     "status": "active",
+     "rngWords": [
+      2453432331,
+      3816165221,
+      1805877949,
+      544261779
+     ],
+     "checksum": "2089cc4b9844bc5970662f2696492bd05fb2ff3281089192a57036edb97505d8"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "8",
+     "revision": 22,
+     "acceptedMoves": 22,
+     "score": "144",
+     "status": "active",
+     "rngWords": [
+      2107437622,
+      1582458008,
+      2540709707,
+      849238373
+     ],
+     "checksum": "658875eaf1c2aae58bbce6f06cad692db5ef0ca4491ebb2f7ca55a8ec6cf8422"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 23,
+     "acceptedMoves": 23,
+     "score": "144",
+     "status": "active",
+     "rngWords": [
+      3288438088,
+      3955989331,
+      571924662,
+      2329157290
+     ],
+     "checksum": "b8ee07ed88ecaceca20b4f8cb7d87dedf2a23e6760fc4862dffed2937ae37c3d"
+    },
+    {
+     "direction": "right",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 24,
+     "acceptedMoves": 24,
+     "score": "148",
+     "status": "active",
+     "rngWords": [
+      1424831764,
+      3655544290,
+      1843566927,
+      2569875343
+     ],
+     "checksum": "5e3ce0de9871e5875c998c379746607b8b17cd8b9dd283b423dd4c293bb9cf49"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 25,
+     "acceptedMoves": 25,
+     "score": "148",
+     "status": "active",
+     "rngWords": [
+      2229066950,
+      194764443,
+      846474530,
+      4284349575
+     ],
+     "checksum": "88441f14e185cd334bca1fc89080854299bc94a23c484b7fb048fed53a042d3d"
+    },
+    {
+     "direction": "down",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 26,
+     "acceptedMoves": 26,
+     "score": "148",
+     "status": "active",
+     "rngWords": [
+      4231607811,
+      1279006273,
+      2538719038,
+      507956321
+     ],
+     "checksum": "3ecc3b6bbc88bd8ef880009d565400aa8145f6acb2bf67f960257e5976d7348b"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 27,
+     "acceptedMoves": 27,
+     "score": "148",
+     "status": "active",
+     "rngWords": [
+      1606814156,
+      2589161570,
+      348743454,
+      791641996
+     ],
+     "checksum": "039cb50d20f15b9b198d138e1f140b15ea0a5f4f55883b117eec99ac8b4cfcb5"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 28,
+     "acceptedMoves": 28,
+     "score": "152",
+     "status": "active",
+     "rngWords": [
+      3688459577,
+      3592008256,
+      3211314416,
+      454613387
+     ],
+     "checksum": "21563c3307036296971a4bedbb8a3df8606438703e9e433fec87f889e64a7c82"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "8",
+     "revision": 29,
+     "acceptedMoves": 29,
+     "score": "160",
+     "status": "active",
+     "rngWords": [
+      2939044627,
+      4087690418,
+      289029435,
+      2989428175
+     ],
+     "checksum": "0b96262429ebe35a61eaf0f2163362233ee96f7d77b2174f3d0acdb0341cfdc0"
+    },
+    {
+     "direction": "right",
+     "changed": true,
+     "scoreDelta": "16",
+     "revision": 30,
+     "acceptedMoves": 30,
+     "score": "176",
+     "status": "active",
+     "rngWords": [
+      4074691320,
+      1466444508,
+      2018268230,
+      3573854435
+     ],
+     "checksum": "1e1694b0a7feefe8212bfe8933e8fc157e0a6bfd3c1efe2025e4498ae6764f09"
+    },
+    {
+     "direction": "down",
+     "changed": true,
+     "scoreDelta": "8",
+     "revision": 31,
+     "acceptedMoves": 31,
+     "score": "184",
+     "status": "active",
+     "rngWords": [
+      3382253750,
+      4153397787,
+      3745362553,
+      1522765257
+     ],
+     "checksum": "53b03ac3cc0dd8980892b947aa3766e4449faa3f681dd4978c9af842c7aedbf2"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "8",
+     "revision": 32,
+     "acceptedMoves": 32,
+     "score": "192",
+     "status": "active",
+     "rngWords": [
+      3875580634,
+      2365498239,
+      992244651,
+      2943218718
+     ],
+     "checksum": "ccc2ee833a10ac6a2dea1f4cfbc436b936637e4edf5f52d65ca86d8ba8ebc9e9"
+    },
+    {
+     "direction": "down",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 33,
+     "acceptedMoves": 33,
+     "score": "196",
+     "status": "active",
+     "rngWords": [
+      250777257,
+      3039535300,
+      1359333066,
+      194549331
+     ],
+     "checksum": "24d4e3ee53a721a134a20ac250313d178d5783450ae508cf668656901e77d087"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 34,
+     "acceptedMoves": 34,
+     "score": "196",
+     "status": "active",
+     "rngWords": [
+      3274304876,
+      1378586874,
+      19281501,
+      1118475163
+     ],
+     "checksum": "a232049afac8ddaff3d2c1b196fb88f33055ba56efee16366353c96c95be04cb"
+    },
+    {
+     "direction": "right",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 35,
+     "acceptedMoves": 35,
+     "score": "196",
+     "status": "active",
+     "rngWords": [
+      1268231490,
+      3600976631,
+      236017468,
+      4196039873
+     ],
+     "checksum": "9919415c474e2fe15b1c1d2b4c73d536e98cff9385f008f7d7cfe9d1af81a0d8"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 36,
+     "acceptedMoves": 36,
+     "score": "196",
+     "status": "active",
+     "rngWords": [
+      867867288,
+      4103618435,
+      794647818,
+      2920243876
+     ],
+     "checksum": "843b8fa2e8a8f79bbb6049c28708849f9a2ce88be14f454ead523b4186192839"
+    },
+    {
+     "direction": "right",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 37,
+     "acceptedMoves": 37,
+     "score": "196",
+     "status": "active",
+     "rngWords": [
+      1002112378,
+      2915761724,
+      3125093421,
+      3054906004
+     ],
+     "checksum": "4d5ed7c6bc49c59db05ff3991aea1a0964c28fe4e922e8eda82491fcc5c1c79b"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 38,
+     "acceptedMoves": 38,
+     "score": "200",
+     "status": "active",
+     "rngWords": [
+      3942010471,
+      407984110,
+      1574657669,
+      2365435476
+     ],
+     "checksum": "0fc48417f0d93da8a4648edf67378356192fd67792e3ccbac9dd2e0500526922"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 39,
+     "acceptedMoves": 39,
+     "score": "204",
+     "status": "active",
+     "rngWords": [
+      3068863604,
+      3299097651,
+      2471912255,
+      2359119429
+     ],
+     "checksum": "c095cd434622f6455161ce9408e8313d95562aca019ec9be04313bda67802683"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "8",
+     "revision": 40,
+     "acceptedMoves": 40,
+     "score": "212",
+     "status": "active",
+     "rngWords": [
+      3562577723,
+      1913523249,
+      2715912009,
+      1447676244
+     ],
+     "checksum": "cf99b082071196ba347052f303a12e8acf7e52d4c1493a2fb010d5f2ab967992"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "12",
+     "revision": 41,
+     "acceptedMoves": 41,
+     "score": "224",
+     "status": "active",
+     "rngWords": [
+      3380832063,
+      2651403375,
+      4153845292,
+      3790277068
+     ],
+     "checksum": "c518b60d2dbacf9140c0a071f4776a887f55bff2c5c27e2722873584fdc82de1"
+    },
+    {
+     "direction": "down",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 42,
+     "acceptedMoves": 42,
+     "score": "224",
+     "status": "active",
+     "rngWords": [
+      126923807,
+      973123827,
+      2750856591,
+      2406751631
+     ],
+     "checksum": "4b09ccdac99817fd9e8da630e0cc36faba47f031bfdf475975b69e759e0138d6"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 43,
+     "acceptedMoves": 43,
+     "score": "224",
+     "status": "active",
+     "rngWords": [
+      2313766315,
+      2307215248,
+      3666948339,
+      1793475032
+     ],
+     "checksum": "a35d3f8a36bf948e663c4b3024648e3f314146135347218269523430e2ba1c09"
+    },
+    {
+     "direction": "down",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 44,
+     "acceptedMoves": 44,
+     "score": "224",
+     "status": "active",
+     "rngWords": [
+      2818913840,
+      3918537843,
+      3373829819,
+      2079235604
+     ],
+     "checksum": "08656bce31732e0ead70ba502cebe341088c3b4393439da42971d624172754b7"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "24",
+     "revision": 45,
+     "acceptedMoves": 45,
+     "score": "248",
+     "status": "active",
+     "rngWords": [
+      1193618492,
+      4087565860,
+      1612128988,
+      4110638058
+     ],
+     "checksum": "b6f8d895957a91ab17be23f564abbc22df816485a41eed712e45a399f861486f"
+    },
+    {
+     "direction": "right",
+     "changed": true,
+     "scoreDelta": "48",
+     "revision": 46,
+     "acceptedMoves": 46,
+     "score": "296",
+     "status": "active",
+     "rngWords": [
+      2511997187,
+      4105846742,
+      44758802,
+      4186410657
+     ],
+     "checksum": "a46b07228cb3d61f6a995c8fa7d6813146caebeba9c4d2b1dbe7bcb48de9f12c"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "20",
+     "revision": 47,
+     "acceptedMoves": 47,
+     "score": "316",
+     "status": "active",
+     "rngWords": [
+      380027354,
+      406989730,
+      778789989,
+      198014065
+     ],
+     "checksum": "34f22a8462459e57c4d675f6e5509502dc29f21e46872d64a92c3adf13532719"
+    },
+    {
+     "direction": "right",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 48,
+     "acceptedMoves": 48,
+     "score": "316",
+     "status": "active",
+     "rngWords": [
+      1599637640,
+      2570908075,
+      2796504502,
+      2293500627
+     ],
+     "checksum": "c8133906d22d9f3e998c91d93d8c0da56d0c5b76ddd773265fe89cd1a8ea4cac"
+    },
+    {
+     "direction": "down",
+     "changed": true,
+     "scoreDelta": "8",
+     "revision": 49,
+     "acceptedMoves": 49,
+     "score": "324",
+     "status": "active",
+     "rngWords": [
+      1774227433,
+      2920272987,
+      1488831182,
+      2279655736
+     ],
+     "checksum": "b8788f46161d5e43b6ba5e919c2f029e4968c7c9bbb58d9b31ff5a2aa59b107a"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "12",
+     "revision": 50,
+     "acceptedMoves": 50,
+     "score": "336",
+     "status": "active",
+     "rngWords": [
+      2813727417,
+      4052283601,
+      2345177517,
+      3422658364
+     ],
+     "checksum": "c087058a551bce82af99ae34253c7a3c0cf1a0aa9123ad4c9dc380fb9d4a265a"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 51,
+     "acceptedMoves": 51,
+     "score": "336",
+     "status": "active",
+     "rngWords": [
+      213280637,
+      2052468613,
+      1262999104,
+      1221676212
+     ],
+     "checksum": "755dcc0e18135da749b47cf0007bd278115ad9f3ab8a19bff7e7078023001387"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "8",
+     "revision": 52,
+     "acceptedMoves": 52,
+     "score": "344",
+     "status": "active",
+     "rngWords": [
+      948900704,
+      3895992777,
+      2594361201,
+      4038680629
+     ],
+     "checksum": "9cf1db3f58ea409df75e143e32feb4f5cffe6e6344a119fc22d6a2d25179ac6a"
+    },
+    {
+     "direction": "right",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 53,
+     "acceptedMoves": 53,
+     "score": "348",
+     "status": "active",
+     "rngWords": [
+      1611943808,
+      3094733141,
+      3650858125,
+      3504923136
+     ],
+     "checksum": "bd1644a63d636c4e461cb5ae0eaae4bdb3e2214c6d528db882d05f478bb2cdce"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "16",
+     "revision": 54,
+     "acceptedMoves": 54,
+     "score": "364",
+     "status": "active",
+     "rngWords": [
+      3781813705,
+      1530791808,
+      2931865048,
+      88663887
+     ],
+     "checksum": "3d740a7fdf5fe8239364f1e6f4d3e03cc3873ab021149a67931b98ab620b8e22"
+    },
+    {
+     "direction": "down",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 55,
+     "acceptedMoves": 55,
+     "score": "368",
+     "status": "active",
+     "rngWords": [
+      479078500,
+      2553152134,
+      2719381271,
+      2305496348
+     ],
+     "checksum": "614b7be6855dab214490e127c1c9e5c2e8ceb5cec7bc080dac0539ca337d6801"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 56,
+     "acceptedMoves": 56,
+     "score": "368",
+     "status": "active",
+     "rngWords": [
+      63025793,
+      3386913144,
+      2213381773,
+      1416362096
+     ],
+     "checksum": "e83765e2791a995ff48734919ee5f65c72b8d99b483ea993c717333416b2b62f"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 57,
+     "acceptedMoves": 57,
+     "score": "372",
+     "status": "active",
+     "rngWords": [
+      2311993873,
+      2546514673,
+      1175345029,
+      571261116
+     ],
+     "checksum": "230b778333345aa9501edaf776b1c92b2b07aa23de93fd085603525fe14f14b2"
+    },
+    {
+     "direction": "left",
+     "changed": false,
+     "scoreDelta": "0",
+     "revision": 57,
+     "acceptedMoves": 57,
+     "score": "372",
+     "status": "active",
+     "rngWords": [
+      2311993873,
+      2546514673,
+      1175345029,
+      571261116
+     ],
+     "checksum": "230b778333345aa9501edaf776b1c92b2b07aa23de93fd085603525fe14f14b2"
+    },
+    {
+     "direction": "right",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 58,
+     "acceptedMoves": 58,
+     "score": "372",
+     "status": "active",
+     "rngWords": [
+      1204877975,
+      985077933,
+      1930495432,
+      3587595230
+     ],
+     "checksum": "78b750b2954257eb0da7c3615343cd1e6400c6113d81cc92dd728012b879c0e1"
+    },
+    {
+     "direction": "down",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 59,
+     "acceptedMoves": 59,
+     "score": "372",
+     "status": "active",
+     "rngWords": [
+      2900148589,
+      4231527241,
+      529463483,
+      1808025635
+     ],
+     "checksum": "f6f6e4270f3787e85fdc0943f037ce101a221e3362821818b1e9d19dd6a73dad"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 60,
+     "acceptedMoves": 60,
+     "score": "372",
+     "status": "active",
+     "rngWords": [
+      3922846759,
+      2834176846,
+      739174353,
+      4105242263
+     ],
+     "checksum": "64423d81aa5f46cb2930a6454411d22a2cab05507ec6cea5f18f6a022316d51c"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 61,
+     "acceptedMoves": 61,
+     "score": "376",
+     "status": "active",
+     "rngWords": [
+      542190500,
+      3243671216,
+      3461748232,
+      4271035566
+     ],
+     "checksum": "21dd9f3fa8f3eb2f47ba36950a088ec0bd8d42a7365b55a07177f7a9b8e06269"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 62,
+     "acceptedMoves": 62,
+     "score": "380",
+     "status": "active",
+     "rngWords": [
+      362034008,
+      1916706570,
+      4293518358,
+      228003920
+     ],
+     "checksum": "4e15e4808b30e49d3b1fd86f5999949e37f026376568601193dfa44077bc99d5"
+    },
+    {
+     "direction": "right",
+     "changed": true,
+     "scoreDelta": "12",
+     "revision": 63,
+     "acceptedMoves": 63,
+     "score": "392",
+     "status": "active",
+     "rngWords": [
+      3187943355,
+      1698510600,
+      2079258444,
+      3437088417
+     ],
+     "checksum": "2987cdf55d5b54aab4e561160cdd41f1782aa172335f86645e22c0f93263e626"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 64,
+     "acceptedMoves": 64,
+     "score": "392",
+     "status": "active",
+     "rngWords": [
+      2969466018,
+      146274586,
+      128966885,
+      3579151672
+     ],
+     "checksum": "7ef0af1ab05de131dd1ef9a31ad51291a5dfc47ad62b5a75f57acfd20afb019c"
+    },
+    {
+     "direction": "down",
+     "changed": true,
+     "scoreDelta": "12",
+     "revision": 65,
+     "acceptedMoves": 65,
+     "score": "404",
+     "status": "active",
+     "rngWords": [
+      3239801650,
+      173655450,
+      2036667079,
+      1004377440
+     ],
+     "checksum": "158e603986009a5b7947f3e2f00aadbd4c27408ec080bb6e6d5984a3d820e72b"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "20",
+     "revision": 66,
+     "acceptedMoves": 66,
+     "score": "424",
+     "status": "active",
+     "rngWords": [
+      1614763563,
+      1229836882,
+      3022170173,
+      61807749
+     ],
+     "checksum": "455159b86deb8d368997bc0d10ef47340e754458c1ad41ac6d1e04fd24373e8e"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 67,
+     "acceptedMoves": 67,
+     "score": "424",
+     "status": "active",
+     "rngWords": [
+      2717585135,
+      4164218542,
+      3309062890,
+      883989593
+     ],
+     "checksum": "ea3cc3ef42f64c3fa120c2036f7d630fb79db08542bca4c9696597d95e42cedb"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 68,
+     "acceptedMoves": 68,
+     "score": "424",
+     "status": "active",
+     "rngWords": [
+      3525011671,
+      4237741750,
+      2268082717,
+      547782139
+     ],
+     "checksum": "b6c987999e92bef3c5dca2739c9e71498e2c8f1ee9c192917cf1b3e2c6bf3216"
+    },
+    {
+     "direction": "right",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 69,
+     "acceptedMoves": 69,
+     "score": "428",
+     "status": "active",
+     "rngWords": [
+      571220231,
+      3743447340,
+      229971280,
+      1070917985
+     ],
+     "checksum": "5f0e4e08f4b6c7bbcb7cee3d003f650c92feac95079673d770a8375890cf941f"
+    },
+    {
+     "direction": "down",
+     "changed": true,
+     "scoreDelta": "44",
+     "revision": 70,
+     "acceptedMoves": 70,
+     "score": "472",
+     "status": "active",
+     "rngWords": [
+      2531496758,
+      1563070566,
+      2670275357,
+      3641959072
+     ],
+     "checksum": "c655bc77a5a54931e4b38c44488d2a56e0a3e64918c17065a52ede004ffcef5c"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "72",
+     "revision": 71,
+     "acceptedMoves": 71,
+     "score": "544",
+     "status": "active",
+     "rngWords": [
+      2376924572,
+      449887638,
+      2388660187,
+      2967692539
+     ],
+     "checksum": "2bda11dfe3e60adc93d0c5baa78d57e1e6a57d356bdecb41f25bc4bf14cd6ad1"
+    },
+    {
+     "direction": "down",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 72,
+     "acceptedMoves": 72,
+     "score": "544",
+     "status": "active",
+     "rngWords": [
+      2689074801,
+      2620700007,
+      3182909622,
+      3105096766
+     ],
+     "checksum": "2e1b4a1b5758afa9f63daa72849af9b6688b0128486fc909b6ab41d8920bf5fc"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 73,
+     "acceptedMoves": 73,
+     "score": "548",
+     "status": "active",
+     "rngWords": [
+      19502497,
+      1882639439,
+      1714055151,
+      152325154
+     ],
+     "checksum": "230576b5e36eb06e4b02139ea0651114849df350d9f97c55753c68785bde4601"
+    },
+    {
+     "direction": "right",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 74,
+     "acceptedMoves": 74,
+     "score": "552",
+     "status": "active",
+     "rngWords": [
+      2067611652,
+      1705330563,
+      418151298,
+      2997764121
+     ],
+     "checksum": "ce4c3184824edc974f259401b95a116f510544a13d0d971374d3ae98e41e7a83"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 75,
+     "acceptedMoves": 75,
+     "score": "552",
+     "status": "active",
+     "rngWords": [
+      4068404515,
+      2199651869,
+      1838182424,
+      1163258610
+     ],
+     "checksum": "3fba6bc80a330bd3b58cac5db0f3bbd005f83b5d1697ec0bc493f0ce259110ac"
+    },
+    {
+     "direction": "right",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 76,
+     "acceptedMoves": 76,
+     "score": "552",
+     "status": "active",
+     "rngWords": [
+      1738728664,
+      2401713617,
+      1994648311,
+      2938675868
+     ],
+     "checksum": "a967f6869e3965b38baabec405f5d89d2d831a0dc25a62002f225e943465c7b7"
+    }
+   ],
+   "finalChecksum": "a967f6869e3965b38baabec405f5d89d2d831a0dc25a62002f225e943465c7b7"
+  },
+  {
+   "rulesetVersion": "classic-v1",
+   "boardSize": 4,
+   "spawnFourTenths": 1,
+   "moveCap": null,
+   "seed": "2048",
+   "initial": {
+    "cells": [
+     null,
+     null,
+     "1",
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     "2",
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "rngWords": [
+     1571702260,
+     11424497,
+     2102765697,
+     3629134841
+    ],
+    "spawns": [
+     {
+      "index": 9,
+      "exponent": "2"
+     },
+     {
+      "index": 2,
+      "exponent": "1"
+     }
+    ],
+    "checksum": "79527ccd96e09e8a435cdde1af8b1fb5924ad900a4e6b39a39adf9174cf32c52"
+   },
+   "steps": [
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 1,
+     "acceptedMoves": 1,
+     "score": "0",
+     "status": "active",
+     "rngWords": [
+      1443749311,
+      3646657549,
+      1383146377,
+      4023000730
+     ],
+     "checksum": "c0dfc7924aad7ce2680bdcf4f25c59c9b18023c6630159630b9d6224d55f2615"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 2,
+     "acceptedMoves": 2,
+     "score": "0",
+     "status": "active",
+     "rngWords": [
+      837780647,
+      250599717,
+      2635908382,
+      2661055115
+     ],
+     "checksum": "1b7923b3ba1809a396195ba0524bb36e8ce54755b553fb95446c94038b1b583e"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "12",
+     "revision": 3,
+     "acceptedMoves": 3,
+     "score": "12",
+     "status": "active",
+     "rngWords": [
+      2661141270,
+      1891742764,
+      3958117552,
+      258013688
+     ],
+     "checksum": "ce24540c5fbb4c029a0e1ace418fa21933da473680aec3f50fcd209a145dcfec"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 4,
+     "acceptedMoves": 4,
+     "score": "12",
+     "status": "active",
+     "rngWords": [
+      4007808693,
+      311782126,
+      2012353892,
+      4131633278
+     ],
+     "checksum": "db43e95449755c943db259809e5ffa409f31126d9c8ca992f258c12909ef4b54"
+    },
+    {
+     "direction": "down",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 5,
+     "acceptedMoves": 5,
+     "score": "12",
+     "status": "active",
+     "rngWords": [
+      925182524,
+      846473931,
+      3012781556,
+      2377173480
+     ],
+     "checksum": "5a9a79f278197be50b145c5e3154f0a0cb80e7b29534ad1b69a3fbca32c455ff"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 6,
+     "acceptedMoves": 6,
+     "score": "12",
+     "status": "active",
+     "rngWords": [
+      423277026,
+      1388344788,
+      1623725783,
+      3687312526
+     ],
+     "checksum": "f5accf0a00fc6b98f0d46fab9b51fe2447eb626e22cadd767967ff8aad2d265d"
+    },
+    {
+     "direction": "down",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 7,
+     "acceptedMoves": 7,
+     "score": "16",
+     "status": "active",
+     "rngWords": [
+      2277846545,
+      1108800876,
+      209839501,
+      3224717503
+     ],
+     "checksum": "06164a70faecba676883c2d82fa27d707f6ace181f7303b04b8087c636945501"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 8,
+     "acceptedMoves": 8,
+     "score": "20",
+     "status": "active",
+     "rngWords": [
+      3512348963,
+      1780137646,
+      120938590,
+      3843493541
+     ],
+     "checksum": "51f5a1dcfb8f960a12af358f4e9750ed78c994f0347294eb06271aa451052ca3"
+    },
+    {
+     "direction": "right",
+     "changed": true,
+     "scoreDelta": "8",
+     "revision": 9,
+     "acceptedMoves": 9,
+     "score": "28",
+     "status": "active",
+     "rngWords": [
+      2409771651,
+      19948422,
+      1452943957,
+      2912771727
+     ],
+     "checksum": "c211d0d8e089c79b684ad4cc6c665ec8c4c97e43bfe3ac5a29df80a70c685369"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "20",
+     "revision": 10,
+     "acceptedMoves": 10,
+     "score": "48",
+     "status": "active",
+     "rngWords": [
+      2465151423,
+      1123573772,
+      2315696988,
+      28421519
+     ],
+     "checksum": "c177aacb6c34183a3c9e8b28313869e54600b0a2df29a47b8d66cb0062d3f13b"
+    },
+    {
+     "direction": "right",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 11,
+     "acceptedMoves": 11,
+     "score": "48",
+     "status": "active",
+     "rngWords": [
+      3319467209,
+      1671334960,
+      441102559,
+      4022839459
+     ],
+     "checksum": "7f7766d1a5fd045994e99a988a5a577f6dfc534d3f594d74fdba620d4866d2df"
+    },
+    {
+     "direction": "down",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 12,
+     "acceptedMoves": 12,
+     "score": "52",
+     "status": "active",
+     "rngWords": [
+      1017742366,
+      386188394,
+      3043735628,
+      1566712745
+     ],
+     "checksum": "3155c3111d2e56f4048538edabf068b08fb076cbe44d74bc0560b7de4327d866"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 13,
+     "acceptedMoves": 13,
+     "score": "52",
+     "status": "active",
+     "rngWords": [
+      3744956854,
+      1749250999,
+      2071329679,
+      3339935055
+     ],
+     "checksum": "8c8f7f4585589788cf8b0fcc85ebbc065ad1c8ec4934f3597fbaf812548c36a5"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "8",
+     "revision": 14,
+     "acceptedMoves": 14,
+     "score": "60",
+     "status": "active",
+     "rngWords": [
+      1024549818,
+      2663625465,
+      1355917175,
+      3060245099
+     ],
+     "checksum": "04ea187d5bbf755f388a236c25e153b7e7dbbadf3e6c870e2e32ad757dd4c9ce"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 15,
+     "acceptedMoves": 15,
+     "score": "64",
+     "status": "active",
+     "rngWords": [
+      3325203545,
+      202585041,
+      4194053605,
+      1060867740
+     ],
+     "checksum": "48d925c9391a65a93147c0b1bb6e32d041ea926b10dd56fddbea1e81da8d145f"
+    },
+    {
+     "direction": "right",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 16,
+     "acceptedMoves": 16,
+     "score": "64",
+     "status": "active",
+     "rngWords": [
+      2200816352,
+      3748575429,
+      1470621864,
+      3206521777
+     ],
+     "checksum": "0d64bcbcd5479cc8e29d8a44bb9acb6da06948f16254a5eee13961a375a06e16"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 17,
+     "acceptedMoves": 17,
+     "score": "68",
+     "status": "active",
+     "rngWords": [
+      1617160218,
+      3779322705,
+      596796380,
+      4190925849
+     ],
+     "checksum": "723e20676de4648b3fb97ded119d0e0b84c707b1967fa32fcaf46a9a7db2bb75"
+    },
+    {
+     "direction": "down",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 18,
+     "acceptedMoves": 18,
+     "score": "72",
+     "status": "active",
+     "rngWords": [
+      2799982337,
+      510213635,
+      3624564884,
+      1094885104
+     ],
+     "checksum": "a1128293b89c43edef581e72b25efbc0a7f1976b30c9aca03a9903d718bb1443"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "8",
+     "revision": 19,
+     "acceptedMoves": 19,
+     "score": "80",
+     "status": "active",
+     "rngWords": [
+      3293543581,
+      903532529,
+      1535046247,
+      73103852
+     ],
+     "checksum": "d702a53d0f9bee16c17fe7ea458523fe1429051b723e7f1b0364768078ddcbaf"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 20,
+     "acceptedMoves": 20,
+     "score": "84",
+     "status": "active",
+     "rngWords": [
+      1385521671,
+      1972103025,
+      165851258,
+      3712236858
+     ],
+     "checksum": "51fa6bd985a71281c4ddddc55048cb812bb7c692d222e0d00b9cbf725e76950b"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 21,
+     "acceptedMoves": 21,
+     "score": "84",
+     "status": "active",
+     "rngWords": [
+      2859782150,
+      2552216893,
+      1317638193,
+      1933726337
+     ],
+     "checksum": "f17e462a94149e94039e8c7e3f058a41faf306be7360b419a093d5c84e32df5a"
+    },
+    {
+     "direction": "right",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 22,
+     "acceptedMoves": 22,
+     "score": "88",
+     "status": "active",
+     "rngWords": [
+      3535152618,
+      3863804039,
+      1599345037,
+      4174546076
+     ],
+     "checksum": "b8937f98a89cda892424b855d3b2bbe2d606576524f0253b03218c23294f5f5d"
+    },
+    {
+     "direction": "down",
+     "changed": true,
+     "scoreDelta": "16",
+     "revision": 23,
+     "acceptedMoves": 23,
+     "score": "104",
+     "status": "active",
+     "rngWords": [
+      1415990757,
+      3012931446,
+      2242028438,
+      1889576130
+     ],
+     "checksum": "14ee008c46fd03819a06352cd562794a3d10b7440ea78d172df15bda81899c10"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 24,
+     "acceptedMoves": 24,
+     "score": "108",
+     "status": "active",
+     "rngWords": [
+      1566548301,
+      261621031,
+      3477818914,
+      1731782224
+     ],
+     "checksum": "227f5136c33d49a27e783c2f5844ee56a7c6b58bcc174702d476759c5441f3c5"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "32",
+     "revision": 25,
+     "acceptedMoves": 25,
+     "score": "140",
+     "status": "active",
+     "rngWords": [
+      2942833463,
+      174917917,
+      2385867605,
+      3129502932
+     ],
+     "checksum": "324cf1e65c3bc15a5e1152900e0e59640b17737810a9b7a16f60ba63653a862c"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "32",
+     "revision": 26,
+     "acceptedMoves": 26,
+     "score": "172",
+     "status": "active",
+     "rngWords": [
+      529748486,
+      3488761315,
+      2215695004,
+      4045914112
+     ],
+     "checksum": "72124525195ebfe47eb180ee5e89dae5a7b9313f197f8c71b1e91d94016541e7"
+    },
+    {
+     "direction": "right",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 27,
+     "acceptedMoves": 27,
+     "score": "176",
+     "status": "active",
+     "rngWords": [
+      3642231658,
+      171922438,
+      3183764351,
+      4142170050
+     ],
+     "checksum": "faeb9e52a3748cbb0e306b31b0f96e7a12d528513e6eb746138d7ae83e49731e"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "12",
+     "revision": 28,
+     "acceptedMoves": 28,
+     "score": "188",
+     "status": "active",
+     "rngWords": [
+      2457746267,
+      1364490408,
+      4191118011,
+      3906973117
+     ],
+     "checksum": "0afcf323eedccc8db9c0dd5812d66d217ad2cf2e232e4a50b6296276b03fbdc3"
+    },
+    {
+     "direction": "down",
+     "changed": true,
+     "scoreDelta": "8",
+     "revision": 29,
+     "acceptedMoves": 29,
+     "score": "196",
+     "status": "active",
+     "rngWords": [
+      1337483978,
+      3528509158,
+      586643374,
+      1818501922
+     ],
+     "checksum": "45848472bae231bbf447d075f5d9acfef3a9b2d34e6925124e540b413b9c9f66"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "16",
+     "revision": 30,
+     "acceptedMoves": 30,
+     "score": "212",
+     "status": "active",
+     "rngWords": [
+      3921506685,
+      2186382824,
+      48847466,
+      2410911937
+     ],
+     "checksum": "3681fd65159d59bb6e41f554ddb9ee9a54e240ca9ef724136f41a6de6e4902d0"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "32",
+     "revision": 31,
+     "acceptedMoves": 31,
+     "score": "244",
+     "status": "active",
+     "rngWords": [
+      2649983684,
+      3306502588,
+      2807914819,
+      1735689165
+     ],
+     "checksum": "5b1d42a9d59f02f1dd6e878e373712379f00393c16449ecc88af1077120a0eba"
+    },
+    {
+     "direction": "left",
+     "changed": false,
+     "scoreDelta": "0",
+     "revision": 31,
+     "acceptedMoves": 31,
+     "score": "244",
+     "status": "active",
+     "rngWords": [
+      2649983684,
+      3306502588,
+      2807914819,
+      1735689165
+     ],
+     "checksum": "5b1d42a9d59f02f1dd6e878e373712379f00393c16449ecc88af1077120a0eba"
+    },
+    {
+     "direction": "right",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 32,
+     "acceptedMoves": 32,
+     "score": "244",
+     "status": "active",
+     "rngWords": [
+      3455741853,
+      3505680649,
+      1491850546,
+      1123633043
+     ],
+     "checksum": "50b62b473ac2b5c92c58926273f7042fa65fc282a06ee5d16096837bfb5e4037"
+    },
+    {
+     "direction": "down",
+     "changed": true,
+     "scoreDelta": "8",
+     "revision": 33,
+     "acceptedMoves": 33,
+     "score": "252",
+     "status": "active",
+     "rngWords": [
+      1940276785,
+      1742813710,
+      3918773672,
+      2298065250
+     ],
+     "checksum": "36683f3d88d4be55c89501041791388210f5c108a42e0b8f27d50b655bf44f8b"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 34,
+     "acceptedMoves": 34,
+     "score": "252",
+     "status": "active",
+     "rngWords": [
+      2771479474,
+      959179603,
+      1836844228,
+      2100787660
+     ],
+     "checksum": "d3af7b1d5d41bba728470675d0e0ea373b183902336309aaa01ebe8ef027b461"
+    },
+    {
+     "direction": "down",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 35,
+     "acceptedMoves": 35,
+     "score": "252",
+     "status": "active",
+     "rngWords": [
+      4108289832,
+      2412819582,
+      3015604827,
+      2481989807
+     ],
+     "checksum": "5c84e1c2b5ebab2a3d97b0844bf76475c53b590165b6a80480379a1e97a06ed0"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 36,
+     "acceptedMoves": 36,
+     "score": "252",
+     "status": "active",
+     "rngWords": [
+      615045653,
+      3326563207,
+      1818493066,
+      3188680290
+     ],
+     "checksum": "9bcad8b9c32a39334757904ba630758a63565a02f29fce2c6645592b3978e307"
+    },
+    {
+     "direction": "right",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 37,
+     "acceptedMoves": 37,
+     "score": "256",
+     "status": "active",
+     "rngWords": [
+      2479115562,
+      335590007,
+      2375617391,
+      622253689
+     ],
+     "checksum": "eeb8fea0de55634e53e59d79a2c3f0260311a9eecd9686816c430523647aa42e"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 38,
+     "acceptedMoves": 38,
+     "score": "260",
+     "status": "active",
+     "rngWords": [
+      464497822,
+      3082188115,
+      100918625,
+      3962426827
+     ],
+     "checksum": "fe9b04d3844a8d7d02d114cbc4cab716a88d4e49406b3df039d33f94b3be2163"
+    },
+    {
+     "direction": "right",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 39,
+     "acceptedMoves": 39,
+     "score": "260",
+     "status": "active",
+     "rngWords": [
+      925561462,
+      2607341397,
+      84655097,
+      4159931320
+     ],
+     "checksum": "69552ddfcb3484af0afe1cc3b8812024c585ba3cbbc90f4317f30d8f5b877c59"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 40,
+     "acceptedMoves": 40,
+     "score": "260",
+     "status": "active",
+     "rngWords": [
+      673141541,
+      292019150,
+      721680660,
+      2012083101
+     ],
+     "checksum": "e8c9ede7997eec101f8f9870e3328fabe68a83e4f383fdfc8bd490818d7275a7"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "12",
+     "revision": 41,
+     "acceptedMoves": 41,
+     "score": "272",
+     "status": "active",
+     "rngWords": [
+      229413309,
+      2420456632,
+      1960686407,
+      3478542873
+     ],
+     "checksum": "8af42df5cb0ff49a7c7622347574b3efea12ba2020df63eaade61feaea42bcc0"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "8",
+     "revision": 42,
+     "acceptedMoves": 42,
+     "score": "280",
+     "status": "active",
+     "rngWords": [
+      549381030,
+      1216592804,
+      3381338598,
+      145085328
+     ],
+     "checksum": "f8e20ae67bd67e7bfab6180f202fca0c69f8cfaa243321b6ec3cb27580ec9499"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "88",
+     "revision": 43,
+     "acceptedMoves": 43,
+     "score": "368",
+     "status": "active",
+     "rngWords": [
+      4067381367,
+      795637814,
+      3794389458,
+      3202296983
+     ],
+     "checksum": "25280fd4d7ae3486b4db5aa87c42af14040b5fa1780551649947e5fd206a9a9f"
+    },
+    {
+     "direction": "down",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 44,
+     "acceptedMoves": 44,
+     "score": "372",
+     "status": "active",
+     "rngWords": [
+      3327388104,
+      2487226592,
+      4272543603,
+      2137584940
+     ],
+     "checksum": "fca51999f0186b13f81fd069eab363baa1a4a2eff11d12c6dbd2f0a61ca4661d"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 45,
+     "acceptedMoves": 45,
+     "score": "372",
+     "status": "active",
+     "rngWords": [
+      3337569542,
+      958061796,
+      3791406271,
+      2722633564
+     ],
+     "checksum": "c8f11f480a8bed7023fb96d9ca8cce05aa8468b9071d40ce1ab93705b60faacf"
+    },
+    {
+     "direction": "down",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 46,
+     "acceptedMoves": 46,
+     "score": "372",
+     "status": "active",
+     "rngWords": [
+      3588855609,
+      1360960090,
+      1554906375,
+      2697739330
+     ],
+     "checksum": "7067874e3cf6d3fb74065cc210243ec720e31cc12c52e40b7bc71095191addd5"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "12",
+     "revision": 47,
+     "acceptedMoves": 47,
+     "score": "384",
+     "status": "active",
+     "rngWords": [
+      1766917835,
+      1209081723,
+      631973663,
+      1371492971
+     ],
+     "checksum": "5cdde5fad4f5411ab3bcd50ace2e1aa6dc051b34ea9ac82f0aee1c76712976e8"
+    },
+    {
+     "direction": "right",
+     "changed": true,
+     "scoreDelta": "8",
+     "revision": 48,
+     "acceptedMoves": 48,
+     "score": "392",
+     "status": "active",
+     "rngWords": [
+      108852665,
+      449880736,
+      3360080399,
+      502469556
+     ],
+     "checksum": "9e4a71c2b1c69d8c31a3505ab3c965cad42ff01d6ed1275e7dc86042f428fcb3"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 49,
+     "acceptedMoves": 49,
+     "score": "392",
+     "status": "active",
+     "rngWords": [
+      3359469954,
+      3133842957,
+      3138002715,
+      296320587
+     ],
+     "checksum": "1455fa1d972a33564c2ead4b4b2e4ba769ea24473b458d3e511123b8d8dded0e"
+    },
+    {
+     "direction": "right",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 50,
+     "acceptedMoves": 50,
+     "score": "392",
+     "status": "active",
+     "rngWords": [
+      3026277387,
+      1289229769,
+      2125788509,
+      4293820089
+     ],
+     "checksum": "a0ad3ff5e8c16ddf8aac2fbec90145d07c8d0dda90c3f2f2515e3b4fa550b791"
+    },
+    {
+     "direction": "down",
+     "changed": true,
+     "scoreDelta": "12",
+     "revision": 51,
+     "acceptedMoves": 51,
+     "score": "404",
+     "status": "active",
+     "rngWords": [
+      838930045,
+      4221876402,
+      1723871789,
+      2978492842
+     ],
+     "checksum": "abad6bb031705303f77aaa557786f1b4a2427346ba5567435bca2f664b917e52"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "16",
+     "revision": 52,
+     "acceptedMoves": 52,
+     "score": "420",
+     "status": "active",
+     "rngWords": [
+      3003171286,
+      3405274071,
+      2928941877,
+      1781898841
+     ],
+     "checksum": "4c7d1079488b1f87b0cde3a0ca652517a6b9a671ac76ef07ab009ed99a200425"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "8",
+     "revision": 53,
+     "acceptedMoves": 53,
+     "score": "428",
+     "status": "active",
+     "rngWords": [
+      2861428842,
+      696447375,
+      669784251,
+      128030154
+     ],
+     "checksum": "3d0fc065a9db93a594aa0db00b4e4cbe35751af808a2012b4502879f77321cda"
+    },
+    {
+     "direction": "up",
+     "changed": false,
+     "scoreDelta": "0",
+     "revision": 53,
+     "acceptedMoves": 53,
+     "score": "428",
+     "status": "active",
+     "rngWords": [
+      2861428842,
+      696447375,
+      669784251,
+      128030154
+     ],
+     "checksum": "3d0fc065a9db93a594aa0db00b4e4cbe35751af808a2012b4502879f77321cda"
+    },
+    {
+     "direction": "right",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 54,
+     "acceptedMoves": 54,
+     "score": "432",
+     "status": "active",
+     "rngWords": [
+      997172224,
+      2832169888,
+      3391020798,
+      159481342
+     ],
+     "checksum": "6a9e31d8e6f95682dba8061283be8c63fa796b365ec8c34b79a548142283f098"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "8",
+     "revision": 55,
+     "acceptedMoves": 55,
+     "score": "440",
+     "status": "active",
+     "rngWords": [
+      3014481418,
+      2887358974,
+      2309301408,
+      1738711372
+     ],
+     "checksum": "09b2a4c7d82b3fa891b3072a1e27ab31c462f988e3c20a88a3efe0450db0f996"
+    },
+    {
+     "direction": "down",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 56,
+     "acceptedMoves": 56,
+     "score": "440",
+     "status": "active",
+     "rngWords": [
+      935465905,
+      3879471942,
+      1392199698,
+      2749909630
+     ],
+     "checksum": "a64ad14341319cf60f772242385b3f0eded9118cac72966c3aa390022bfdc904"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 57,
+     "acceptedMoves": 57,
+     "score": "444",
+     "status": "active",
+     "rngWords": [
+      1394262090,
+      3963409871,
+      1687703338,
+      1687558400
+     ],
+     "checksum": "26da4550f2f08c2b2a8f30041799cc77cca4f7b788885f714c01b82a960dab9c"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 58,
+     "acceptedMoves": 58,
+     "score": "444",
+     "status": "active",
+     "rngWords": [
+      1449667183,
+      1311197002,
+      3911992293,
+      3241628782
+     ],
+     "checksum": "be2f4217125b56cd9512c803ee9e88c99cf21f0702dce1d65140fb3492047681"
+    }
+   ],
+   "finalChecksum": "be2f4217125b56cd9512c803ee9e88c99cf21f0702dce1d65140fb3492047681"
+  },
+  {
+   "rulesetVersion": "custom-v1:5:3:2:none",
+   "boardSize": 5,
+   "spawnFourTenths": 3,
+   "moveCap": null,
+   "seed": "golden-1",
+   "initial": {
+    "cells": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     "1",
+     null,
+     null,
+     null,
+     null,
+     "2",
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "rngWords": [
+     3475936922,
+     1324704924,
+     2189577915,
+     1095926321
+    ],
+    "spawns": [
+     {
+      "index": 14,
+      "exponent": "1"
+     },
+     {
+      "index": 19,
+      "exponent": "2"
+     }
+    ],
+    "checksum": "b5605a54953f8d05c453c2766d4c159a62de048949788dfe22766438b5a03371"
+   },
+   "steps": [
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 1,
+     "acceptedMoves": 1,
+     "score": "0",
+     "status": "active",
+     "rngWords": [
+      4242908407,
+      1689595051,
+      3566594582,
+      1722155491
+     ],
+     "checksum": "146407159603e891ece4d12a7ed36cb083682112b983cfcee4542e6e0455e5e9"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 2,
+     "acceptedMoves": 2,
+     "score": "0",
+     "status": "active",
+     "rngWords": [
+      727296997,
+      4028298004,
+      907740510,
+      2031277741
+     ],
+     "checksum": "cac29b801d21cffcac74354624a6e3e83bfce247ddbd871b2e2d0a83be358980"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 3,
+     "acceptedMoves": 3,
+     "score": "4",
+     "status": "active",
+     "rngWords": [
+      237248443,
+      1739412808,
+      978212583,
+      2895068515
+     ],
+     "checksum": "fc0d1ab48f450b9695b34e648eb6d9cd2f97918b042614cab67479986b5266a6"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "8",
+     "revision": 4,
+     "acceptedMoves": 4,
+     "score": "12",
+     "status": "active",
+     "rngWords": [
+      2239772125,
+      4160860888,
+      637437644,
+      840067588
+     ],
+     "checksum": "53d070c657c75d2c3e4258c1faa8b4fd893918342ddb9e383215981a58926cdb"
+    },
+    {
+     "direction": "down",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 5,
+     "acceptedMoves": 5,
+     "score": "12",
+     "status": "active",
+     "rngWords": [
+      2301233816,
+      3036147673,
+      311131152,
+      3476868661
+     ],
+     "checksum": "59f1175ccb3dba252f6c2659e896e5ce5e9de9c458854e6fec670c0c06179f1b"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 6,
+     "acceptedMoves": 6,
+     "score": "12",
+     "status": "active",
+     "rngWords": [
+      2226704891,
+      2848552621,
+      732777980,
+      3486809010
+     ],
+     "checksum": "4ca7ec441ee48023bc9ed679628cf9347d7b4c52a37c88a3f190f1b8351e605b"
+    },
+    {
+     "direction": "down",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 7,
+     "acceptedMoves": 7,
+     "score": "12",
+     "status": "active",
+     "rngWords": [
+      202493310,
+      3649171529,
+      1720209123,
+      2693584757
+     ],
+     "checksum": "e400bd08eb28f3f3fccd39fb829a8f68989e03bc36724b861904dd9b78f93a29"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "12",
+     "revision": 8,
+     "acceptedMoves": 8,
+     "score": "24",
+     "status": "active",
+     "rngWords": [
+      2940041822,
+      2944239627,
+      746738655,
+      209774289
+     ],
+     "checksum": "968bca966e383dd3016ff1154980dbb6a50ceff6c10deea06f171b1e98f97a20"
+    },
+    {
+     "direction": "right",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 9,
+     "acceptedMoves": 9,
+     "score": "24",
+     "status": "active",
+     "rngWords": [
+      3413401617,
+      1487768207,
+      4046208773,
+      2745478717
+     ],
+     "checksum": "c6221e7b980940120203ce6a49a5404866690285da56f26f29865c3d23a1b827"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 10,
+     "acceptedMoves": 10,
+     "score": "24",
+     "status": "active",
+     "rngWords": [
+      464324320,
+      868601900,
+      3130733495,
+      2182224222
+     ],
+     "checksum": "2a568b9e6103c95ef1e1ef0d1a0a457c848ba5aa52027d563a41b3d123567473"
+    },
+    {
+     "direction": "right",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 11,
+     "acceptedMoves": 11,
+     "score": "28",
+     "status": "active",
+     "rngWords": [
+      2260909927,
+      304039870,
+      1730565317,
+      3280447845
+     ],
+     "checksum": "9909fc00d83b7901da9337868c323dd987e24779cc0fc157f1a323d63997e488"
+    },
+    {
+     "direction": "down",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 12,
+     "acceptedMoves": 12,
+     "score": "28",
+     "status": "active",
+     "rngWords": [
+      1675043628,
+      2076862978,
+      2137652766,
+      1804894628
+     ],
+     "checksum": "81fa77a54355407913d5d8372961dfb2b76283f1b11bec7eca8aca0863ea6e17"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 13,
+     "acceptedMoves": 13,
+     "score": "28",
+     "status": "active",
+     "rngWords": [
+      3818934072,
+      2627184264,
+      311259576,
+      1279104129
+     ],
+     "checksum": "ac401c5ac62890dc582778f94c377865e29b77325c44a09391d40ae6767a992c"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 14,
+     "acceptedMoves": 14,
+     "score": "32",
+     "status": "active",
+     "rngWords": [
+      253799356,
+      2161167289,
+      2556052401,
+      1454664161
+     ],
+     "checksum": "f7046be84c875b35cbd94b167a17a1262330727f35bea81a3a5ccc5b84121b9a"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "8",
+     "revision": 15,
+     "acceptedMoves": 15,
+     "score": "40",
+     "status": "active",
+     "rngWords": [
+      3959221475,
+      4160991325,
+      3153001449,
+      3341302165
+     ],
+     "checksum": "8cd81b2c9151595b1deecd1859713832359336d7a27fb674d33e489bc4a63a54"
+    },
+    {
+     "direction": "right",
+     "changed": true,
+     "scoreDelta": "20",
+     "revision": 16,
+     "acceptedMoves": 16,
+     "score": "60",
+     "status": "active",
+     "rngWords": [
+      545817477,
+      733245302,
+      2699781665,
+      4281694114
+     ],
+     "checksum": "d367430f0db7f4788226fcf6caa910ec8d9339fabfada78e55eb59362aceee15"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 17,
+     "acceptedMoves": 17,
+     "score": "64",
+     "status": "active",
+     "rngWords": [
+      1461237543,
+      3076724775,
+      3013687029,
+      2305013016
+     ],
+     "checksum": "2860dd14f005528a96f553f07805631892821deb1bf1381a8ac2eae7d135191e"
+    },
+    {
+     "direction": "down",
+     "changed": true,
+     "scoreDelta": "12",
+     "revision": 18,
+     "acceptedMoves": 18,
+     "score": "76",
+     "status": "active",
+     "rngWords": [
+      1068202525,
+      407587903,
+      4272046026,
+      2600479413
+     ],
+     "checksum": "930bf96628b38cb472b54f68e07ee23c96b9a5dc40cb925853a02a544c7462ec"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "16",
+     "revision": 19,
+     "acceptedMoves": 19,
+     "score": "92",
+     "status": "active",
+     "rngWords": [
+      1050034533,
+      842215080,
+      1868756800,
+      3002045459
+     ],
+     "checksum": "89a8b92fa5781aa257afbf6e0dd85552e7fd4da82124b2d2b7406c69fd4c3c6b"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 20,
+     "acceptedMoves": 20,
+     "score": "96",
+     "status": "active",
+     "rngWords": [
+      945340245,
+      3928262006,
+      114427899,
+      2451856432
+     ],
+     "checksum": "2ecc594712e84801075d1f09dec365007f93f6252ef679e391205e3602ed2e0b"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "8",
+     "revision": 21,
+     "acceptedMoves": 21,
+     "score": "104",
+     "status": "active",
+     "rngWords": [
+      2453432331,
+      3816165221,
+      1805877949,
+      544261779
+     ],
+     "checksum": "97306968d2efe791a96bac305ab582dd4901592d82bdac68e2afd83778b013e4"
+    },
+    {
+     "direction": "right",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 22,
+     "acceptedMoves": 22,
+     "score": "104",
+     "status": "active",
+     "rngWords": [
+      2107437622,
+      1582458008,
+      2540709707,
+      849238373
+     ],
+     "checksum": "081cb70352ff1b66e5bc187a581ce6e13c2ae1274779b1ddcfce5d040794e140"
+    },
+    {
+     "direction": "down",
+     "changed": true,
+     "scoreDelta": "40",
+     "revision": 23,
+     "acceptedMoves": 23,
+     "score": "144",
+     "status": "active",
+     "rngWords": [
+      3288438088,
+      3955989331,
+      571924662,
+      2329157290
+     ],
+     "checksum": "391f6d36cb777f0e9a388f82b99671e74fddb6b0dcfc66792f2dc4957ad257aa"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "16",
+     "revision": 24,
+     "acceptedMoves": 24,
+     "score": "160",
+     "status": "active",
+     "rngWords": [
+      1424831764,
+      3655544290,
+      1843566927,
+      2569875343
+     ],
+     "checksum": "802b5e7582bd94da7aebda34f93225ee2b2a9470be37389ac2eb1b7f144bbf1d"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "12",
+     "revision": 25,
+     "acceptedMoves": 25,
+     "score": "172",
+     "status": "active",
+     "rngWords": [
+      2229066950,
+      194764443,
+      846474530,
+      4284349575
+     ],
+     "checksum": "e141ad12c0ed15a3f6385feac5e795f61a61d4b84fb5f62e792389a88727838d"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "8",
+     "revision": 26,
+     "acceptedMoves": 26,
+     "score": "180",
+     "status": "active",
+     "rngWords": [
+      4231607811,
+      1279006273,
+      2538719038,
+      507956321
+     ],
+     "checksum": "804fc9e6f4d155f3d0de631b8a85a44ec20a2781fc555556b75309d7d1ac3896"
+    },
+    {
+     "direction": "right",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 27,
+     "acceptedMoves": 27,
+     "score": "180",
+     "status": "active",
+     "rngWords": [
+      1606814156,
+      2589161570,
+      348743454,
+      791641996
+     ],
+     "checksum": "889962e3ee484a500262bb9ed0ea84ce0e947381813e86e8282237b91ca6357f"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 28,
+     "acceptedMoves": 28,
+     "score": "184",
+     "status": "active",
+     "rngWords": [
+      3688459577,
+      3592008256,
+      3211314416,
+      454613387
+     ],
+     "checksum": "b71c28fcfa7953fd3351394a7c6f2a85098362e594cba94603eab10e0e749ac7"
+    },
+    {
+     "direction": "down",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 29,
+     "acceptedMoves": 29,
+     "score": "184",
+     "status": "active",
+     "rngWords": [
+      2939044627,
+      4087690418,
+      289029435,
+      2989428175
+     ],
+     "checksum": "6e7cda74f7a3e00f1f2a29bbdd9f260f8a2f3964aea2c3e719070a2312974193"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 30,
+     "acceptedMoves": 30,
+     "score": "188",
+     "status": "active",
+     "rngWords": [
+      4074691320,
+      1466444508,
+      2018268230,
+      3573854435
+     ],
+     "checksum": "64c400b79d847c473a7f1b3d90035d0f88869719dbfbe6c680f15e9cc65ffb94"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 31,
+     "acceptedMoves": 31,
+     "score": "188",
+     "status": "active",
+     "rngWords": [
+      3382253750,
+      4153397787,
+      3745362553,
+      1522765257
+     ],
+     "checksum": "e1feaac9c503d76c63ad1f0e8119eda6197458047217c3c0bfbfd85cdce5191e"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 32,
+     "acceptedMoves": 32,
+     "score": "188",
+     "status": "active",
+     "rngWords": [
+      3875580634,
+      2365498239,
+      992244651,
+      2943218718
+     ],
+     "checksum": "341b2ca529fb38a5095f707a64f82d825ca72b0cf625326a73b20459910922fa"
+    },
+    {
+     "direction": "right",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 33,
+     "acceptedMoves": 33,
+     "score": "192",
+     "status": "active",
+     "rngWords": [
+      250777257,
+      3039535300,
+      1359333066,
+      194549331
+     ],
+     "checksum": "06ebe7db42f86df1fe42bcb5f7bd2d5b78f1619e9536e399353b241bda7d0165"
+    },
+    {
+     "direction": "down",
+     "changed": true,
+     "scoreDelta": "8",
+     "revision": 34,
+     "acceptedMoves": 34,
+     "score": "200",
+     "status": "active",
+     "rngWords": [
+      3274304876,
+      1378586874,
+      19281501,
+      1118475163
+     ],
+     "checksum": "2acc8d220471995e5c6df4dd1666df30253c158c4b36ac313e33ca20fd56ecbe"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 35,
+     "acceptedMoves": 35,
+     "score": "200",
+     "status": "active",
+     "rngWords": [
+      1268231490,
+      3600976631,
+      236017468,
+      4196039873
+     ],
+     "checksum": "b45da7a29501676b4f3ccff7c9aac1078589ab6502feb7b74c9abba9f55e65d2"
+    },
+    {
+     "direction": "down",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 36,
+     "acceptedMoves": 36,
+     "score": "200",
+     "status": "active",
+     "rngWords": [
+      867867288,
+      4103618435,
+      794647818,
+      2920243876
+     ],
+     "checksum": "934755d2f583c0ba9c5b6cd69b5a3ebd3290bd90b1baa8288cd6d36f3e946a51"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 37,
+     "acceptedMoves": 37,
+     "score": "200",
+     "status": "active",
+     "rngWords": [
+      1002112378,
+      2915761724,
+      3125093421,
+      3054906004
+     ],
+     "checksum": "9cae2d4254ef7fd95f1604811403866028c3fd750944b9f9940e94c398d12ae5"
+    },
+    {
+     "direction": "right",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 38,
+     "acceptedMoves": 38,
+     "score": "204",
+     "status": "active",
+     "rngWords": [
+      3942010471,
+      407984110,
+      1574657669,
+      2365435476
+     ],
+     "checksum": "def1b3ebe23252dd7625bcd3155552e622f1a45a5bf13151740b9add439640b4"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "8",
+     "revision": 39,
+     "acceptedMoves": 39,
+     "score": "212",
+     "status": "active",
+     "rngWords": [
+      3068863604,
+      3299097651,
+      2471912255,
+      2359119429
+     ],
+     "checksum": "0130478b1c062d8d4da7533120c0fa6851da63c5b6bd76e2ec9219f8dfb85d89"
+    },
+    {
+     "direction": "right",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 40,
+     "acceptedMoves": 40,
+     "score": "216",
+     "status": "active",
+     "rngWords": [
+      3562577723,
+      1913523249,
+      2715912009,
+      1447676244
+     ],
+     "checksum": "75df3a8ebd2b52450b20511a87585f2f97a7e177a5adf7817421244a6fd301df"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 41,
+     "acceptedMoves": 41,
+     "score": "216",
+     "status": "active",
+     "rngWords": [
+      3380832063,
+      2651403375,
+      4153845292,
+      3790277068
+     ],
+     "checksum": "f5593efaa3ce3233020bd9f5d85ba5d4da583a583b0fddcb451f6018b1e18dce"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "32",
+     "revision": 42,
+     "acceptedMoves": 42,
+     "score": "248",
+     "status": "active",
+     "rngWords": [
+      126923807,
+      973123827,
+      2750856591,
+      2406751631
+     ],
+     "checksum": "390bcc54ce4be5fbdeab5648ecb564a6280cf0b83680c8b801b7cfc4967efdea"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 43,
+     "acceptedMoves": 43,
+     "score": "248",
+     "status": "active",
+     "rngWords": [
+      2313766315,
+      2307215248,
+      3666948339,
+      1793475032
+     ],
+     "checksum": "0d109735cba07b189416c3538a790f7017c95a979552bf4176e7215e45edae16"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "8",
+     "revision": 44,
+     "acceptedMoves": 44,
+     "score": "256",
+     "status": "active",
+     "rngWords": [
+      2818913840,
+      3918537843,
+      3373829819,
+      2079235604
+     ],
+     "checksum": "3dfa8351e40b88c978503cfce6cb9694a32efca8c462a25c23ca85bd65efd636"
+    },
+    {
+     "direction": "down",
+     "changed": true,
+     "scoreDelta": "16",
+     "revision": 45,
+     "acceptedMoves": 45,
+     "score": "272",
+     "status": "active",
+     "rngWords": [
+      1193618492,
+      4087565860,
+      1612128988,
+      4110638058
+     ],
+     "checksum": "0f606166317cffd63611f584cc024961baa8df910aeef7aac4d81c9d347c314a"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 46,
+     "acceptedMoves": 46,
+     "score": "272",
+     "status": "active",
+     "rngWords": [
+      2511997187,
+      4105846742,
+      44758802,
+      4186410657
+     ],
+     "checksum": "5f8704f5e57649e773bae9cdbbebe25c0c0475cdd121f6824b039472c26812b4"
+    },
+    {
+     "direction": "down",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 47,
+     "acceptedMoves": 47,
+     "score": "272",
+     "status": "active",
+     "rngWords": [
+      380027354,
+      406989730,
+      778789989,
+      198014065
+     ],
+     "checksum": "f48d9114a4f814d66151ff3d690a95d7c7e8b2357d778da7bdf66e22464c7b5a"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "40",
+     "revision": 48,
+     "acceptedMoves": 48,
+     "score": "312",
+     "status": "active",
+     "rngWords": [
+      1599637640,
+      2570908075,
+      2796504502,
+      2293500627
+     ],
+     "checksum": "9d2dd82c90b38150dc30f02dbef761342bad3081d8e525ff77073d7959283587"
+    },
+    {
+     "direction": "right",
+     "changed": true,
+     "scoreDelta": "8",
+     "revision": 49,
+     "acceptedMoves": 49,
+     "score": "320",
+     "status": "active",
+     "rngWords": [
+      1774227433,
+      2920272987,
+      1488831182,
+      2279655736
+     ],
+     "checksum": "900fdccc1c0b9a5cb6412cb60e588ec55454c703989466f3ee473d7d6a875f70"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 50,
+     "acceptedMoves": 50,
+     "score": "320",
+     "status": "active",
+     "rngWords": [
+      2813727417,
+      4052283601,
+      2345177517,
+      3422658364
+     ],
+     "checksum": "eeca28a8fb47dacb53591858a47c4e83328a7ddb6dd010446d06f8f17dc8ef84"
+    },
+    {
+     "direction": "right",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 51,
+     "acceptedMoves": 51,
+     "score": "320",
+     "status": "active",
+     "rngWords": [
+      213280637,
+      2052468613,
+      1262999104,
+      1221676212
+     ],
+     "checksum": "a30e4912d0e93b6cfa660c73099135a67d44ccb209f096cf1b6d478fe5f0839c"
+    },
+    {
+     "direction": "down",
+     "changed": true,
+     "scoreDelta": "76",
+     "revision": 52,
+     "acceptedMoves": 52,
+     "score": "396",
+     "status": "active",
+     "rngWords": [
+      948900704,
+      3895992777,
+      2594361201,
+      4038680629
+     ],
+     "checksum": "92a7bb6d0b4ea87186e2cedf4292e0cb6146efd59a7d3d7aed6e815fba7ab9b8"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 53,
+     "acceptedMoves": 53,
+     "score": "396",
+     "status": "active",
+     "rngWords": [
+      1611943808,
+      3094733141,
+      3650858125,
+      3504923136
+     ],
+     "checksum": "628baefbe6ab2d4ac5d208594a53c4633a7f1231f15fa9adde210d700afcd211"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "16",
+     "revision": 54,
+     "acceptedMoves": 54,
+     "score": "412",
+     "status": "active",
+     "rngWords": [
+      3781813705,
+      1530791808,
+      2931865048,
+      88663887
+     ],
+     "checksum": "e1f84a28c7452a3c708f5e42aa1b6c80422d7ba4a54b3c6cf1b17c9071d96a22"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "28",
+     "revision": 55,
+     "acceptedMoves": 55,
+     "score": "440",
+     "status": "active",
+     "rngWords": [
+      479078500,
+      2553152134,
+      2719381271,
+      2305496348
+     ],
+     "checksum": "073aaf7148e57d64caf71cdc2365d40dd8617185c6f5eb5548a111afbbf8fe15"
+    },
+    {
+     "direction": "right",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 56,
+     "acceptedMoves": 56,
+     "score": "440",
+     "status": "active",
+     "rngWords": [
+      63025793,
+      3386913144,
+      2213381773,
+      1416362096
+     ],
+     "checksum": "a889e742a9e57c6c260b80656a2e405ca785b9ed6a65461c40551651334e76f8"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "12",
+     "revision": 57,
+     "acceptedMoves": 57,
+     "score": "452",
+     "status": "active",
+     "rngWords": [
+      2311993873,
+      2546514673,
+      1175345029,
+      571261116
+     ],
+     "checksum": "084e2d92e2f05adb2fce59ec7b654e48b782e326b81502e515f2c40ffad52bf3"
+    },
+    {
+     "direction": "down",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 58,
+     "acceptedMoves": 58,
+     "score": "452",
+     "status": "active",
+     "rngWords": [
+      1204877975,
+      985077933,
+      1930495432,
+      3587595230
+     ],
+     "checksum": "a31988a470f5dd3e21a72a76431be9060efc7a758d87179ec8dc6d7f36ff149f"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "32",
+     "revision": 59,
+     "acceptedMoves": 59,
+     "score": "484",
+     "status": "active",
+     "rngWords": [
+      2900148589,
+      4231527241,
+      529463483,
+      1808025635
+     ],
+     "checksum": "4a10182d3bf0fdcf54025a1f68f24bdce6b7b90a809586aa05026f14d991554a"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 60,
+     "acceptedMoves": 60,
+     "score": "484",
+     "status": "active",
+     "rngWords": [
+      3922846759,
+      2834176846,
+      739174353,
+      4105242263
+     ],
+     "checksum": "fd1ab6d09907f9b2fe017858675151925602aba9408fc7c1674ce206e4127ed8"
+    }
+   ],
+   "finalChecksum": "fd1ab6d09907f9b2fe017858675151925602aba9408fc7c1674ce206e4127ed8"
+  },
+  {
+   "rulesetVersion": "ranked-v1",
+   "boardSize": 4,
+   "spawnFourTenths": 1,
+   "moveCap": 500,
+   "seed": "ranked-seed",
+   "initial": {
+    "cells": [
+     "1",
+     null,
+     null,
+     null,
+     "1",
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "rngWords": [
+     836319806,
+     826874170,
+     710851097,
+     4095779847
+    ],
+    "spawns": [
+     {
+      "index": 4,
+      "exponent": "1"
+     },
+     {
+      "index": 0,
+      "exponent": "1"
+     }
+    ],
+    "checksum": "1bbb272a31863d6015b3f4ecf25f2df242a8d506367689d666949a2a880e573f"
+   },
+   "steps": [
+    {
+     "direction": "left",
+     "changed": false,
+     "scoreDelta": "0",
+     "revision": 0,
+     "acceptedMoves": 0,
+     "score": "0",
+     "status": "active",
+     "rngWords": [
+      836319806,
+      826874170,
+      710851097,
+      4095779847
+     ],
+     "checksum": "1bbb272a31863d6015b3f4ecf25f2df242a8d506367689d666949a2a880e573f"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 1,
+     "acceptedMoves": 1,
+     "score": "4",
+     "status": "active",
+     "rngWords": [
+      2476208181,
+      1472981561,
+      3761719588,
+      1002025785
+     ],
+     "checksum": "d389b8b481e526e608b9214501721fc5bd4edea78b8686b91036e553250f9cc2"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 2,
+     "acceptedMoves": 2,
+     "score": "4",
+     "status": "active",
+     "rngWords": [
+      1229388158,
+      1073361164,
+      3442946596,
+      444751285
+     ],
+     "checksum": "6d79bcfc56308508a2bd6fd0775b0bf5246ea1a62f4ea7aaebb92e37e2819259"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 3,
+     "acceptedMoves": 3,
+     "score": "4",
+     "status": "active",
+     "rngWords": [
+      349218490,
+      2812722379,
+      198830749,
+      1906043847
+     ],
+     "checksum": "f91887b700e83507cb23d583b5cc9cdd96363c3d20f47e33b3556a7fdfcf6088"
+    },
+    {
+     "direction": "down",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 4,
+     "acceptedMoves": 4,
+     "score": "4",
+     "status": "active",
+     "rngWords": [
+      2432329707,
+      674421629,
+      3481072529,
+      3165842064
+     ],
+     "checksum": "60901060d78186f79c583cc1dd4cbe4290f21795a37275bd793a86f5e33321cf"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 5,
+     "acceptedMoves": 5,
+     "score": "4",
+     "status": "active",
+     "rngWords": [
+      1916892581,
+      1241413499,
+      1456748156,
+      3642563505
+     ],
+     "checksum": "b201cbef9eec8d856ae682ef0c6b36b78ad834d2677ef32ec591b8b69dac6c7e"
+    },
+    {
+     "direction": "down",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 6,
+     "acceptedMoves": 6,
+     "score": "8",
+     "status": "active",
+     "rngWords": [
+      2494527818,
+      1471322132,
+      3971016886,
+      1795238832
+     ],
+     "checksum": "3d850cca63f3fa0797c1b64163c490070d705681e74be3ad144344ff53b3691a"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 7,
+     "acceptedMoves": 7,
+     "score": "12",
+     "status": "active",
+     "rngWords": [
+      439149283,
+      2594077434,
+      4011893522,
+      2168483217
+     ],
+     "checksum": "3eb49d1cfcf8ee138d1291b66ad6340b926ddabdd7a86ed8778fd49346735db2"
+    },
+    {
+     "direction": "right",
+     "changed": true,
+     "scoreDelta": "12",
+     "revision": 8,
+     "acceptedMoves": 8,
+     "score": "24",
+     "status": "active",
+     "rngWords": [
+      2665191005,
+      2811853682,
+      3967637113,
+      1260301561
+     ],
+     "checksum": "cef44b545f76cffbb8960642ede8470c2a210b3690c1cd00b935178f0eac45bc"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 9,
+     "acceptedMoves": 9,
+     "score": "24",
+     "status": "active",
+     "rngWords": [
+      2581571044,
+      3878936228,
+      1299892722,
+      522295132
+     ],
+     "checksum": "08fc2cf716ad9f506df50b7344bcd14553a3b80a0b264d09ca575a4a4d83ce02"
+    },
+    {
+     "direction": "right",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 10,
+     "acceptedMoves": 10,
+     "score": "24",
+     "status": "active",
+     "rngWords": [
+      3222575470,
+      3779295928,
+      4289768458,
+      3417019662
+     ],
+     "checksum": "e8d842fc64fc39e74e59b30440ae4d561bcc9ca5bb2ede20afa1aa30a9275e21"
+    },
+    {
+     "direction": "down",
+     "changed": true,
+     "scoreDelta": "8",
+     "revision": 11,
+     "acceptedMoves": 11,
+     "score": "32",
+     "status": "active",
+     "rngWords": [
+      1936099411,
+      2370468960,
+      2637335484,
+      3623115980
+     ],
+     "checksum": "341f024a75c2337a966371a8a68506a7a532e9ff9a5990c3462f8bd8bb77fe4e"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 12,
+     "acceptedMoves": 12,
+     "score": "36",
+     "status": "active",
+     "rngWords": [
+      3150165413,
+      812258463,
+      1871410448,
+      3639268496
+     ],
+     "checksum": "dd275c89bf0f19916f8698bc29143a8bd80fea7c2c434d7bd7e12d9a8e216e99"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "8",
+     "revision": 13,
+     "acceptedMoves": 13,
+     "score": "44",
+     "status": "active",
+     "rngWords": [
+      2975981252,
+      3070254901,
+      378199839,
+      358315793
+     ],
+     "checksum": "31d60ad2d7951a1e3b30ffd773834a23320c943ab482478b30cf64989f607f12"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "20",
+     "revision": 14,
+     "acceptedMoves": 14,
+     "score": "64",
+     "status": "active",
+     "rngWords": [
+      3666906396,
+      2760164309,
+      1657946427,
+      1407182413
+     ],
+     "checksum": "2afde05f87d7c7dc1539c2a8bb728112450c55bd729e979c7d0c46df121e03d7"
+    },
+    {
+     "direction": "right",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 15,
+     "acceptedMoves": 15,
+     "score": "68",
+     "status": "active",
+     "rngWords": [
+      3894501580,
+      2160640337,
+      269560483,
+      1447183919
+     ],
+     "checksum": "7c75eeec9c213ae6102001400d765127a9f0162e504e2eb625deb2386a6efdf3"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 16,
+     "acceptedMoves": 16,
+     "score": "68",
+     "status": "active",
+     "rngWords": [
+      308845112,
+      803308771,
+      2786030557,
+      468472166
+     ],
+     "checksum": "bad16259edfa7730cd25859bfaf34b1b0f34b6ce36f9da252f777d15238850c5"
+    },
+    {
+     "direction": "down",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 17,
+     "acceptedMoves": 17,
+     "score": "68",
+     "status": "active",
+     "rngWords": [
+      3545172763,
+      3398241630,
+      1574005848,
+      1378170793
+     ],
+     "checksum": "97c6adb47bce5da6ae57add0deb4bd23c95b02edad07bc71d643615e1783488b"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 18,
+     "acceptedMoves": 18,
+     "score": "68",
+     "status": "active",
+     "rngWords": [
+      1310975796,
+      2607841458,
+      4189573295,
+      649510958
+     ],
+     "checksum": "b989870c22fddd44daf7e7d594286bbdaecc7f2c15849e5828ea9ecba94ae2ee"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "16",
+     "revision": 19,
+     "acceptedMoves": 19,
+     "score": "84",
+     "status": "active",
+     "rngWords": [
+      3976590703,
+      2308195098,
+      1813947955,
+      43399415
+     ],
+     "checksum": "d87043ad46c55fd4acff74a3ad0476db2d84c99ca765c2d98de768fcb7d0a246"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "20",
+     "revision": 20,
+     "acceptedMoves": 20,
+     "score": "104",
+     "status": "active",
+     "rngWords": [
+      2102915740,
+      3340106136,
+      3518653918,
+      2212557018
+     ],
+     "checksum": "b4508a6f6560471fbe83643bc8039507d6f7cadb6dcb3c7bae4be742e43a0ba0"
+    },
+    {
+     "direction": "right",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 21,
+     "acceptedMoves": 21,
+     "score": "104",
+     "status": "active",
+     "rngWords": [
+      4195387171,
+      3578016326,
+      1315039388,
+      2481450525
+     ],
+     "checksum": "5ee661107abc975fecabf65055c24cde711cbb51ea954e43b0d23f6b6552b5a3"
+    },
+    {
+     "direction": "down",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 22,
+     "acceptedMoves": 22,
+     "score": "104",
+     "status": "active",
+     "rngWords": [
+      3278167220,
+      3784566078,
+      3927788231,
+      3158205438
+     ],
+     "checksum": "3e5caa1ca496529021d43d62091728d6a7bf466344577410c93e21613f6518d0"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 23,
+     "acceptedMoves": 23,
+     "score": "104",
+     "status": "active",
+     "rngWords": [
+      974466004,
+      1485882186,
+      1151085063,
+      3817669926
+     ],
+     "checksum": "dd6ebd986f8836e74125f1b408b8de8d4789d0b50f56894be3c9f8e19991a307"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "36",
+     "revision": 24,
+     "acceptedMoves": 24,
+     "score": "140",
+     "status": "active",
+     "rngWords": [
+      1226984185,
+      4162763506,
+      3984738923,
+      1429868097
+     ],
+     "checksum": "05c0bbe3da07bb9c3235746d0f119d0b983922a7a4d90deee47c81c09c8570dc"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 25,
+     "acceptedMoves": 25,
+     "score": "140",
+     "status": "active",
+     "rngWords": [
+      2635979075,
+      560832696,
+      11000536,
+      3644345288
+     ],
+     "checksum": "2323cade2961cbce8ac3287f404f44a1668b1d925fa52d55f18ba76668b7c34f"
+    },
+    {
+     "direction": "right",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 26,
+     "acceptedMoves": 26,
+     "score": "144",
+     "status": "active",
+     "rngWords": [
+      1992562386,
+      2674188939,
+      2364868520,
+      1629948060
+     ],
+     "checksum": "9fbe87f2adbc77930f64d7af497cee8d7fa6859ddc6ae4ef07c35ef23a90ce1d"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "8",
+     "revision": 27,
+     "acceptedMoves": 27,
+     "score": "152",
+     "status": "active",
+     "rngWords": [
+      4068651206,
+      3727034446,
+      278141375,
+      710941648
+     ],
+     "checksum": "dcf2de07ad43de0b69b702c7964a55d8c5803d01e1b6f2351093952754b6f13d"
+    },
+    {
+     "direction": "down",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 28,
+     "acceptedMoves": 28,
+     "score": "156",
+     "status": "active",
+     "rngWords": [
+      174650829,
+      2498901782,
+      3380672545,
+      1656006757
+     ],
+     "checksum": "8ce4ba25f0982be35cc4250115e31a53676a65c9caa6522d2b7ec7b2af95e086"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "8",
+     "revision": 29,
+     "acceptedMoves": 29,
+     "score": "164",
+     "status": "active",
+     "rngWords": [
+      2681196534,
+      2360504744,
+      4024287058,
+      220873503
+     ],
+     "checksum": "51150d6c091aa8632a03a5743324aea5a36bc1f19f567d27ffb272eebec098bf"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "16",
+     "revision": 30,
+     "acceptedMoves": 30,
+     "score": "180",
+     "status": "active",
+     "rngWords": [
+      593641537,
+      4127644905,
+      1252312549,
+      2917663209
+     ],
+     "checksum": "44e5338e6eb04c6415987147414f75882d4a0f525fbf61b8e2ae687082c7c671"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "8",
+     "revision": 31,
+     "acceptedMoves": 31,
+     "score": "188",
+     "status": "active",
+     "rngWords": [
+      2443495123,
+      2201195432,
+      2621526245,
+      1121752905
+     ],
+     "checksum": "55699c101ead0d60038c3836213b923a0a9e944403554cf8785f5db5a546d2fe"
+    },
+    {
+     "direction": "right",
+     "changed": true,
+     "scoreDelta": "8",
+     "revision": 32,
+     "acceptedMoves": 32,
+     "score": "196",
+     "status": "active",
+     "rngWords": [
+      2797259171,
+      3026125210,
+      2525116420,
+      2287767479
+     ],
+     "checksum": "c5054ea55a71ea624b66afce841c447274ee248cb9dd795c7a344fedb3a02099"
+    },
+    {
+     "direction": "down",
+     "changed": true,
+     "scoreDelta": "8",
+     "revision": 33,
+     "acceptedMoves": 33,
+     "score": "204",
+     "status": "active",
+     "rngWords": [
+      45080147,
+      2430956052,
+      3680696361,
+      3033459904
+     ],
+     "checksum": "c6238e45b4b6016a0e6dac9d3599e1b4dd121fe821e4b5031e6e8b3e27fe40b8"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "16",
+     "revision": 34,
+     "acceptedMoves": 34,
+     "score": "220",
+     "status": "active",
+     "rngWords": [
+      861582792,
+      2089097875,
+      1694864125,
+      4155144366
+     ],
+     "checksum": "27392532eeddeb824b9bbaf1ba05e006ca61bca98f4547e12712999fac49957b"
+    },
+    {
+     "direction": "down",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 35,
+     "acceptedMoves": 35,
+     "score": "220",
+     "status": "active",
+     "rngWords": [
+      3921544714,
+      3469077350,
+      1348770496,
+      1586494094
+     ],
+     "checksum": "5be5cabd4e53b2ce5e4c3d010c6df366331ef89498cea00f669b6f7b51e21cbc"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 36,
+     "acceptedMoves": 36,
+     "score": "220",
+     "status": "active",
+     "rngWords": [
+      1583621324,
+      1021784196,
+      1964449576,
+      2174316860
+     ],
+     "checksum": "f20938290028494713253265ff76a49cf8cf319f61201897bf9a11e1b4b3127e"
+    },
+    {
+     "direction": "right",
+     "changed": true,
+     "scoreDelta": "40",
+     "revision": 37,
+     "acceptedMoves": 37,
+     "score": "260",
+     "status": "active",
+     "rngWords": [
+      109292543,
+      295460336,
+      773756560,
+      3463733036
+     ],
+     "checksum": "cad8fda23fb83fa6f1b496dd73c1505d9536141b953df50adfb36f7d4025da60"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "8",
+     "revision": 38,
+     "acceptedMoves": 38,
+     "score": "268",
+     "status": "active",
+     "rngWords": [
+      2692493123,
+      4031517907,
+      3414968908,
+      3157459912
+     ],
+     "checksum": "2b254ca0e95d4ab333bcdae53003560e72745e0d11eb9bbf1114abb2d7d4ea70"
+    },
+    {
+     "direction": "right",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 39,
+     "acceptedMoves": 39,
+     "score": "268",
+     "status": "active",
+     "rngWords": [
+      2399638503,
+      2221312651,
+      1731806039,
+      626916120
+     ],
+     "checksum": "280a9c2c0a360b246cda8d2e1fcbb66b85f41979f84f1915b0b47ca6541cf954"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 40,
+     "acceptedMoves": 40,
+     "score": "272",
+     "status": "active",
+     "rngWords": [
+      2582127942,
+      1733263103,
+      3148042948,
+      2788791742
+     ],
+     "checksum": "da2aa20aed55bc0309e7430491c934384b7f816721cc8ecb08aa15f54b61de28"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "80",
+     "revision": 41,
+     "acceptedMoves": 41,
+     "score": "352",
+     "status": "active",
+     "rngWords": [
+      2864761201,
+      2704035576,
+      3963272581,
+      4030445458
+     ],
+     "checksum": "2633315781aaf8798bece960832e2fee16217fc55139f54613f5bc5922de69c5"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "16",
+     "revision": 42,
+     "acceptedMoves": 42,
+     "score": "368",
+     "status": "active",
+     "rngWords": [
+      2747947167,
+      40275683,
+      1237626095,
+      3947111104
+     ],
+     "checksum": "391d9329f9f84d293d38c8095157bd94288662b0a04fcc8215e695f41eb61d11"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 43,
+     "acceptedMoves": 43,
+     "score": "368",
+     "status": "active",
+     "rngWords": [
+      3085013350,
+      2241051743,
+      3171868876,
+      1261361128
+     ],
+     "checksum": "44f6ee320415bcb72ea62089e61c6f49a6b185820d39023d144ab9f2481353f5"
+    },
+    {
+     "direction": "down",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 44,
+     "acceptedMoves": 44,
+     "score": "368",
+     "status": "active",
+     "rngWords": [
+      494766417,
+      3686267022,
+      2907758459,
+      194773793
+     ],
+     "checksum": "7d8c8ce652f90a192a921b414866fbd5166f8032b52aecc62b0cc1e32c577032"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "8",
+     "revision": 45,
+     "acceptedMoves": 45,
+     "score": "376",
+     "status": "active",
+     "rngWords": [
+      4178682587,
+      2031130224,
+      668430548,
+      1048652194
+     ],
+     "checksum": "d4b6eb0199bcbd2d95f32b7f05e3201dbafefdf9fdc725e763ca512c515daa42"
+    },
+    {
+     "direction": "down",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 46,
+     "acceptedMoves": 46,
+     "score": "380",
+     "status": "active",
+     "rngWords": [
+      2494090058,
+      3871107961,
+      3991064838,
+      1186077009
+     ],
+     "checksum": "232fdfced4d95137b806b222648b95e4ca1d20ab2d3f2ec74073c6417729e3cf"
+    },
+    {
+     "direction": "left",
+     "changed": false,
+     "scoreDelta": "0",
+     "revision": 46,
+     "acceptedMoves": 46,
+     "score": "380",
+     "status": "active",
+     "rngWords": [
+      2494090058,
+      3871107961,
+      3991064838,
+      1186077009
+     ],
+     "checksum": "232fdfced4d95137b806b222648b95e4ca1d20ab2d3f2ec74073c6417729e3cf"
+    },
+    {
+     "direction": "right",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 47,
+     "acceptedMoves": 47,
+     "score": "380",
+     "status": "active",
+     "rngWords": [
+      3636563287,
+      2865504283,
+      3654826798,
+      966897507
+     ],
+     "checksum": "c015825e1233f35443707134ce70f99885e399137247301911120019806bb781"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 48,
+     "acceptedMoves": 48,
+     "score": "380",
+     "status": "active",
+     "rngWords": [
+      2348962006,
+      2032145460,
+      2044282454,
+      1922551357
+     ],
+     "checksum": "8bfaaf70c698e966029c72a1e93896b4c641bf913f96f3492d8f9ce865f8aaeb"
+    },
+    {
+     "direction": "right",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 49,
+     "acceptedMoves": 49,
+     "score": "384",
+     "status": "active",
+     "rngWords": [
+      3047079990,
+      3200120555,
+      3292765279,
+      1515669905
+     ],
+     "checksum": "75aa60aa4453d6ed414664dd0e52b5c96c714023e45e06182baca115821e37e8"
+    },
+    {
+     "direction": "down",
+     "changed": true,
+     "scoreDelta": "8",
+     "revision": 50,
+     "acceptedMoves": 50,
+     "score": "392",
+     "status": "active",
+     "rngWords": [
+      3421438697,
+      2485411751,
+      2584867109,
+      3689753812
+     ],
+     "checksum": "d45cf5af9a58b05a8d41d15760c1204855e704a38ee08782d93e4a6fb9aa31ec"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 51,
+     "acceptedMoves": 51,
+     "score": "396",
+     "status": "active",
+     "rngWords": [
+      174540687,
+      1488805949,
+      675224150,
+      162573426
+     ],
+     "checksum": "d1c113c86a0f629f1e1d5182b1ff7a34e85445aa54a23cebff73b72726665981"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "12",
+     "revision": 52,
+     "acceptedMoves": 52,
+     "score": "408",
+     "status": "active",
+     "rngWords": [
+      1340984492,
+      2031587837,
+      3381224473,
+      976969892
+     ],
+     "checksum": "a728ca02839bc328f6b5ef3b6c4e270fd9eb4287f6b05b94d40f2b03ca0a8a8d"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "20",
+     "revision": 53,
+     "acceptedMoves": 53,
+     "score": "428",
+     "status": "active",
+     "rngWords": [
+      2486750884,
+      1526027784,
+      1140129600,
+      3483012295
+     ],
+     "checksum": "19061aba8902878390c8575347a90fe972cf19df4d900135bc0d9b623f3ba1a9"
+    },
+    {
+     "direction": "right",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 54,
+     "acceptedMoves": 54,
+     "score": "432",
+     "status": "active",
+     "rngWords": [
+      4072148780,
+      2970505827,
+      1324936591,
+      2027569055
+     ],
+     "checksum": "d73b8567d90fdeac1c843dc3532915d845d7cfb9c31fcb4cc3caf83e8db914ff"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "32",
+     "revision": 55,
+     "acceptedMoves": 55,
+     "score": "464",
+     "status": "active",
+     "rngWords": [
+      2504864862,
+      2529621683,
+      115983987,
+      179598705
+     ],
+     "checksum": "e01683258876da25c3030154d9815effb581985000b224e51dfbedebaeaa74e9"
+    },
+    {
+     "direction": "down",
+     "changed": true,
+     "scoreDelta": "0",
+     "revision": 56,
+     "acceptedMoves": 56,
+     "score": "464",
+     "status": "active",
+     "rngWords": [
+      2554570721,
+      303310639,
+      3548323761,
+      3766742155
+     ],
+     "checksum": "8fe8e4fcf70b66a7a9a788fd29827be360761c9af30d73c5248f4945a213cb50"
+    },
+    {
+     "direction": "left",
+     "changed": true,
+     "scoreDelta": "4",
+     "revision": 57,
+     "acceptedMoves": 57,
+     "score": "468",
+     "status": "active",
+     "rngWords": [
+      2376193198,
+      1351488874,
+      1486386197,
+      2915524411
+     ],
+     "checksum": "751e11a1e0fee3d2a92b1317f146d607c5866dd317ac4944a5efd8a55b5f33c0"
+    },
+    {
+     "direction": "up",
+     "changed": true,
+     "scoreDelta": "8",
+     "revision": 58,
+     "acceptedMoves": 58,
+     "score": "476",
+     "status": "active",
+     "rngWords": [
+      3205342404,
+      1011638165,
+      3599779908,
+      701619839
+     ],
+     "checksum": "c823da0a68bd05a667925486310f5b22c39a3d4cae14fb8de21cc660fa50268c"
+    }
+   ],
+   "finalChecksum": "c823da0a68bd05a667925486310f5b22c39a3d4cae14fb8de21cc660fa50268c"
+  }
+ ]
+}

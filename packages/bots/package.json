@@ -1,0 +1,10 @@
+{
+  "name": "@2048/bots",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": { "typecheck": "tsc -p tsconfig.json" },
+  "dependencies": { "@2048/contracts": "*", "@2048/engine": "*" },
+  "devDependencies": {}
+}

@@ -1,0 +1,8 @@
+{
+  "name": "@2048/contracts",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts", "./golden/*": "./golden/*" },
+  "scripts": { "typecheck": "tsc -p tsconfig.json" }
+}
