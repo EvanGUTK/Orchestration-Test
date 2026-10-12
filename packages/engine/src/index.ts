@@ -1,2 +1,11 @@
-// M0 skeleton created by chief; owned by the engine lane from CONTRACT-001 onward.
-export const PACKAGE_NAME = "@g2048/engine";
+// @g2048/engine — pure, deterministic 2048 Infinite engine (CONTRACT-001 / v1).
+export { EngineError, isEngineError } from "./errors.js";
+export { addDecimal, compareDecimal, isDecimal, isExponent, MAX_EXPONENT, pow2Decimal } from "./decimal.js";
+export { canMove, isDirection, isGameOver, legalMoves, maxExponent, slide, validateBoard } from "./slide.js";
+export { sha256, sha256Hex, toHex, utf8Bytes } from "./sha256.js";
+export { deriveRandomState, nextUint32, uniform, validateRandomState, wordsFromDigest } from "./rng.js";
+export { MAX_SCORE_DIGITS, validateGameState, validateRuleset, VERSION_ID_PATTERN } from "./state.js";
+export { applyMove, forfeit, MAX_SEED_LENGTH, newGame, spawn } from "./game.js";
+export { canonicalJson, checksum, deserialize, MAX_STATE_JSON_LENGTH, serialize } from "./serialize.js";
+export { replay, verifyReplay } from "./replay.js";
+export type { VerifyReplayResult } from "./replay.js";
