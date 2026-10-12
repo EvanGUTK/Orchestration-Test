@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "status": "not-run",
+  "experiment": null,
+  "runId": null,
+  "track": "native-or-assisted",
+  "baselineSha": null,
+  "startingSha": null,
+  "finalSha": null,
+  "softwareVersion": null,
+  "checkoutMode": null,
+  "roles": [],
+  "hardware": {"os": null, "cpu": null, "ramGiB": null, "gpu": null},
+  "budget": {"minutes": null, "providerCostLimit": null, "currency": null},
+  "actual": {"minutes": null, "providerCost": null, "costKnown": false},
+  "startedAt": null,
+  "endedAt": null,
+  "terminationReason": null,
+  "metrics": {"tasksAssigned": 0, "tasksAcked": 0, "tasksVerified": 0, "humanInterventions": 0, "conflicts": 0, "recoveries": 0},
+  "acceptanceEvidence": [],
+  "notes": "Fill before dispatch. Secrets and private account data are forbidden."
+}

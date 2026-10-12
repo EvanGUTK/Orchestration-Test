@@ -1,0 +1,27 @@
+name: Repository checks
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  harness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate shared repository
+        run: python3 tools/check_repo.py
+      - name: Test lab guards, mailbox, and score validation
+        run: python3 -m unittest discover -s tests/harness -v
+      - name: Reject PRs aimed at the frozen baseline
+        if: github.event_name == 'pull_request'
+        env:
+          TARGET_BRANCH: ${{ github.base_ref }}
+        run: |
+          case "$TARGET_BRANCH" in
+            main|master) echo "Experiment PRs may not target main/master."; exit 1 ;;
+          esac

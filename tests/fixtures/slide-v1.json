@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "encoding": "null=empty; decimal exponent string e means tile 2^e; score is decimal string",
+  "operation": "slide without spawn",
+  "vectors": [
+    {"id":"quad-left","size":4,"direction":"left","before":["1","1","1","1",null,null,null,null,null,null,null,null,null,null,null,null],"after":["2","2",null,null,null,null,null,null,null,null,null,null,null,null,null,null],"scoreDelta":"8","changed":true},
+    {"id":"triple-left","size":4,"direction":"left","before":["1","1","1",null,null,null,null,null,null,null,null,null,null,null,null,null],"after":["2","1",null,null,null,null,null,null,null,null,null,null,null,null,null,null],"scoreDelta":"4","changed":true},
+    {"id":"no-double-merge","size":4,"direction":"left","before":["1","1","2",null,null,null,null,null,null,null,null,null,null,null,null,null],"after":["2","2",null,null,null,null,null,null,null,null,null,null,null,null,null,null],"scoreDelta":"4","changed":true},
+    {"id":"compress-gap","size":4,"direction":"left","before":["1",null,"1",null,null,null,null,null,null,null,null,null,null,null,null,null],"after":["2",null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],"scoreDelta":"4","changed":true},
+    {"id":"right-merge","size":4,"direction":"right","before":["1","1","2",null,null,null,null,null,null,null,null,null,null,null,null,null],"after":[null,null,"2","2",null,null,null,null,null,null,null,null,null,null,null,null],"scoreDelta":"4","changed":true},
+    {"id":"up-merge","size":4,"direction":"up","before":["1",null,null,null,"1",null,null,null,"1",null,null,null,null,null,null,null],"after":["2",null,null,null,"1",null,null,null,null,null,null,null,null,null,null,null],"scoreDelta":"4","changed":true},
+    {"id":"down-merge","size":4,"direction":"down","before":["1",null,null,null,"1",null,null,null,"1",null,null,null,null,null,null,null],"after":[null,null,null,null,null,null,null,null,"1",null,null,null,"2",null,null,null],"scoreDelta":"4","changed":true},
+    {"id":"no-op","size":4,"direction":"left","before":["1","2",null,null,null,null,null,null,null,null,null,null,null,null,null,null],"after":["1","2",null,null,null,null,null,null,null,null,null,null,null,null,null,null],"scoreDelta":"0","changed":false},
+    {"id":"empty","size":4,"direction":"up","before":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],"after":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],"scoreDelta":"0","changed":false},
+    {"id":"above-safe-integer","size":4,"direction":"left","before":["53","53",null,null,null,null,null,null,null,null,null,null,null,null,null,null],"after":["54",null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],"scoreDelta":"18014398509481984","changed":true},
+    {"id":"huge-exponent","size":4,"direction":"left","before":["255","255",null,null,null,null,null,null,null,null,null,null,null,null,null,null],"after":["256",null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],"scoreDelta":"115792089237316195423570985008687907853269984665640564039457584007913129639936","changed":true}
+  ]
+}

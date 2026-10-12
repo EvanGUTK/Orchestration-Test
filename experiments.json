@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "roles": ["chief", "engine", "backend", "frontend", "competition", "quality"],
+  "experiments": {
+    "conductor": {"branch": "experiment/conductor", "webPort": 5411, "apiPort": 5511},
+    "harmony-desktop": {"branch": "experiment/harmony-desktop", "webPort": 5412, "apiPort": 5512},
+    "gas-town": {"branch": "experiment/gas-town", "webPort": 5413, "apiPort": 5513},
+    "dmux": {"branch": "experiment/dmux", "webPort": 5414, "apiPort": 5514},
+    "herdr": {"branch": "experiment/herdr", "webPort": 5415, "apiPort": 5515},
+    "bridgemind": {"branch": "experiment/bridgemind", "webPort": 5416, "apiPort": 5516},
+    "native-claude-teams": {"branch": "experiment/native-claude-teams", "webPort": 5417, "apiPort": 5517},
+    "paneflow": {"branch": "experiment/paneflow", "webPort": 5418, "apiPort": 5518}
+  }
+}

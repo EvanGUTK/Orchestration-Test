@@ -1,0 +1,314 @@
+{
+  "schemaVersion": 1,
+  "maxPoints": 1000,
+  "ratingScale": {
+    "0": "Absent/unrun/no evidence",
+    "1": "Narrow partial",
+    "2": "Core path with substantial gaps",
+    "3": "Nearly complete with minor gaps",
+    "4": "Complete with independent evidence"
+  },
+  "disqualifiers": [
+    "baseline_modified",
+    "prohibited_main_action",
+    "cross_experiment_copy",
+    "benchmark_tampered",
+    "cloud_game_dependency"
+  ],
+  "categories": [
+    {
+      "id": "engine",
+      "label": "Engine / exact arithmetic",
+      "weight": 170,
+      "items": [
+        {
+          "id": "engine.merge",
+          "weight": 60,
+          "requirement": "ENG-01/02/07: immutable directional moves, one-merge semantics, game-over"
+        },
+        {
+          "id": "engine.precision",
+          "weight": 40,
+          "requirement": "ENG-05/09: exact tile/score values through all layers, recoverable resource limits"
+        },
+        {
+          "id": "engine.random",
+          "weight": 40,
+          "requirement": "ENG-03/04/10: deterministic seeded RNG, serialization, no-op behavior"
+        },
+        {
+          "id": "engine.invariants",
+          "weight": 30,
+          "requirement": "ENG-06/08: keep playing, mass/score invariants and fuzz coverage"
+        }
+      ]
+    },
+    {
+      "id": "persistence",
+      "label": "Persistence / durability",
+      "weight": 100,
+      "items": [
+        {
+          "id": "persistence.schema",
+          "weight": 25,
+          "requirement": "DB-01: migrations, constraints, indexes, tested upgrade path"
+        },
+        {
+          "id": "persistence.atomic",
+          "weight": 35,
+          "requirement": "DB-02/03/04/07: atomic moves, revisions, idempotency, restart integrity"
+        },
+        {
+          "id": "persistence.backup",
+          "weight": 25,
+          "requirement": "DB-05/06: WAL-safe backup/restore, corruption/disk-full recovery"
+        },
+        {
+          "id": "persistence.isolation",
+          "weight": 15,
+          "requirement": "DB-08: exact ordering, private test databases and one game writer"
+        }
+      ]
+    },
+    {
+      "id": "accounts",
+      "label": "Accounts / security",
+      "weight": 80,
+      "items": [
+        {
+          "id": "accounts.flows",
+          "weight": 25,
+          "requirement": "ACC-01/02: local account lifecycle and input normalization"
+        },
+        {
+          "id": "accounts.sessions",
+          "weight": 25,
+          "requirement": "ACC-01/03: Argon2id, hashed sessions, logout/revocation, ownership"
+        },
+        {
+          "id": "accounts.request",
+          "weight": 20,
+          "requirement": "ACC-04: Origin/Host/CSRF/socket validation and rate limits"
+        },
+        {
+          "id": "accounts.privacy",
+          "weight": 10,
+          "requirement": "ACC-05: credential-free export/deletion and private logs"
+        }
+      ]
+    },
+    {
+      "id": "ui",
+      "label": "UI / accessibility",
+      "weight": 100,
+      "items": [
+        {
+          "id": "ui.responsive",
+          "weight": 25,
+          "requirement": "UI-01: polished responsive layouts and touch play"
+        },
+        {
+          "id": "ui.accessible",
+          "weight": 35,
+          "requirement": "UI-02/03: keyboard, focus, screen readers, reduced motion, contrast"
+        },
+        {
+          "id": "ui.input",
+          "weight": 25,
+          "requirement": "UI-04: input/animation correctness under rapid commands"
+        },
+        {
+          "id": "ui.states",
+          "weight": 15,
+          "requirement": "UI-05: settings and truthful loading/error/reconnect states"
+        }
+      ]
+    },
+    {
+      "id": "solo",
+      "label": "Solo / practice",
+      "weight": 70,
+      "items": [
+        {
+          "id": "solo.classic",
+          "weight": 30,
+          "requirement": "SOLO-01: guest/account classic, correct new game and durable resume"
+        },
+        {
+          "id": "solo.custom",
+          "weight": 20,
+          "requirement": "SOLO-02: 3x3-8x8 custom practice and seed/rule isolation"
+        },
+        {
+          "id": "solo.undo",
+          "weight": 20,
+          "requirement": "SOLO-03: casual undo restores all state and replay path"
+        }
+      ]
+    },
+    {
+      "id": "ranked",
+      "label": "Ranked / leaderboards",
+      "weight": 80,
+      "items": [
+        {
+          "id": "ranked.challenge",
+          "weight": 30,
+          "requirement": "RANK-01/02: official attempt policy, no undo, rules/move cap"
+        },
+        {
+          "id": "ranked.boards",
+          "weight": 25,
+          "requirement": "RANK-03/DB-08: separated season/ruleset boards and exact stable pagination"
+        },
+        {
+          "id": "ranked.authority",
+          "weight": 25,
+          "requirement": "RANK-04: backend derives score and rejects forged results"
+        }
+      ]
+    },
+    {
+      "id": "bots",
+      "label": "Bots",
+      "weight": 70,
+      "items": [
+        {
+          "id": "bots.strategies",
+          "weight": 30,
+          "requirement": "BOT-01/04: four deterministic algorithms and repeatable bot league"
+        },
+        {
+          "id": "bots.budget",
+          "weight": 25,
+          "requirement": "BOT-02: bounded cancellable workers, pause/step/fallback, responsive API"
+        },
+        {
+          "id": "bots.fairness",
+          "weight": 15,
+          "requirement": "BOT-03: separate randomness, no future spawn peeking or cloud calls"
+        }
+      ]
+    },
+    {
+      "id": "duels",
+      "label": "Duels / ratings",
+      "weight": 100,
+      "items": [
+        {
+          "id": "duels.lobby",
+          "weight": 25,
+          "requirement": "DUEL-01: two local identities, seat authority, same-seed split boards"
+        },
+        {
+          "id": "duels.outcome",
+          "weight": 25,
+          "requirement": "DUEL-02/03: terminal seat rules, ties/forfeits, move cap"
+        },
+        {
+          "id": "duels.rating",
+          "weight": 30,
+          "requirement": "DUEL-04/05: transactional exactly-once Elo, bot/human separation"
+        },
+        {
+          "id": "duels.reconnect",
+          "weight": 20,
+          "requirement": "DUEL-06: durable reconnect and missing-event catch-up"
+        }
+      ]
+    },
+    {
+      "id": "replay",
+      "label": "Replay / export",
+      "weight": 60,
+      "items": [
+        {
+          "id": "replay.verify",
+          "weight": 25,
+          "requirement": "REP-01: exact versioned replay/checksums and snapshots"
+        },
+        {
+          "id": "replay.controls",
+          "weight": 20,
+          "requirement": "REP-01: step/seek/pause/speed with correct rendered state"
+        },
+        {
+          "id": "replay.imports",
+          "weight": 15,
+          "requirement": "REP-02/03: safe versioned import/export with exact values"
+        }
+      ]
+    },
+    {
+      "id": "performance",
+      "label": "Performance / stress",
+      "weight": 70,
+      "items": [
+        {
+          "id": "performance.latency",
+          "weight": 20,
+          "requirement": "OPS-02/03: measured engine and concurrent command latency/throughput"
+        },
+        {
+          "id": "performance.scale",
+          "weight": 20,
+          "requirement": "OPS-04/05: large leaderboard/replay performance and bounded memory"
+        },
+        {
+          "id": "performance.soak",
+          "weight": 15,
+          "requirement": "OPS-06/07: concurrent bots and measured memory soak"
+        },
+        {
+          "id": "performance.faults",
+          "weight": 15,
+          "requirement": "OPS-08/09/10: kill/restart, slow consumers, disk/migration recovery"
+        }
+      ]
+    },
+    {
+      "id": "delivery",
+      "label": "Verification / delivery",
+      "weight": 60,
+      "items": [
+        {
+          "id": "delivery.clean",
+          "weight": 20,
+          "requirement": "Clean checkout actual install/build/start/check commands and final SHA"
+        },
+        {
+          "id": "delivery.offline",
+          "weight": 20,
+          "requirement": "OPS-01: built product runs entirely offline with bundled assets"
+        },
+        {
+          "id": "delivery.evidence",
+          "weight": 20,
+          "requirement": "Independent acceptance evidence, honest report, redacted reproducible artifacts"
+        }
+      ]
+    },
+    {
+      "id": "orchestration",
+      "label": "Orchestration / recovery",
+      "weight": 40,
+      "items": [
+        {
+          "id": "orchestration.handoffs",
+          "weight": 15,
+          "requirement": "Five worker ACKs, task ownership, dependency question/answer round trip"
+        },
+        {
+          "id": "orchestration.integration",
+          "weight": 15,
+          "requirement": "Reviewed serial integration, conflict/failure correction, unchanged main"
+        },
+        {
+          "id": "orchestration.recovery",
+          "weight": 10,
+          "requirement": "Interrupted worker resumes from own run summary; bounded communication and interventions recorded"
+        }
+      ]
+    }
+  ]
+}

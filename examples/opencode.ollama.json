@@ -1,0 +1,13 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "instructions": ["AGENTS.md", "BRANCH_RULES.md"],
+  "model": "ollama/qwen3.5",
+  "provider": {
+    "ollama": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Local Ollama",
+      "options": {"baseURL": "http://127.0.0.1:11434/v1"},
+      "models": {"qwen3.5": {"name": "qwen3.5"}}
+    }
+  }
+}
