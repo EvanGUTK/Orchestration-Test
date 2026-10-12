@@ -81,9 +81,13 @@ async function promptHidden(prompt: string): Promise<string> {
   }
 }
 
-/** First line of piped stdin, or a no-echo prompt (twice) on a terminal. */
+/** One piped line (trailing CR/LF removed, spaces kept), or a no-echo prompt (twice) on a terminal. */
 async function readNewPassword(): Promise<string> {
-  if (!process.stdin.isTTY) return (await readStdin()).split(/\r?\n/)[0] ?? "";
+  if (!process.stdin.isTTY) {
+    const piped = (await readStdin()).replace(/[\r\n]+$/, "");
+    if (/[\r\n]/.test(piped)) throw new Error("Pipe exactly one line containing the new password");
+    return piped;
+  }
   const first = await promptHidden("New password: ");
   const second = await promptHidden("Repeat new password: ");
   if (first !== second) throw new Error("Passwords do not match");

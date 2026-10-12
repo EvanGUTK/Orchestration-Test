@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
-import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -529,5 +529,71 @@ describe("DB-05 backup and validated restore", () => {
     expect(existsSync(lockPathFor(dbPath))).toBe(false);
     writeFileSync(lockPathFor(dbPath), JSON.stringify({ pid: 2_147_483_000, startedAt: TEST_NOW }));
     await expect(restoreDatabase(backupPath, dbPath)).resolves.toMatchObject({ restoredFrom: backupPath });
+  });
+});
+
+describe("SEC-FIX-001 lock and restore hardening", () => {
+  it("M4 boots on a fresh machine where the data directory does not exist yet", async () => {
+    const fresh = join(temp.dir, "not", "yet", "created", "game.sqlite3");
+    const release = acquireDatabaseLock(fresh);
+    const { db, applied } = await prepareDatabase(fresh);
+    track(db);
+    expect(applied).toEqual([1]);
+    expect(existsSync(lockPathFor(fresh))).toBe(true);
+    release();
+    expect(existsSync(lockPathFor(fresh))).toBe(false);
+  });
+
+  it("L4 releases its own lock after restoring; L6 refuses -wal sidecars and modified schemas", async () => {
+    const { db } = await prepareDatabase(dbPath);
+    track(db);
+    insertTestUser(db, "original");
+    const good = join(temp.dir, "good.sqlite3");
+    await backupDatabase(db, good);
+    db.close();
+
+    writeFileSync(`${good}-wal`, "pretend live WAL");
+    await expect(restoreDatabase(good, dbPath)).rejects.toThrow(/-wal exists/);
+    rmSync(`${good}-wal`);
+
+    const altered = join(temp.dir, "altered.sqlite3");
+    writeFileSync(altered, readFileSync(good));
+    const alt = new DatabaseSync(altered);
+    alt.exec("DROP TRIGGER rating_events_human_only");
+    alt.close();
+    await expect(restoreDatabase(altered, dbPath)).rejects.toThrow(/schema does not match/);
+
+    await expect(restoreDatabase(good, dbPath)).resolves.toMatchObject({ restoredFrom: good });
+    expect(existsSync(lockPathFor(dbPath))).toBe(false);
+  });
+});
+
+describe("SEC-FIX-001 L6 schema comparison", () => {
+  it("tolerates extra data tables but rejects extra triggers and edited objects", async () => {
+    const { db } = await prepareDatabase(dbPath);
+    track(db);
+    const base = join(temp.dir, "base.sqlite3");
+    await backupDatabase(db, base);
+    db.close();
+    const variant = (name: string, sql: string): string => {
+      const path = join(temp.dir, `${name}.sqlite3`);
+      writeFileSync(path, readFileSync(base));
+      const v = new DatabaseSync(path);
+      v.exec(sql);
+      v.close();
+      return path;
+    };
+    const extraTable = variant("extra-table", "CREATE TABLE notes (x TEXT)");
+    await expect(restoreDatabase(extraTable, dbPath)).resolves.toMatchObject({ restoredFrom: extraTable });
+    const trigger = variant(
+      "extra-trigger",
+      "CREATE TRIGGER sneaky AFTER INSERT ON users BEGIN UPDATE users SET display_name = 'x'; END",
+    );
+    await expect(restoreDatabase(trigger, dbPath)).rejects.toThrow(/unexpected trigger sneaky/);
+    const edited = variant(
+      "edited",
+      "DROP INDEX games_casual_standings; CREATE INDEX games_casual_standings ON games(score)",
+    );
+    await expect(restoreDatabase(edited, dbPath)).rejects.toThrow(/modified index games_casual_standings/);
   });
 });

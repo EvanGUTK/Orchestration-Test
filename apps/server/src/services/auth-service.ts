@@ -20,8 +20,8 @@ import type { PasswordHasher } from "../security/passwords.js";
 import { csrfTokenFor, hashToken, isWellFormedToken, newSessionToken } from "../security/tokens.js";
 import type { ServiceContext } from "./context.js";
 import { nowIso } from "./context.js";
-import type { GuestIdentity, Identity, UserIdentity } from "./identity.js";
-import { FailureRateLimiter } from "./rate-limiter.js";
+import type { AnonymousIdentity, GuestIdentity, Identity, UserIdentity } from "./identity.js";
+import { FailureRateLimiter, type RateLimitDecision } from "./rate-limiter.js";
 
 /** ASCII-only lowercase; non-ASCII characters are left as-is and then fail USERNAME_PATTERN. */
 export function normalizeUsername(raw: string): string {
@@ -47,7 +47,22 @@ export type AuthServiceOptions = {
   loginAttemptsPerWindow?: number;
   loginWindowMs?: number;
   sessionTtlMs?: number;
+  /** Registrations per client per window (default 10). */
+  registrationsPerWindow?: number;
+  /** Guest identities created per client per window (default 30). */
+  guestsPerWindow?: number;
 };
+
+function rateLimited(decision: RateLimitDecision, message: string): AppError | null {
+  if (decision.allowed) return null;
+  const seconds = Math.ceil(decision.retryAfterMs / 1000);
+  return new AppError(
+    "RATE_LIMITED",
+    message,
+    { retryAfterSeconds: seconds },
+    { "retry-after": String(seconds) },
+  );
+}
 
 export class AuthService {
   readonly #ctx: ServiceContext;
@@ -55,6 +70,8 @@ export class AuthService {
   readonly #sessionTtlMs: number;
   readonly #perAccount: FailureRateLimiter;
   readonly #perClient: FailureRateLimiter;
+  readonly #registrations: FailureRateLimiter;
+  readonly #guestCreation: FailureRateLimiter;
 
   constructor(ctx: ServiceContext, options: AuthServiceOptions) {
     this.#ctx = ctx;
@@ -66,6 +83,17 @@ export class AuthService {
     this.#perAccount = new FailureRateLimiter({ limit, windowMs, now });
     // All local clients share 127.0.0.1, so the per-client cap is looser; it bounds username spraying.
     this.#perClient = new FailureRateLimiter({ limit: limit * 4, windowMs, now });
+    this.#registrations = new FailureRateLimiter({
+      limit: options.registrationsPerWindow ?? 10,
+      windowMs,
+      now,
+    });
+    this.#guestCreation = new FailureRateLimiter({ limit: options.guestsPerWindow ?? 30, windowMs, now });
+  }
+
+  /** Eagerly prepares the dummy hash so unknown-user timing matches from the first request. */
+  async warmup(): Promise<void> {
+    await this.#hasher.warmup();
   }
 
   // ---------- identity resolution ----------
@@ -93,8 +121,19 @@ export class AuthService {
           csrfToken: csrfTokenFor(gidCookie),
         };
       }
+      return { kind: "anonymous", pendingToken: gidCookie, csrfToken: csrfTokenFor(gidCookie) };
     }
-    return { kind: "anonymous" };
+    return { kind: "anonymous", pendingToken: null, csrfToken: null };
+  }
+
+  /** A fresh unregistered `gid` token for an anonymous caller; nothing is written to the database. */
+  issuePendingGuestToken(): { token: string; csrfToken: string; expiresAt: Date } {
+    const token = newSessionToken();
+    return {
+      token,
+      csrfToken: csrfTokenFor(token),
+      expiresAt: new Date(this.#ctx.clock().getTime() + this.#sessionTtlMs),
+    };
   }
 
   #newSession(): { token: string; tokenHash: string; expiresAt: Date } {
@@ -106,28 +145,50 @@ export class AuthService {
     };
   }
 
-  /** Creates a separate guest identity with its own opaque session. */
-  async createGuest(): Promise<GuestIdentity & { expiresAt: Date }> {
+  /**
+   * Creates the guest identity for an anonymous caller, adopting its pending `gid` token so the
+   * CSRF token it already holds stays valid. Throttled per client. If the pending token was used
+   * before (an expired/revoked row exists) a fresh token is minted instead.
+   */
+  async createGuest(
+    anonymous: AnonymousIdentity,
+    clientKey: string,
+  ): Promise<GuestIdentity & { expiresAt: Date; tokenChanged: boolean }> {
+    const limited = rateLimited(
+      this.#guestCreation.reserve(`guest:${clientKey}`),
+      "Too many new guest sessions; try again later",
+    );
+    if (limited) throw limited;
     const guestId = randomUUID();
-    const session = this.#newSession();
-    await this.#ctx.writer.run((db) => {
+    const expiresAt = new Date(this.#ctx.clock().getTime() + this.#sessionTtlMs);
+    let token = anonymous.pendingToken ?? newSessionToken();
+    const tokenHash = await this.#ctx.writer.run((db) => {
       const now = nowIso(this.#ctx);
+      let hash = hashToken(token);
+      const reused =
+        db.prepare("SELECT 1 AS used FROM sessions WHERE token_hash = ?").get(hash) !== undefined;
+      if (reused) {
+        token = newSessionToken();
+        hash = hashToken(token);
+      }
       guestsRepo.insert(db, guestId, now);
       sessionsRepo.insert(db, {
-        tokenHash: session.tokenHash,
+        tokenHash: hash,
         kind: "guest",
         guestId,
         now,
-        expiresAt: session.expiresAt.toISOString(),
+        expiresAt: expiresAt.toISOString(),
       });
+      return hash;
     });
     return {
       kind: "guest",
       guestId,
-      sessionToken: session.token,
-      tokenHash: session.tokenHash,
-      csrfToken: csrfTokenFor(session.token),
-      expiresAt: session.expiresAt,
+      sessionToken: token,
+      tokenHash,
+      csrfToken: csrfTokenFor(token),
+      expiresAt,
+      tokenChanged: token !== anonymous.pendingToken,
     };
   }
 
@@ -135,6 +196,7 @@ export class AuthService {
 
   async register(
     input: { username: string; displayName: string; password: string },
+    clientKey: string,
     replacedSessionHash: string | null,
   ): Promise<{ user: UserRow; session: NewSession }> {
     const username = normalizeUsername(input.username);
@@ -144,6 +206,11 @@ export class AuthService {
       });
     }
     checkDisplayName(input.displayName);
+    const limited = rateLimited(
+      this.#registrations.reserve(`register:${clientKey}`),
+      "Too many new accounts; try again later",
+    );
+    if (limited) throw limited;
     const passwordHash = await this.#hasher.hash(input.password);
     const id = randomUUID();
     const session = this.#newSession();
@@ -186,34 +253,35 @@ export class AuthService {
     const username = normalizeUsername(input.username);
     const accountKey = `login:${username}`;
     const clientLimitKey = `login-client:${clientKey}`;
-    for (const decision of [this.#perAccount.check(accountKey), this.#perClient.check(clientLimitKey)]) {
-      if (!decision.allowed) {
-        const seconds = Math.ceil(decision.retryAfterMs / 1000);
-        throw new AppError(
-          "RATE_LIMITED",
-          "Too many login attempts; try again later",
-          { retryAfterSeconds: seconds },
-          { "retry-after": String(seconds) },
-        );
-      }
+    // Reserve the attempt BEFORE the async verification so parallel requests cannot exceed the limit.
+    const accountDecision = this.#perAccount.reserve(accountKey);
+    const accountLimited = rateLimited(accountDecision, "Too many login attempts; try again later");
+    if (accountLimited) throw accountLimited;
+    const clientLimited = rateLimited(
+      this.#perClient.reserve(clientLimitKey),
+      "Too many login attempts; try again later",
+    );
+    if (clientLimited) {
+      this.#perAccount.release(accountKey);
+      throw clientLimited;
     }
+
     const user = USERNAME_PATTERN.test(username) ? usersRepo.findByUsername(this.#ctx.db, username) : null;
     const ok = user
       ? await this.#hasher.verify(input.password, user.passwordHash)
       : await this.#hasher.verifyDummy(input.password);
-    if (!user || !ok) {
-      this.#perAccount.fail(accountKey);
-      this.#perClient.fail(clientLimitKey);
-      throw new AppError("UNAUTHENTICATED", GENERIC_LOGIN_FAILURE);
-    }
-    this.#perAccount.reset(accountKey);
+    if (!user || !ok) throw new AppError("UNAUTHENTICATED", GENERIC_LOGIN_FAILURE);
+
     const upgraded = this.#hasher.needsRehash(user.passwordHash)
       ? await this.#hasher.hash(input.password)
       : null;
     const session = this.#newSession();
-    await this.#ctx.writer.run((db) => {
+    const committed = await this.#ctx.writer.run((db) => {
       const now = nowIso(this.#ctx);
-      if (upgraded) usersRepo.updatePasswordHash(db, user.id, upgraded, now);
+      // The password may have changed while we were hashing: never open a session (or write a
+      // rehash) for credentials that are no longer current.
+      if (usersRepo.currentPasswordHash(db, user.id) !== user.passwordHash) return false;
+      if (upgraded) usersRepo.updatePasswordHashIfUnchanged(db, user.id, user.passwordHash, upgraded, now);
       if (replacedSessionHash) sessionsRepo.revoke(db, replacedSessionHash, now);
       sessionsRepo.insert(db, {
         tokenHash: session.tokenHash,
@@ -222,7 +290,11 @@ export class AuthService {
         now,
         expiresAt: session.expiresAt.toISOString(),
       });
+      return true;
     });
+    if (!committed) throw new AppError("UNAUTHENTICATED", GENERIC_LOGIN_FAILURE);
+    this.#perAccount.reset(accountKey);
+    this.#perClient.release(clientLimitKey);
     return { user, session: { token: session.token, expiresAt: session.expiresAt } };
   }
 
@@ -241,28 +313,37 @@ export class AuthService {
     input: { currentPassword: string; newPassword: string },
   ): Promise<number> {
     const key = `password:${identity.user.id}`;
-    const decision = this.#perAccount.check(key);
-    if (!decision.allowed) {
-      const seconds = Math.ceil(decision.retryAfterMs / 1000);
-      throw new AppError(
-        "RATE_LIMITED",
-        "Too many password attempts; try again later",
-        { retryAfterSeconds: seconds },
-        { "retry-after": String(seconds) },
-      );
-    }
+    const limited = rateLimited(this.#perAccount.reserve(key), "Too many password attempts; try again later");
+    if (limited) throw limited;
     const current = usersRepo.findById(this.#ctx.db, identity.user.id);
     if (!current || !(await this.#hasher.verify(input.currentPassword, current.passwordHash))) {
-      this.#perAccount.fail(key);
       throw new AppError("VALIDATION_ERROR", "Current password is incorrect", { field: "currentPassword" });
     }
-    this.#perAccount.reset(key);
     const passwordHash = await this.#hasher.hash(input.newPassword);
-    return this.#ctx.writer.run((db) => {
+    const revoked = await this.#ctx.writer.run((db) => {
       const now = nowIso(this.#ctx);
-      usersRepo.updatePasswordHash(db, identity.user.id, passwordHash, now);
+      const stillActive = sessionsRepo.findActive(db, identity.tokenHash, "account", now) !== null;
+      if (!stillActive) return null;
+      if (
+        !usersRepo.updatePasswordHashIfUnchanged(
+          db,
+          identity.user.id,
+          current.passwordHash,
+          passwordHash,
+          now,
+        )
+      ) {
+        return null;
+      }
       return sessionsRepo.revokeAllForUser(db, identity.user.id, now, identity.tokenHash);
     });
+    if (revoked === null) {
+      throw new AppError("VALIDATION_ERROR", "The password was changed concurrently; sign in again", {
+        field: "currentPassword",
+      });
+    }
+    this.#perAccount.reset(key);
+    return revoked;
   }
 
   /** Local owner reset (CLI only): sets a new password and revokes every session of the account. */
@@ -277,6 +358,17 @@ export class AuthService {
       return sessionsRepo.revokeAllForUser(db, user.id, now);
     });
     return { revokedSessions };
+  }
+
+  // ---------- housekeeping ----------
+
+  /** Deletes expired/revoked sessions and guests left with no session and no games. */
+  async purgeInactive(): Promise<{ sessions: number; guests: number }> {
+    return this.#ctx.writer.run((db) => {
+      const sessions = sessionsRepo.purgeInactive(db, nowIso(this.#ctx));
+      const guests = guestsRepo.purgeOrphans(db);
+      return { sessions, guests };
+    });
   }
 
   // ---------- profile ----------
@@ -312,7 +404,7 @@ export class AuthService {
     });
   }
 
-  me(identity: UserIdentity | GuestIdentity): MeResponse {
+  me(identity: Identity): MeResponse {
     const { db } = this.#ctx;
     if (identity.kind === "user") {
       const user = usersRepo.findById(db, identity.user.id) ?? identity.user;
@@ -323,12 +415,15 @@ export class AuthService {
         preferences: sanitizePreferences(profilesRepo.get(db, user.id)?.preferences ?? {}),
       };
     }
-    return {
-      user: null,
-      guest: { id: identity.guestId },
-      csrfToken: identity.csrfToken,
-      preferences: sanitizePreferences(guestsRepo.get(db, identity.guestId)?.preferences ?? {}),
-    };
+    if (identity.kind === "guest") {
+      return {
+        user: null,
+        guest: { id: identity.guestId },
+        csrfToken: identity.csrfToken,
+        preferences: sanitizePreferences(guestsRepo.get(db, identity.guestId)?.preferences ?? {}),
+      };
+    }
+    return { user: null, guest: null, csrfToken: identity.csrfToken ?? "", preferences: {} };
   }
 
   meForNewSession(user: UserRow, sessionToken: string): MeResponse {

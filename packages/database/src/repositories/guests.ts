@@ -39,4 +39,16 @@ export const guestsRepo = {
       .run(JSON.stringify(preferences), now, id);
     return Number(result.changes) === 1;
   },
+
+  /** Housekeeping: delete guests with no session rows and no owned games. */
+  purgeOrphans(db: DatabaseSync): number {
+    const result = db
+      .prepare(
+        `DELETE FROM guests
+          WHERE NOT EXISTS (SELECT 1 FROM sessions s WHERE s.guest_id = guests.id)
+            AND NOT EXISTS (SELECT 1 FROM games g WHERE g.owner_guest_id = guests.id)`,
+      )
+      .run();
+    return Number(result.changes);
+  },
 };

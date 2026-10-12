@@ -27,6 +27,10 @@ export type AppOptions = {
   writerQueueMax?: number;
   loginAttemptsPerWindow?: number;
   loginWindowMs?: number;
+  registrationsPerWindow?: number;
+  guestsPerWindow?: number;
+  /** Session/guest purge interval; 0 disables the timer (it still runs once when the app is ready). */
+  maintenanceIntervalMs?: number;
 };
 
 /** Services exposed for feature plugins (ports/adapters): later tasks register routes against these. */
@@ -56,9 +60,34 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
       ? { loginAttemptsPerWindow: options.loginAttemptsPerWindow }
       : {}),
     ...(options.loginWindowMs !== undefined ? { loginWindowMs: options.loginWindowMs } : {}),
+    ...(options.registrationsPerWindow !== undefined
+      ? { registrationsPerWindow: options.registrationsPerWindow }
+      : {}),
+    ...(options.guestsPerWindow !== undefined ? { guestsPerWindow: options.guestsPerWindow } : {}),
   });
+  await auth.warmup();
   app.decorate("services", { ctx, auth });
+
+  // Housekeeping: purge expired/revoked sessions and orphaned guests at startup and periodically.
+  const purge = async (): Promise<void> => {
+    try {
+      const purged = await auth.purgeInactive();
+      if (purged.sessions + purged.guests > 0) app.log.info(purged, "purged inactive sessions/guests");
+    } catch (error) {
+      app.log.warn({ err: error }, "session purge failed");
+    }
+  };
+  const intervalMs = options.maintenanceIntervalMs ?? 60 * 60 * 1000;
+  let timer: NodeJS.Timeout | null = null;
+  app.addHook("onReady", async () => {
+    await purge();
+    if (intervalMs > 0) {
+      timer = setInterval(() => void purge(), intervalMs);
+      timer.unref();
+    }
+  });
   app.addHook("onClose", async () => {
+    if (timer) clearInterval(timer);
     await writer.close();
   });
 

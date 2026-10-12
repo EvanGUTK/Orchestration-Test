@@ -73,6 +73,29 @@ export const usersRepo = {
     return Number(result.changes) === 1;
   },
 
+  /** Compare-and-set: only replaces the hash if it is still `expectedHash` (no concurrent change). */
+  updatePasswordHashIfUnchanged(
+    db: DatabaseSync,
+    id: string,
+    expectedHash: string,
+    passwordHash: string,
+    now: string,
+  ): boolean {
+    const result = db
+      .prepare(
+        "UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ? AND password_hash = ? AND deleted_at IS NULL",
+      )
+      .run(passwordHash, now, id, expectedHash);
+    return Number(result.changes) === 1;
+  },
+
+  /** Current stored hash of an active user (re-read inside a transaction to detect races). */
+  currentPasswordHash(db: DatabaseSync, id: string): string | null {
+    const row = db.prepare("SELECT password_hash FROM users WHERE id = ? AND deleted_at IS NULL").get(id) as
+      { password_hash: string } | undefined;
+    return row?.password_hash ?? null;
+  },
+
   updateDisplayName(db: DatabaseSync, id: string, displayName: string, now: string): boolean {
     const result = db
       .prepare("UPDATE users SET display_name = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL")
