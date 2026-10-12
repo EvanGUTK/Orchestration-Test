@@ -46,13 +46,13 @@ afterEach(async () => {
 });
 
 describe("BotSeatDriver (worker pool)", () => {
-  it("defaults to LIMITS.concurrentBotRunsMax workers", () => {
-    expect(makeDriver().workers).toBe(LIMITS.concurrentBotRunsMax);
-    expect(() => new BotSeatDriver({ workers: 0 })).toThrow();
+  it("defaults to a pool of LIMITS.concurrentBotRunsMax workers", () => {
+    expect(makeDriver().pool.size).toBe(LIMITS.concurrentBotRunsMax);
+    expect(() => new BotSeatDriver({ poolOptions: { size: 0 } })).toThrow();
   });
 
   it("decides off-thread with the same result as the pure seat driver", async () => {
-    const driver = makeDriver({ workers: 2 });
+    const driver = makeDriver({ poolOptions: { size: 2 } });
     const req = request(match("m1"), "b", greedy);
     const action = await driver.decide(req);
     expect(action).toEqual(nextBotSeatAction(req));
@@ -60,7 +60,7 @@ describe("BotSeatDriver (worker pool)", () => {
   }, 30_000);
 
   it("answers terminal/idle plans without touching a worker", async () => {
-    const driver = makeDriver({ workers: 1 });
+    const driver = makeDriver({ poolOptions: { size: 1 } });
     const m = match("m2");
     const req = request(m, "a", greedy);
     const done = { ...req, game: { ...req.game, status: "forfeited" as const } };
@@ -83,7 +83,7 @@ describe("BotSeatDriver (worker pool)", () => {
   });
 
   it("a slow seat neither blocks the event loop nor a parallel seat", async () => {
-    const driver = makeDriver({ workers: 2 });
+    const driver = makeDriver({ poolOptions: { size: 2 } });
     const slow = driver.decide(request(match("slow"), "a", heavy));
     slow.catch(() => undefined);
     let maxGap = 0;
@@ -107,7 +107,7 @@ describe("BotSeatDriver (worker pool)", () => {
   }, 30_000);
 
   it("AbortSignal cancels an in-flight search; the worker is reused afterwards", async () => {
-    const driver = makeDriver({ workers: 1 });
+    const driver = makeDriver({ poolOptions: { size: 1 } });
     const controller = new AbortController();
     const pending = driver.decide(request(match("m3"), "a", heavy), { signal: controller.signal });
     await new Promise((r) => setTimeout(r, 800));
@@ -121,7 +121,7 @@ describe("BotSeatDriver (worker pool)", () => {
   }, 30_000);
 
   it("one decision per seat at a time and a bounded queue", async () => {
-    const driver = makeDriver({ workers: 1, queueMax: 1 });
+    const driver = makeDriver({ poolOptions: { size: 1, seatQueueMax: 1 } });
     const m = match("m5");
     const first = driver.decide(request(m, "a", heavy));
     first.catch(() => undefined);
@@ -136,7 +136,7 @@ describe("BotSeatDriver (worker pool)", () => {
   }, 30_000);
 
   it("cancelling a queued decision removes it without running", async () => {
-    const driver = makeDriver({ workers: 1 });
+    const driver = makeDriver({ poolOptions: { size: 1 } });
     const busy = driver.decide(request(match("q1"), "a", heavy));
     busy.catch(() => undefined);
     const queued = driver.decide(request(match("q2"), "a", greedy));
