@@ -30,7 +30,7 @@ export type StrategyChoice = {
 export type Strategy = (ctx: StrategyContext) => StrategyChoice;
 
 export const HEURISTIC_MAX_DEPTH = 3;
-export const EXPECTIMAX_MAX_DEPTH = 4;
+export const EXPECTIMAX_MAX_DEPTH = 6;
 
 /** Uniform tie-break on the bot stream; no draw when the choice is forced. */
 function breakTie(port: EnginePort, rng: RandomState, tied: readonly Direction[]): [Direction, RandomState] {

@@ -41,3 +41,6 @@ export type {
   TournamentRow,
   TournamentSeat,
 } from "./play.js";
+export { nextBotSeatAction, planBotSeat } from "./seat-driver.js";
+export type { BotSeatAction, BotSeatPlan } from "./seat-driver.js";
+export { leagueGamesFromTournament } from "./league.js";

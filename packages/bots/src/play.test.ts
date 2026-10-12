@@ -18,7 +18,7 @@ describe("playBotGame", () => {
     expect(["move-cap", "dead-board"]).toContain(r.end);
     expect(r.moves.length).toBe(r.acceptedMoves);
     expect(r.finalState.status).toBe("completed");
-    expect(r).toMatchObject({ strategy: "greedy-v1", difficulty: "medium", botVersion: "bots-1.0.0" });
+    expect(r).toMatchObject({ strategy: "greedy-v1", difficulty: "medium", botVersion: "bots-1.1.0" });
     const replayed = replay(engineAdapter.newGame(duel, "replay-check"), r.moves, duel);
     expect(replayed.final).toEqual(r.finalState);
   });
