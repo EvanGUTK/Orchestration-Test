@@ -28,19 +28,19 @@ server on `127.0.0.1:$E2E_PORT` (default 5611) with a private temp DB; needs `np
 
 | ID | Test | Status / dependency |
 | --- | --- | --- |
-| ACC-01 | `tests/acceptance/api-contract.spec.ts` (register/me/logout/login/password change; hash never in responses; other sessions revoked; old credential fails) | written; needs server (harness smoke-tested against a stand-in, not the real server) |
-| ACC-02 | `api-contract.spec.ts` (case-variant duplicates, 10k-char username, HTML display name headers) | written; needs server |
-| ACC-03 | `tests/acceptance/isolation.spec.ts`: second account and guest cannot GET/POST another user's game, seat, results; guest absent from human boards | planned; needs server |
-| ACC-04 | `api-contract.spec.ts` (foreign Origin 403, bounded login attempts -> 429, loopback-only bind); WebSocket foreign-Origin upgrade in `tests/integration/ws.test.ts` | written (HTTP) / planned (WS); needs server |
-| ACC-05 | `tests/acceptance/profile-export-delete.spec.ts` (export has no credential/session material; delete anonymizes; replays still verify) | planned; needs server |
-| DB-01 | `tests/integration/migrations.test.ts` (fresh boot, repeat boot, tampered checksum surfaces, upgrade-failure recovery) via `npm run db:migrate` | planned; needs database pkg |
+| ACC-01 | `tests/integration/accounts-security.test.ts` (cookie flags, salted Argon2id, token never stored raw, logout revokes replayed cookie, password change revokes other sessions incl. DB, no user enumeration) + `api-contract.spec.ts` | **written+run against real server: pass** |
+| ACC-02 | `accounts-security.test.ts` (case/whitespace/fullwidth duplicates, 12 invalid-input cases, unicode names) + `api-contract.spec.ts` | **written+run against real server: pass** |
+| ACC-03 | `accounts-security.test.ts` (user B and guest get 404 on get/events/moves/undo/forfeit/list of A's game; foreign vs nonexistent indistinguishable; guest limits; guest cannot create ranked/duel) ; guest absent from human boards needs `/leaderboards` | **written+run: pass**; leaderboard part blocked (route missing) |
+| ACC-04 | `accounts-security.test.ts` (CSRF missing/wrong/other-user token, foreign/null/https Origin, cross-site fetch metadata, Host spoof, no CORS, per-account login limit 429+Retry-After, oversize/malformed/wrong-content-type bodies, headers) + `api-contract.spec.ts` (loopback-only bind); WebSocket upgrade Origin planned | **written+run: pass** (HTTP); WS planned |
+| ACC-05 | `accounts-security.test.ts` (delete needs password; delete removes hash/username/display name from every table, revokes sessions, blocks login; export has no credential material) | delete **pass**; **export FAILS: `GET /profile/export` is 404 (repro filed)** |
+| DB-01 | `tests/integration/database.test.ts` (CLI migrate fresh/idempotent/checksums/integrity/FK; 3 repeated server boots keep data and migration history byte-identical; tampered checksum refuses boot and leaves data untouched; newer-schema DB refused) | **written+run: pass**; upgrade-from-old-version path untestable until migration 0002 exists |
 | DB-02 | `tests/integration/fault-kill-during-move.test.ts` (SIGKILL during in-flight burst, restart on same DB, oracle replay equals recovered state, acked moves durable, `integrity_check`) | written; needs server |
 | DB-03 | `tests/integration/api-authority.test.ts` (duplicate commandId identical; different payload `IDEMPOTENCY_CONFLICT`) | written; needs server |
 | DB-04 | `api-authority.test.ts` (two stale clients: one 200, one `REVISION_CONFLICT`, no double spawn) | written; needs server |
-| DB-05 | `tests/integration/backup-restore.test.ts` (`db:backup` under write load -> `db:restore` -> state equal; corrupt file leaves active data intact) | planned; needs database pkg CLI |
-| DB-06 | `tests/integration/db-busy.test.ts` (hold a write lock from a second connection, expect `DB_BUSY` 503, no lost/phantom move) | planned; needs server |
+| DB-05 | `database.test.ts` (online backup while moves are in flight = consistent prefix verified by oracle replay; restore returns exactly that state and the game keeps working; corrupt/truncated/empty/foreign/missing files refused with active DB byte-identical) | **written+run: pass** |
+| DB-06 | `database.test.ts` (second connection holds the write lock: move waits then succeeds or returns DB_BUSY 503 with Retry-After; 120-request flood returns only 200/409/429/503; /health stays up; state equals acknowledged stream) ; disk-full is OPS-10 | **written+run: pass** (observed: single move waited ~1.5 s then 200; flood 1x200, 118x409, 1x503) |
 | DB-07 | `tests/integration/duel-restart.test.ts` (kill mid-duel, restart, seat state resumes, rating events count == 1) | planned; needs competition+server |
-| DB-08 | `tests/performance/support/leaderboard-oracle.ts` (self-check written+run) + `ops04-leaderboard.perf.ts` (live) | oracle written+run; live needs seeder |
+| DB-08 | `database.test.ts` (schema rejects float-ish/non-canonical decimals; 3000 rows incl. 2^53 neighbours: stored as text, round-trip exact, SQL ranking order == BigInt oracle) + `ops04-leaderboard.perf.ts` (HTTP) | schema part **written+run: pass**; HTTP part blocked (`/leaderboards` missing) |
 
 ## Gameplay, UI, ranked, bots
 
@@ -78,9 +78,9 @@ server on `127.0.0.1:$E2E_PORT` (default 5611) with a private temp DB; needs `np
 | --- | --- | --- |
 | OPS-01 | `shell-offline-responsive.spec.ts` (all non-loopback requests aborted and counted; must be 0) + full flows under the same route guard | partly written; needs web |
 | OPS-02 | `tests/performance/ops02-engine-throughput.perf.ts` | **written+run against @2048/engine: n=100000, p50 0.0016 ms, p95 0.0019 ms, p99 0.0043 ms (Apple M4, Node 24.21)**; target p95 < 2 ms met |
-| OPS-03 | `ops03-concurrent-games.perf.ts` (32 games / 10,000 commands, oracle-exact) | written; harness smoke-tested on a stand-in; needs server |
-| OPS-04 | `ops04-leaderboard.perf.ts` + `support/leaderboard-oracle.ts` | oracle written+run; live needs a seeder (question to chief) |
-| OPS-05 | `ops05-replay-seek.perf.ts` (>=100k domain events, 220 seeks) | written; needs server |
+| OPS-03 | `ops03-concurrent-games.perf.ts` (32 games / 10,016 accepted commands, every response oracle-exact) | **written+run on real server: p50 27.7 ms, p95 65.0 ms, p99 85.2 ms (target p95 < 100 ms met); zero mismatches** |
+| OPS-04 | `ops04-leaderboard.perf.ts` + `support/leaderboard-oracle.ts` + `support/seed-leaderboard.ts` | seeder + ordering self-checks **pass**; live part **blocked: `GET /leaderboards` is 404 (repro filed)** |
+| OPS-05 | `ops05-replay-seek.perf.ts` (>=100k domain events, 220 seeks) | **blocked: `GET /replays/:id` is 404 (repro filed)** |
 | OPS-06 | `tests/performance/ops06-bots-vs-interactive.perf.ts` | planned; needs bots+server |
 | OPS-07 | `tests/performance/ops07-soak.perf.ts` (RSS baseline/end/peak, env `OPS07_MINUTES`, default 60) | planned; needs server |
 | OPS-08 | game half: `fault-kill-during-move.test.ts` (written); rating half: `tests/integration/fault-rating-finish.test.ts` | partly written; rating half needs competition |

@@ -35,13 +35,16 @@ describe.skipIf(!available)("OPS-05 replay seek over 100k events", () => {
     const g = unwrapGame<View>((await c.post("/games", { mode: "practice", custom: { boardSize: 8, seed } })).body);
     const oracle = new OracleGame(practiceRules(8), seed);
     let rev = g.state.revision;
+    // fail fast: the replay endpoint must exist before spending a minute building 100k events
+    const probe = await c.get(`/replays/${g.id}`);
+    expect(probe.status, `GET /replays/:id precondition: ${probe.raw}`).toBe(200);
     // Domain events per move are counted from the server's own event pages (incrementally), not guessed.
     let eventCount = 0;
     let eventCursor = 0;
     const drain = async () => {
       let cur: number | null = eventCursor;
       while (cur !== null) {
-        const pg: Awaited<ReturnType<typeof c.get<EvPage>>> = await c.get<EvPage>(`/games/${g.id}/events?after=${cur}&limit=100`);
+        const pg: Awaited<ReturnType<typeof c.get<EvPage>>> = await c.get<EvPage>(`/games/${g.id}/events?cursor=${cur}&limit=100`);
         expect(pg.status, pg.raw).toBe(200);
         for (const e of pg.body.events) {
           eventCount += e.events.length;
@@ -77,7 +80,7 @@ describe.skipIf(!available)("OPS-05 replay seek over 100k events", () => {
       const evs: { sequence: number; direction: Dir }[] = [];
       let cur: number | null = startSeq;
       while (cur !== null && evs.length < target - startSeq) {
-        const pg: Awaited<ReturnType<typeof c.get<EvPage>>> = await c.get<EvPage>(`/games/${g.id}/events?after=${cur}&limit=${Math.max(1, target - startSeq)}`);
+        const pg: Awaited<ReturnType<typeof c.get<EvPage>>> = await c.get<EvPage>(`/games/${g.id}/events?cursor=${cur}&limit=${Math.max(1, target - startSeq)}`);
         evs.push(...pg.body.events.filter((e) => e.sequence <= target));
         cur = pg.body.nextCursor;
       }
