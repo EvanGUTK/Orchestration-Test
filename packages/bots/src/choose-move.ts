@@ -14,7 +14,7 @@ import type { EnginePort } from "./engine-port.js";
 import { STRATEGIES } from "./strategies.js";
 
 /** Version of this bot implementation, recorded in every BotDecision and run result. */
-export const BOT_VERSION = "bots-1.0.0";
+export const BOT_VERSION = "bots-1.1.0";
 
 export type BotErrorCode = "VALIDATION_ERROR";
 

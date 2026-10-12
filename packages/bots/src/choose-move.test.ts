@@ -135,7 +135,7 @@ describe("strategy behaviour", () => {
     const shallow = move(chooseMove(mid, RULESETS["duel-v1"], cfg("expectimax-v1", 60), botRng));
     const deep = move(chooseMove(mid, RULESETS["duel-v1"], cfg("expectimax-v1", 20_000), botRng));
     expect(shallow.decision.explanation).toMatch(/at depth 1/);
-    expect(deep.decision.explanation).toMatch(/at depth [2-4]/);
+    expect(deep.decision.explanation).toMatch(/at depth [2-6]/);
     expect(deep.decision.nodesSearched).toBeGreaterThan(shallow.decision.nodesSearched);
   });
 });

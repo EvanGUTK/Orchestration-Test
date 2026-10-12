@@ -10,3 +10,6 @@ export * from "./duel.js";
 export * from "./match.js";
 export * from "./challenge.js";
 export * from "./season.js";
+export * from "./bot-league.js";
+export * from "./profile-stats.js";
+export * from "./challenge-catalog.js";
