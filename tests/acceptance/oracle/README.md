@@ -12,6 +12,8 @@ ENG-01..08.
 | `reference_engine.py` | Seed derivation, xoshiro128**, `uniform`, `spawn`, `new_game`, `slide`, `apply_move`, `is_game_over`, `legal_moves`, `canonical_json`, `checksum` |
 | `generate_vectors.py` | Deterministic generator for `../vectors/engine-v1.json` (`--check` verifies only) |
 | `test_reference_engine.py` | unittest: all 11 `tests/fixtures/slide-v1.json` vectors, invariants, vector-file regeneration |
+| `oracle_cli.py` | JSON stdin/stdout front end for differential fuzzing (`tests/acceptance/engine/differential.test.ts`) |
+| `test_oracle_cli.py` | unittest for the CLI (golden sequences, unicode seeds, `GAME_NOT_ACTIVE` recording) |
 | `../vectors/engine-v1.json` | Frozen golden vectors |
 | `../vectors/.gitattributes` | Forces LF so the byte comparison survives `core.autocrlf=true` checkouts |
 
@@ -83,9 +85,34 @@ name (`engine-v2.json`) rather than editing v1 in place.
 - The oracle can generate new expectations for any ad-hoc state
   (`apply_move`, `checksum`), but frozen files are the source of truth.
 
-## Ambiguities and the literal reading chosen
+## Differential fuzzing CLI
 
-Sent to chief as a `question` on QA-001; override here if the chief rules otherwise.
+```bash
+echo '{"cases":[{"id":0,"seed":"abc","size":4,"rulesetVersion":"classic-v1","directions":["up","left"]}]}'   | python3 tests/acceptance/oracle/oracle_cli.py
+```
+
+Each case may set `fourWeight` (default 1), `rulesetVersion` (default by size) and `moveCap`
+(default null). Output per step: `direction, changed, scoreDelta, checksum, rngWords, status, error`.
+A step on a non-active game records `error: "GAME_NOT_ACTIVE"` and leaves the state unchanged.
+The Vitest differential test samples 200 cases with fast-check seed 20261012, runs them all through
+one oracle process, and requires identical per-step results from `@g2048/engine`. It needs
+Python 3 (`python3`/`python`/`py`, or `$PYTHON`); a missing interpreter fails, never skips.
+
+## Chief rulings (CONTRACT-001 "Frozen engine decisions")
+
+1. `uniform(1)` consumes one draw: confirmed.
+2. `applyMove` on a non-active game throws `GAME_NOT_ACTIVE`: implemented in the oracle.
+3. `rulesetVersion` comes from the Ruleset passed in (`rules["version"]`; the v1 vectors use the
+   size convention below, which is consistent).
+4. `fourWeight` integer 0..10: confirmed.
+5. Celebration/completion on the post-spawn board: confirmed; reaching `moveCap` also completes
+   the game (`rules["moveCap"]` in the oracle).
+
+None of these changed `engine-v1.json` (regeneration remains byte-identical).
+
+## Original ambiguities (QA-001) and the literal reading chosen
+
+Sent to chief as a `question` on QA-001; resolved as listed above.
 
 1. `uniform(1)` consumes exactly one raw draw (decision 3 is "repeat ... until"),
    so a spawn with a single empty cell still advances the PRNG for its position.

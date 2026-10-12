@@ -20,6 +20,12 @@ import copy
 import hashlib
 import json
 import re
+import sys
+
+# Exact decimal strings of huge tile values/scores (Python 3.11+ caps int->str
+# conversion at 4300 digits by default).
+if hasattr(sys, "set_int_max_str_digits"):
+    sys.set_int_max_str_digits(0)
 
 MASK32 = 0xFFFFFFFF
 TWO_POW_32 = 1 << 32
@@ -284,12 +290,22 @@ def spawn(board, rng: Xoshiro128ss, four_weight: int = DEFAULT_FOUR_WEIGHT,
 # Game lifecycle (decisions 5 and 7)
 # --------------------------------------------------------------------------
 
+class EngineError(Exception):
+    """Typed failure mirroring the contract's EngineError codes."""
+
+    def __init__(self, code: str, message: str = ""):
+        super().__init__(message or code)
+        self.code = code
+
+
 def ruleset_version(size: int) -> str:
+    """Default label used by the v1 vectors when rules carry no "version"."""
     return CLASSIC_RULESET if size == 4 else PRACTICE_RULESET
 
 
 def new_game(rules, seed: str, trace: list | None = None) -> dict:
-    """rules: {"size": int, "fourWeight": int (default 1)}."""
+    """rules: {"size": int, "fourWeight": int (default 1), "version": str (optional;
+    defaults to classic-v1 for 4x4 and practice-v1 otherwise)}."""
     size = rules["size"]
     if isinstance(size, bool) or not isinstance(size, int) or size < 2:
         raise ValueError("invalid size")
@@ -303,7 +319,7 @@ def new_game(rules, seed: str, trace: list | None = None) -> dict:
     state = {
         "schemaVersion": SCHEMA_VERSION,
         "engineVersion": ENGINE_VERSION,
-        "rulesetVersion": ruleset_version(size),
+        "rulesetVersion": rules.get("version") or ruleset_version(size),
         "board": board,
         "score": "0",
         "acceptedMoves": 0,
@@ -319,9 +335,15 @@ def new_game(rules, seed: str, trace: list | None = None) -> dict:
 
 def apply_move(state, direction: str, rules=None) -> dict:
     """Returns {"state", "changed", "scoreDelta", "spawn", "draws"}.
-    A no-op returns the identical (deep-copied) state, consumes zero draws."""
+    A no-op returns the identical (deep-copied) state, consumes zero draws.
+    Raises EngineError("GAME_NOT_ACTIVE") unless status is "active"
+    (CONTRACT-001 frozen decision 7). rules may carry "moveCap" (int or None):
+    reaching it after a changed move sets status "completed" (decision 6)."""
     validate_state(state)
+    if state["status"] != "active":
+        raise EngineError("GAME_NOT_ACTIVE", "game is %s" % state["status"])
     fw = _four_weight(rules)
+    move_cap = None if rules is None else rules.get("moveCap")
     slid = slide(state["board"], direction)
     if not slid["changed"]:
         return {"state": copy.deepcopy(state), "changed": False, "scoreDelta": "0",
@@ -337,7 +359,7 @@ def apply_move(state, direction: str, rules=None) -> dict:
     if not state["celebrated2048"] and any(
             c is not None and int(c) >= CELEBRATION_EXPONENT for c in board["cells"]):
         new_state["celebrated2048"] = True
-    if is_game_over(board):
+    if is_game_over(board) or (move_cap is not None and new_state["acceptedMoves"] >= move_cap):
         new_state["status"] = "completed"
     return {"state": new_state, "changed": True, "scoreDelta": slid["scoreDelta"],
             "spawn": rec, "merges": slid["merges"], "draws": rng.draws}

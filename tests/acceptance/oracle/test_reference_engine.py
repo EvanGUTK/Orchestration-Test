@@ -172,6 +172,8 @@ class MoveInvariants(unittest.TestCase):
         for i in range(300):
             state = R.new_game({"size": rnd.randint(3, 8)}, "prop-%d" % i)
             for _ in range(rnd.randint(1, 30)):
+                if state["status"] != "active":
+                    break
                 d = rnd.choice(R.DIRECTIONS)
                 snapshot = copy.deepcopy(state)
                 slid = R.slide(state["board"], d)
@@ -194,6 +196,30 @@ class MoveInvariants(unittest.TestCase):
                 self.assertEqual(new["revision"], state["revision"] + 1)
                 self.assertGreaterEqual(res["draws"], 2)
                 state = new
+
+    def test_non_active_game_rejected(self):
+        for status in ("completed", "forfeited"):
+            s = R.new_game({"size": 4}, "abc")
+            s["status"] = status
+            snapshot = copy.deepcopy(s)
+            with self.assertRaises(R.EngineError) as ctx:
+                R.apply_move(s, "left")
+            self.assertEqual(ctx.exception.code, "GAME_NOT_ACTIVE")
+            self.assertEqual(s, snapshot)
+
+    def test_move_cap_completes(self):
+        s = R.new_game({"size": 4, "version": "ranked-v1"}, "cap")
+        self.assertEqual(s["rulesetVersion"], "ranked-v1")
+        s["acceptedMoves"] = 499
+        s["revision"] = 499
+        for d in R.DIRECTIONS:
+            r = R.apply_move(s, d, {"moveCap": 500})
+            if r["changed"]:
+                self.assertEqual(r["state"]["acceptedMoves"], 500)
+                self.assertEqual(r["state"]["status"], "completed")
+                break
+        else:
+            self.fail("no changed move")
 
     def test_new_game_has_two_tiles(self):
         for size in (3, 4, 8):
