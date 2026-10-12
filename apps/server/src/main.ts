@@ -1,19 +1,32 @@
 import { fileURLToPath } from "node:url";
-import { migrate, openDatabase } from "@g2048/database";
+import { acquireDatabaseLock, prepareDatabase, type PreparedDatabase } from "@g2048/database";
 import { buildApp } from "./app.js";
 import { loadConfig } from "./config.js";
 
 const config = loadConfig();
-const db = openDatabase(config.databasePath);
-migrate(db); // pending migrations apply before any request is accepted
+// Owner lock first: offline restore refuses while this process holds the database.
+const releaseLock = acquireDatabaseLock(config.databasePath);
+let prepared: PreparedDatabase;
+try {
+  // Pending migrations apply (with a preflight backup) before any request is accepted.
+  prepared = await prepareDatabase(config.databasePath);
+} catch (error) {
+  releaseLock();
+  console.error(
+    `Database startup failed; prior data left intact: ${error instanceof Error ? error.message : String(error)}`,
+  );
+  process.exit(1);
+}
+const { db } = prepared;
 const webDist = config.webDist ?? fileURLToPath(new URL("../../web/dist", import.meta.url));
-const app = await buildApp({ db, webDist, logger: true });
+const app = await buildApp({ db, webDist, logger: true, allowedHosts: config.allowedHosts });
 await app.listen({ host: config.host, port: config.port });
 
 for (const signal of ["SIGINT", "SIGTERM"] as const) {
   process.once(signal, () => {
     void app.close().then(() => {
       db.close();
+      releaseLock();
       process.exit(0);
     });
   });

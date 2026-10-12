@@ -95,3 +95,22 @@ chooseMove(state: GameState, rules: Ruleset, config: BotConfig, botRng: RandomSt
 Chief created M0 skeleton files in each lane; they now belong to that lane. Adding a dependency: edit your own
 package's `package.json`, run `npm install` locally, and report it — chief owns and regenerates the root lockfile at
 integration (do not commit `package-lock.json` changes from a worker branch).
+
+## Clarifications (non-breaking, after ENGINE-003 / QA-002)
+
+- C1. Version mismatch on a loaded state (`schemaVersion`, `engineVersion`, rng `algorithm`, `replaySchemaVersion`)
+  => `REPLAY_VERSION_UNSUPPORTED` from `deserialize`, `applyMove`, `verifyReplay`.
+- C2. A loaded state that already contains an exponent above `LIMITS.maxExponent` is invalid input
+  => `VALIDATION_ERROR`. `RESOURCE_LIMIT` is reserved for a transition that would create such an exponent.
+- C3. Merge event `sources` = `[leading tile, trailing tile]` in the slide direction.
+- C4. `first2048` is true only on the milestone of the move that flips `celebrated2048`.
+- C5. `forfeit` changes only `status` (revision/acceptedMoves unchanged); non-active input => `GAME_NOT_ACTIVE`.
+- C6. Move-cap completion sets `status: "completed"` without a `game.over` event; consumers read `state.status`.
+- C7. `verifyReplay` rejects no-op moves and requires `initialState` to equal `newGame(rules, seed)`.
+- C8. `preferences.keyBindings` is a partial record (any subset of directions). Register/login return
+  `AuthResponse` (= `MeResponse`); session clearing is `POST /auth/logout` with `{ "allSessions": true }`;
+  logout and password change return `RevokeResponse` `{ ok: true, revokedSessions }`.
+- C9. `chooseMove` returns a tagged union: `{ kind: "move", decision, rng }` or
+  `{ kind: "no-legal-move", reason: "dead-board" | "game-not-active", rng }`. Bot strategies read only
+  `state.status` and `state.board`. The Node runner is the `@g2048/bots/runner` entry; time budgets apply only
+  when a clock is injected (tournaments are node-budget only and machine-independent).

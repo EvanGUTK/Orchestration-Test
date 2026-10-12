@@ -56,7 +56,7 @@ export const PreferencesSchema = z
     soundMuted: z.boolean(),
     motion: z.enum(["system", "reduced", "full"]),
     tileDisplay: z.enum(["value", "exponent", "auto"]),
-    keyBindings: z.record(z.enum(["up", "right", "down", "left"]), z.array(z.string().max(32)).max(4)),
+    keyBindings: z.partialRecord(z.enum(["up", "right", "down", "left"]), z.array(z.string().max(32)).max(4)),
     botSpeedMs: z.number().int().min(0).max(5000),
   })
   .partial()
@@ -134,6 +134,11 @@ export type MeResponse = {
   csrfToken: string;
   preferences: Preferences;
 };
+/** POST /auth/register (201) and POST /auth/login (200) return the new identity view. */
+export type AuthResponse = MeResponse;
+/** POST /auth/logout ({ allSessions?: true } clears every session of the account) and POST /auth/password. */
+export const LogoutRequest = z.object({ allSessions: z.boolean().optional() }).strict();
+export type RevokeResponse = { ok: true; revokedSessions: number };
 export type GameSummary = {
   id: string;
   mode: GameMode;
