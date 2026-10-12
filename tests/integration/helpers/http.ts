@@ -58,15 +58,17 @@ export class Client {
   async send<T = unknown>(method: string, path: string, opts: SendOptions = {}): Promise<Res<T>> {
     const upper = method.toUpperCase();
     const headers: Record<string, string> = { host: opts.host ?? HOST, ...opts.headers };
-    if (this.jar.size) headers.cookie = this.cookieHeader();
     if (MUTATING.has(upper)) {
       if (opts.origin === undefined) headers.origin = ORIGIN;
       else if (opts.origin !== null) headers.origin = opts.origin;
       if (opts.csrf === undefined) {
+        // GET /auth/me may set the guest `gid` cookie together with the token it belongs to.
         if (this.csrfToken === null) await this.refreshCsrf();
         if (this.csrfToken !== null) headers["x-csrf-token"] = this.csrfToken;
       } else if (opts.csrf !== false) headers["x-csrf-token"] = opts.csrf;
     }
+    // Read the jar only after every awaited step above, so cookies set by refreshCsrf() are sent.
+    if (this.jar.size) headers.cookie = this.cookieHeader();
     const url = path.startsWith("/api/") ? path : `${API_BASE}${path}`;
     const res = await this.app.inject({
       method: upper as "GET",

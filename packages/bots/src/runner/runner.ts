@@ -17,9 +17,11 @@ import { engineAdapter } from "../engine-adapter.js";
 import type { EnginePort } from "../engine-port.js";
 import type { BotGameEnd } from "../play.js";
 import type { BotWorkerData, ChooseRequest, WorkerReply } from "./protocol.js";
+import { WORKER_EXEC_ARGV, WORKER_URL } from "./worker-url.js";
 
 export type BotRunStatus = "queued" | "running" | "paused" | "finished" | "cancelled" | "failed";
-export type BotRunnerErrorCode = "RUNNER_BUSY" | "DUPLICATE_RUN" | "NOT_PAUSED" | "VALIDATION_ERROR";
+export type BotRunnerErrorCode =
+  "RUNNER_BUSY" | "DUPLICATE_RUN" | "NOT_PAUSED" | "CANCELLED" | "VALIDATION_ERROR";
 
 export class BotRunnerError extends Error {
   readonly code: BotRunnerErrorCode;
@@ -100,12 +102,6 @@ export type BotRunnerOptions = {
   /** Clock for latency metrics; defaults to performance.now. */
   readonly now?: () => number;
 };
-
-const SOURCE_MODE = import.meta.url.endsWith(".ts");
-const WORKER_URL = new URL(SOURCE_MODE ? "./bot-worker.ts" : "./bot-worker.js", import.meta.url);
-// Source checkouts (tests, dev server) load the TypeScript worker through tsx with the
-// workspace "source" export condition; built output runs the compiled worker directly.
-const WORKER_EXEC_ARGV = SOURCE_MODE ? ["--conditions=source", "--import", "tsx"] : [];
 
 /**
  * Runs bot games with every search in a dedicated worker_threads worker, so a slow bot

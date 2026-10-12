@@ -42,7 +42,7 @@ describe("BotRunner (worker_threads)", () => {
       end: "max-moves",
       strategy: "greedy-v1",
       difficulty: "medium",
-      botVersion: "bots-1.0.0",
+      botVersion: "bots-1.1.0",
       nodeBudget: 4,
       timeBudgetMs: 1000,
       seed: "runner-seed",

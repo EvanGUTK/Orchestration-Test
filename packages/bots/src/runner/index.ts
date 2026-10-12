@@ -9,3 +9,5 @@ export type {
   BotRunResult,
   BotRunStatus,
 } from "./runner.js";
+export { BotSeatDriver } from "./seat-driver.js";
+export type { BotSeatDriverOptions, BotSeatRequest } from "./seat-driver.js";

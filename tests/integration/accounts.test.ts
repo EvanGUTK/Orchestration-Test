@@ -38,7 +38,9 @@ describe("ACC-01 create / log in / log out / change password", () => {
   it("register + login set an HttpOnly SameSite=Strict sid cookie; /auth/me exposes no secrets", async () => {
     const c = new Client(t.app);
     const reg = await c.register("alice", "Alice", PASSWORD);
-    expect(ok(reg.status), reg.text).toBe(true);
+    // documented shape (backend, CONTRACT-001 C8): 201 + MeResponse
+    expect(reg.status, reg.text).toBe(201);
+    expect((reg.json as MeResponse).user?.username).toBe("alice");
     const login = await c.login("alice", PASSWORD);
     expect(login.status, login.text).toBe(200);
     const sid = login.cookies.find((k) => k.name === "sid");
@@ -88,8 +90,28 @@ describe("ACC-01 create / log in / log out / change password", () => {
     const replay = new Client(t.app);
     replay.jar.set("sid", stolen);
     expectSignedOut(await replay.me());
-    const revoked = t.db.prepare("SELECT revoked_at FROM sessions").all() as { revoked_at: unknown }[];
-    expect(revoked.every((r) => r.revoked_at !== null)).toBe(true);
+    expect(out.json).toMatchObject({ ok: true, revokedSessions: 1 });
+    const revoked = t.db.prepare("SELECT COUNT(*) AS n FROM sessions WHERE revoked_at IS NOT NULL").get() as {
+      n: number;
+    };
+    expect(revoked.n).toBeGreaterThanOrEqual(1);
+  });
+
+  it("POST /auth/logout {allSessions:true} clears every session of the account", async () => {
+    const a1 = new Client(t.app);
+    await a1.signUp("frank", PASSWORD);
+    const a2 = new Client(t.app);
+    expect((await a2.login("frank", PASSWORD)).status).toBe(200);
+    const other = new Client(t.app);
+    await other.signUp("bystander", PASSWORD);
+
+    const out = await a1.post("/auth/logout", { allSessions: true });
+    expect(out.status, out.text).toBe(200);
+    expect((out.json as { ok: boolean; revokedSessions: number }).ok).toBe(true);
+    expect((out.json as { revokedSessions: number }).revokedSessions).toBeGreaterThanOrEqual(2);
+    expectSignedOut(await a1.me());
+    expectSignedOut(await a2.me());
+    expect((await other.me()).json.user?.username).toBe("bystander");
   });
 
   it("changing the password revokes other sessions; old password fails, new one works", async () => {
@@ -106,7 +128,9 @@ describe("ACC-01 create / log in / log out / change password", () => {
     expectErrorEnvelope(wrong);
 
     const change = await a1.post("/auth/password", { currentPassword: PASSWORD, newPassword: NEW_PASSWORD });
-    expect(ok(change.status), change.text).toBe(true);
+    expect(change.status, change.text).toBe(200);
+    expect(change.json).toMatchObject({ ok: true });
+    expect((change.json as { revokedSessions: number }).revokedSessions).toBeGreaterThanOrEqual(1);
     expectSignedOut(await a2.me());
 
     const old = await new Client(t.app).login("dave", PASSWORD);
@@ -292,21 +316,32 @@ describe("ACC-04 CSRF / Origin / Host and rate limits", () => {
   it("mutating requests without or with a wrong CSRF token are rejected", async () => {
     const c = new Client(t.app);
     await c.signUp("csrf_user", PASSWORD);
-    const none = await c.post("/games", { mode: "classic" }, { csrf: false });
+    const none = await c.post("/auth/logout", undefined, { csrf: false });
     expect(none.status).toBe(403);
     expectErrorEnvelope(none, "FORBIDDEN");
-    const wrong = await c.post("/games", { mode: "classic" }, { csrf: "forged-token-value" });
+    const wrong = await c.post("/auth/logout", undefined, { csrf: "forged-token-value" });
     expect(wrong.status).toBe(403);
-    const list = await c.get<{ items: unknown[] }>("/games");
-    expect(list.json.items).toHaveLength(0);
-    expect(ok((await c.post("/games", { mode: "classic" })).status)).toBe(true);
+    expect((await c.me()).json.user?.username).toBe("csrf_user");
+
+    const pw = await c.post(
+      "/auth/password",
+      { currentPassword: PASSWORD, newPassword: NEW_PASSWORD },
+      { csrf: false },
+    );
+    expect(pw.status).toBe(403);
+    expect((await new Client(t.app).login("csrf_user", PASSWORD)).status).toBe(200);
+
+    const real = await c.post("/auth/logout");
+    expect(real.status).toBe(200);
+    expectSignedOut(await c.me());
   });
 
   it("without an Origin header, a foreign Host is rejected", async () => {
     const c = new Client(t.app);
     await c.signUp("host_user", PASSWORD);
-    const r = await c.post("/games", { mode: "classic" }, { origin: null, host: "evil.example" });
+    const r = await c.post("/auth/logout", undefined, { origin: null, host: "evil.example" });
     expect(r.status).toBe(403);
+    expect((await c.me()).json.user?.username).toBe("host_user");
   });
 
   it(`login attempts are bounded: after ${LIMITS.loginAttemptsPerWindow} failures the next attempt is 429`, async () => {
@@ -321,6 +356,23 @@ describe("ACC-04 CSRF / Origin / Host and rate limits", () => {
     expectErrorEnvelope(limited, "RATE_LIMITED");
     const evenCorrect = await attacker.login("target", PASSWORD);
     expect(evenCorrect.status).toBe(429);
+  });
+
+  it("~20 concurrent wrong logins: at most the window's allowance is not rate-limited", async () => {
+    await new Client(t.app).register("target2", "Target", PASSWORD);
+    const attempts = await Promise.all(
+      Array.from({ length: 20 }, (_, i) => new Client(t.app).login("target2", `wrong password ${i}!`)),
+    );
+    const statuses = attempts.map((r) => r.status);
+    const notLimited = statuses.filter((s) => s !== 429);
+    expect(notLimited.length, `statuses: ${statuses.join(",")}`).toBeLessThanOrEqual(
+      LIMITS.loginAttemptsPerWindow,
+    );
+    expect(
+      notLimited.every((s) => s === 401),
+      `statuses: ${statuses.join(",")}`,
+    ).toBe(true);
+    expect((await new Client(t.app).login("target2", PASSWORD)).status).toBe(429);
   });
 
   it("WebSocket upgrades from a foreign Origin are refused (same-origin with a session upgrades)", async () => {

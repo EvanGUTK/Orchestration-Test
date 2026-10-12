@@ -134,11 +134,11 @@ describe("ENG-09 malformed state and resource pressure", () => {
       expect(E.serialize(state)).toBe(snapshot);
     });
 
-    // OPEN (flagged to chief): a state that already holds an exponent above maxExponent can never be produced
-    // by the engine; the spec does not say whether that is malformed input or resource pressure. Either typed
-    // code passes; what is required is a fast typed rejection with the input preserved.
+    // Chief ruling (CONTRACT-001, frozen 2026-10-12): a LOADED state containing an exponent above
+    // LIMITS.maxExponent is invalid input -> VALIDATION_ERROR; RESOURCE_LIMIT is reserved for a
+    // transition that would CREATE an exponent above the limit (covered above).
     it(
-      "an astronomically large exponent pair is refused before computing the power (fast)",
+      "a loaded state with an exponent above maxExponent is VALIDATION_ERROR, refused fast (no power computed)",
       { timeout: 2_000 },
       () => {
         const huge = "9".repeat(40);
@@ -149,12 +149,23 @@ describe("ENG-09 malformed state and resource pressure", () => {
         );
         const snapshot = JSON.stringify(state);
         const t0 = performance.now();
-        expectEngineError(() => E.applyMove(state, "left", CLASSIC), ["RESOURCE_LIMIT", "VALIDATION_ERROR"]);
-        expectEngineError(() => E.slide(state.board, "left"), ["RESOURCE_LIMIT", "VALIDATION_ERROR"]);
+        expectEngineError(() => E.applyMove(state, "left", CLASSIC), "VALIDATION_ERROR");
+        // bare-board slide: the merge would CREATE an exponent above the limit -> RESOURCE_LIMIT (ruling clause 2)
+        expectEngineError(() => E.slide(state.board, "left"), "RESOURCE_LIMIT");
+        expectEngineError(() => E.deserialize(snapshot), "VALIDATION_ERROR");
         expect(JSON.stringify(state)).toBe(snapshot);
         expect(performance.now() - t0).toBeLessThan(1_000);
       },
     );
+
+    it("a single loaded tile at maxExponent + 1 (no merge) is VALIDATION_ERROR", () => {
+      const over = String(max + 1);
+      const state = frozen(
+        makeState(rows(`${over} . . .`, ". . . .", ". . . .", ". . . 1").cells, { celebrated2048: true }),
+      );
+      expectEngineError(() => E.applyMove(state, "right", CLASSIC), "VALIDATION_ERROR");
+      expectEngineError(() => E.deserialize(JSON.stringify(state)), "VALIDATION_ERROR");
+    });
 
     it("creating exactly maxExponent is allowed and exact (no truncation)", { timeout: 60_000 }, () => {
       const e = String(max - 1);
