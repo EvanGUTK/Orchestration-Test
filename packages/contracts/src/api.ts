@@ -189,3 +189,41 @@ export type ReplayView = {
 
 export type HealthResponse = { status: "ok" };
 export type ReadyResponse = { status: "ready"; schemaVersion: number; migrations: number };
+
+/** ---- CONTRACT-001 addendum A1 (additive; resolves FRONTEND-001 questions) ---- */
+export const CSRF_HEADER = "x-csrf-token" as const;
+
+export type ProfileStats = {
+  gamesPlayed: number;
+  bestScore: Decimal | null;
+  bestScoreGameId: string | null;
+  maxExponent: Exponent | null;
+  scoreDistribution: { bucketLabel: string; count: number }[];
+  maxTileCounts: { exponent: Exponent; count: number }[];
+  duels: { won: number; drawn: number; lost: number; rating: number | null };
+  rankedHistory: { challengeId: string; gameId: string; score: Decimal; maxExponent: Exponent; rank: number | null }[];
+  bot: { runs: number; byStrategy: Record<string, { runs: number; bestScore: Decimal | null }> };
+};
+
+export type ReplaySummary = {
+  gameId: string;
+  mode: GameMode;
+  rulesetVersion: string;
+  finalScore: Decimal;
+  maxExponent: Exponent;
+  acceptedMoves: number;
+  createdAt: string;
+};
+
+/** WS payload shapes: game.updated => {game: GameView}; bot.progress|bot.finished => {run: BotRunView};
+ *  match.seat-ended|match.finished => {match: MatchView}; rating.updated => {event: RatingEvent};
+ *  server.recovering => {reason: string}. */
+export type WsPayloads = {
+  "game.updated": { game: GameView };
+  "bot.progress": { run: BotRunView };
+  "bot.finished": { run: BotRunView };
+  "match.seat-ended": { match: MatchView };
+  "match.finished": { match: MatchView };
+  "rating.updated": { event: RatingEvent };
+  "server.recovering": { reason: string };
+};
