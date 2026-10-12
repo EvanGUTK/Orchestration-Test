@@ -1,0 +1,157 @@
+/*
+ * 2048 Infinite design tokens. No web fonts are fetched: type uses system font stacks only.
+ * Themes are selected with <html data-theme="light|dark|high-contrast"> (set from Settings, which
+ * can follow the OS). Motion is selected with <html data-motion="full|reduced">.
+ */
+:root {
+  --font-body: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", Arial, sans-serif;
+  --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, ui-serif, serif;
+  --font-num: ui-rounded, "SF Pro Rounded", "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, "Liberation Mono", monospace;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --radius-s: 6px;
+  --radius-m: 12px;
+  --radius-l: 20px;
+  --target: 44px;
+  --gutter: 16px;
+
+  --dur-move: 110ms;
+  --dur-pop: 170ms;
+  --dur-spawn: 170ms;
+  --dur-ui: 160ms;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-pop: cubic-bezier(0.3, 1.5, 0.5, 1);
+
+  /* Light theme ("paper"). Every tile ink/tone pair is >= 4.5:1. */
+  --bg: #f3eee4;
+  --bg-grain: #ece5d7;
+  --surface: #fbf8f2;
+  --surface-2: #f6f0e4;
+  --ink: #1d1a16;
+  --ink-soft: #5a5247;
+  --line: #d8cdb9;
+  --line-strong: #a89a83;
+  --accent: #b43c0b;
+  --accent-ink: #ffffff;
+  --accent-soft: #f6dccb;
+  --focus: #1f4fd1;
+  --focus-halo: rgba(31, 79, 209, 0.25);
+  --danger: #a51d1d;
+  --ok: #1c6a37;
+  --pending: #7a5a00;
+  --pending-bg: #f7ebc4;
+  --board: #c6b79f;
+  --cell: #ddd0bb;
+  --shadow: 0 1px 0 rgba(60, 40, 10, 0.06), 0 8px 24px -12px rgba(60, 40, 10, 0.35);
+
+  --tile-0: #efe6d6;
+  --tile-0-ink: #3a332a;
+  --tile-1: #ebd9b4;
+  --tile-1-ink: #3a332a;
+  --tile-2: #f2b179;
+  --tile-2-ink: #2a1708;
+  --tile-3: #f59563;
+  --tile-3-ink: #2a1206;
+  --tile-4: #f47b5c;
+  --tile-4-ink: #250c05;
+  --tile-5: #e5573b;
+  --tile-5-ink: #1c0603;
+  --tile-6: #edcf72;
+  --tile-6-ink: #2a2105;
+  --tile-7: #e7bd45;
+  --tile-7-ink: #2a2105;
+  --tile-8: #d6a215;
+  --tile-8-ink: #1d1602;
+  --tile-9: #6ba56c;
+  --tile-9-ink: #0b1d0c;
+  --tile-10: #276f76;
+  --tile-10-ink: #ffffff;
+  --tile-11: #33468f;
+  --tile-11-ink: #ffffff;
+
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --bg: #0e1320;
+  --bg-grain: #121a2a;
+  --surface: #161e2e;
+  --surface-2: #1c2539;
+  --ink: #eef1f7;
+  --ink-soft: #aab3c5;
+  --line: #2b3550;
+  --line-strong: #4a5674;
+  --accent: #ff9b55;
+  --accent-ink: #1a0d03;
+  --accent-soft: #3a2616;
+  --focus: #ffd166;
+  --focus-halo: rgba(255, 209, 102, 0.3);
+  --danger: #ff7b7b;
+  --ok: #6fd99a;
+  --pending: #f3cf6a;
+  --pending-bg: #352c12;
+  --board: #1a2233;
+  --cell: #242e44;
+  --shadow: 0 1px 0 rgba(0, 0, 0, 0.3), 0 12px 32px -14px rgba(0, 0, 0, 0.8);
+
+  --tile-0: #33405b;
+  --tile-0-ink: #eef2f9;
+  --tile-1: #415072;
+  --tile-1-ink: #f3f6fb;
+  --tile-2: #8c5626;
+  --tile-2-ink: #fff4e8;
+  --tile-3: #a2522a;
+  --tile-3-ink: #ffffff;
+  --tile-4: #b2432c;
+  --tile-4-ink: #ffffff;
+  --tile-5: #c23a33;
+  --tile-5-ink: #ffffff;
+  --tile-6: #c9a43a;
+  --tile-6-ink: #1a1404;
+  --tile-7: #dcb942;
+  --tile-7-ink: #1a1404;
+  --tile-8: #ecd060;
+  --tile-8-ink: #1a1404;
+  --tile-9: #5aa86f;
+  --tile-9-ink: #03140a;
+  --tile-10: #3fb0b9;
+  --tile-10-ink: #021416;
+  --tile-11: #8d9bf3;
+  --tile-11-ink: #0a0d24;
+
+  color-scheme: dark;
+}
+
+/* High contrast: pure black/white with yellow focus. Values are distinguished by their text alone. */
+:root[data-theme="high-contrast"] {
+  --bg: #000000;
+  --bg-grain: #000000;
+  --surface: #000000;
+  --surface-2: #000000;
+  --ink: #ffffff;
+  --ink-soft: #ffffff;
+  --line: #ffffff;
+  --line-strong: #ffffff;
+  --accent: #ffff00;
+  --accent-ink: #000000;
+  --accent-soft: #000000;
+  --focus: #ffff00;
+  --focus-halo: transparent;
+  --danger: #ff6b6b;
+  --ok: #7dff9b;
+  --pending: #ffff00;
+  --pending-bg: #000000;
+  --board: #000000;
+  --cell: #000000;
+  --shadow: none;
+  --tile-hc-even: #ffffff;
+  --tile-hc-odd: #000000;
+  color-scheme: dark;
+}
