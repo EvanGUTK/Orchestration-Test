@@ -20,6 +20,12 @@ try {
 const { db } = prepared;
 const webDist = config.webDist ?? fileURLToPath(new URL("../../web/dist", import.meta.url));
 const app = await buildApp({ db, webDist, logger: true, allowedHosts: config.allowedHosts });
+// Restart recovery: every resumable game is rebuilt from its nearest snapshot + move log and compared
+// with the saved state before requests are accepted. Failures are surfaced, never silently repaired.
+const reports = app.services.games.verifyActiveGames();
+const broken = reports.filter((r) => !r.ok);
+app.log.info({ verified: reports.length, failed: broken.length }, "resumable game integrity check");
+for (const report of broken) app.log.error({ integrity: report }, "game failed integrity verification");
 await app.listen({ host: config.host, port: config.port });
 
 for (const signal of ["SIGINT", "SIGTERM"] as const) {

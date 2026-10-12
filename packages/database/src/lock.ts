@@ -1,4 +1,5 @@
-import { readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { dirname } from "node:path";
 
 /**
  * Advisory owner lock: `<database>.lock` holds the PID of the running server. The server takes it
@@ -46,6 +47,7 @@ export class DatabaseLockedError extends Error {
 /** Takes the owner lock for this process. Returns a release function. */
 export function acquireDatabaseLock(databasePath: string): () => void {
   const path = lockPathFor(databasePath);
+  mkdirSync(dirname(path), { recursive: true }); // fresh machine: data dir may not exist yet
   const body = JSON.stringify({ pid: process.pid, startedAt: new Date().toISOString() });
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
