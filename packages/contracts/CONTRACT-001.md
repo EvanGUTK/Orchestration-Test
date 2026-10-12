@@ -114,3 +114,6 @@ integration (do not commit `package-lock.json` changes from a worker branch).
   `{ kind: "no-legal-move", reason: "dead-board" | "game-not-active", rng }`. Bot strategies read only
   `state.status` and `state.board`. The Node runner is the `@g2048/bots/runner` entry; time budgets apply only
   when a clock is injected (tournaments are node-budget only and machine-independent).
+- C10. `legalMoves`/`isGameOver` reflect game rules only. A move that would create an exponent above
+  `LIMITS.maxExponent` stays "legal"; applying it fails with `RESOURCE_LIMIT` and preserves the state (the game is
+  never declared over or won because of the resource guard).
