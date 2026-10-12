@@ -178,7 +178,7 @@ describe("DB-05 backup then validated restore", () => {
     addMarker(db, "after-backup");
     db.close();
 
-    restoreDatabase(backup, live);
+    await restoreDatabase(backup, live);
     const restored = track(new DatabaseSync(live));
     expect(markers(restored)).toEqual(["in-backup"]);
     expect(
@@ -199,7 +199,7 @@ describe("DB-05 backup then validated restore", () => {
     expect(readFileSync(dest, "utf8")).toBe("keep me");
   });
 
-  it("a corrupt or foreign import never replaces the active database", () => {
+  it("a corrupt or foreign import never replaces the active database", async () => {
     const dir = tempDir();
     const live = join(dir, "game.sqlite3");
     const db = track(openDatabase(live));
@@ -211,15 +211,15 @@ describe("DB-05 backup then validated restore", () => {
 
     const garbage = join(dir, "garbage.sqlite3");
     writeFileSync(garbage, Buffer.from("this is not a sqlite database at all".repeat(100)));
-    expect(() => restoreDatabase(garbage, live)).toThrow();
+    await expect(restoreDatabase(garbage, live)).rejects.toThrow();
 
     const foreign = join(dir, "foreign.sqlite3");
     const f = new DatabaseSync(foreign);
     f.exec("CREATE TABLE other (x)");
     f.close();
-    expect(() => restoreDatabase(foreign, live)).toThrow();
+    await expect(restoreDatabase(foreign, live)).rejects.toThrow();
 
-    expect(() => restoreDatabase(join(dir, "missing.sqlite3"), live)).toThrow();
+    await expect(restoreDatabase(join(dir, "missing.sqlite3"), live)).rejects.toThrow();
     expect(sha(readFileSync(live).toString("base64"))).toBe(before);
     const check = track(new DatabaseSync(live));
     expect(markers(check)).toEqual(["precious"]);
@@ -236,7 +236,7 @@ describe("DB-05 backup then validated restore", () => {
     await a.app.close();
     a.db.close();
 
-    restoreDatabase(backup, live);
+    await restoreDatabase(backup, live);
     const b = await openTracked(live);
     expect((await new Client(b.app).login("restore_me", "correct horse battery")).status).toBe(200);
     expect((await new Client(b.app).login("too_late", "correct horse battery")).status).toBe(401);
