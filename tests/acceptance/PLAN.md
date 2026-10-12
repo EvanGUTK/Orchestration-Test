@@ -54,20 +54,20 @@ server on `127.0.0.1:$E2E_PORT` (default 5611) with a private temp DB; needs `np
 | SOLO-01 | `api-authority.test.ts` (create, move, re-read) + `gameplay.spec.ts` (guest and account, reload resumes) | API written; UI planned |
 | SOLO-02 | `api-authority.test.ts` (sizes 3-8 accepted by oracle parity, 2/9/0/-1/4.5 -> 400) | written; needs server |
 | SOLO-03 | `tests/integration/undo.test.ts` (undo restores board/score/PRNG, limit 100, replay stays coherent) | planned; needs server |
-| RANK-01 | `tests/acceptance/ranked.spec.ts` (one attempt/account/challenge, resume, forfeit consumes) | planned; needs server |
-| RANK-02 | `ranked.spec.ts` (undo and custom settings rejected 403/400; 500 move cap enforced) | planned; needs server |
-| RANK-03 | `ranked.spec.ts` (human/bot/casual boards separate, stable cursor pagination) | planned; needs server |
+| RANK-01 | `competition-bots.test.ts` (attempt policy truth table) + `tests/acceptance/ranked.spec.ts` | policy **written+run, passes**; HTTP/UI planned; needs server |
+| RANK-02 | `competition-bots.test.ts` (undo/custom FORBIDDEN, exact official-rules predicate, 500 cap) + `ranked.spec.ts` | policy **written+run, passes**; HTTP planned; needs server |
+| RANK-03 | `competition-bots.test.ts` (6000 adversarial standings vs BigInt oracle, ladder order) + `ranked.spec.ts` (boards separated, cursor pagination) | ordering **written+run, passes**; HTTP planned; needs server |
 | RANK-04 | `tests/integration/forged-score.test.ts` (client posts claimed score/state -> ignored; import never ranked) | planned; needs server |
-| BOT-01 | `tests/integration/bots.test.ts` (four strategies: legal move, determinism, metadata) | planned; needs bots |
-| BOT-02 | `bots.test.ts` + `bot.spec.ts` (budget respected, cancel/pause/step, legal fallback) | planned; needs bots+server |
-| BOT-03 | `bots.test.ts` (bot RNG namespace differs; mutate future spawn stream, bot decision unchanged) | planned; needs bots |
-| BOT-04 | `bots.test.ts` (league repeat run identical; human Elo unchanged) | planned; needs bots+competition |
+| BOT-01 | `tests/integration/competition-bots.test.ts` (four strategies: oracle-legal, deterministic, metadata, config validation, whole BotGame replayed in the oracle) | **package side written+run, passes**; API side (`/bots/runs`) planned; needs server |
+| BOT-02 | `competition-bots.test.ts` (aborted signal, node budget bounds, injected clock, 150 ms real-time budget) + `bot.spec.ts` (UI pause/step/cancel) | **package side written+run, passes**; API/UI planned; needs server+web |
+| BOT-03 | `competition-bots.test.ts` (bot stream == independently derived BOT-namespace stream, differs from game stream; determinism; entry point takes board only) | **written+run, passes** (black-box limit documented in the test) |
+| BOT-04 | `competition-bots.test.ts` (runTournament repeat checksum, exact BigInt table arithmetic; bot matches never produce rating events) | **package side written+run, passes**; API league planned |
 
 ## Duels, ratings, replay
 
 | ID | Test | Status / dependency |
 | --- | --- | --- |
-| DUEL-01..06 | `tests/integration/duels.test.ts` (API with two clients) + `tests/acceptance/duel.spec.ts` (two browser contexts) | planned; needs competition+server+web |
+| DUEL-02..05 | `competition-bots.test.ts` (exhaustive 784-case resolver table with scores > 2^53, dead-seat continuation, duplicate/replayed events idempotent, exactly-once rating, conserved integer Elo, bots never rated, double forfeit) ; DUEL-01/06 and the HTTP/WS side in `tests/integration/duels.test.ts` + `tests/acceptance/duel.spec.ts` | **pure side written+run, passes**; DUEL-01/06 + HTTP planned; needs server+web |
 | REP-01 | `tests/integration/replay.test.ts` (every checksum matches the oracle; snapshot seek) | planned; needs server |
 | REP-02 | `replay.test.ts` (export/import round trip, exact numbers, no secrets) | planned; needs server |
 | REP-03 | `replay.test.ts` (oversize, corrupt, unknown version rejected before install: `IMPORT_INVALID` / `REPLAY_VERSION_UNSUPPORTED`) | planned; needs server |
