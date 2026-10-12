@@ -117,3 +117,14 @@ integration (do not commit `package-lock.json` changes from a worker branch).
 - C10. `legalMoves`/`isGameOver` reflect game rules only. A move that would create an exponent above
   `LIMITS.maxExponent` stays "legal"; applying it fails with `RESOURCE_LIMIT` and preserves the state (the game is
   never declared over or won because of the resource guard).
+- C11. Undo beyond the casual history limit (100) or with nothing left to undo => 400 `VALIDATION_ERROR`
+  (state unchanged). 403 `FORBIDDEN` is only for modes where undo is not allowed (ranked/duel/undo-disabled practice)
+  and for ownership.
+- C12. `ReplayFile.moves[].revision` is the canonical replay revision (1..n over the accepted moves on the final path,
+  exactly what `engine.replay`/`verifyReplay` produce), not the server's internal game revision (which also counts
+  undo/forfeit commands). Exporters re-derive per-move checksums with `engine.replay`.
+- C13. Bot runs: `GET /bots/runs/:id` returns `BotRunView` (owner only) for polling; `bot.progress`/`bot.finished`
+  WebSocket events mirror it. Pause/resume/step live under `POST /bots/runs/:id/{pause,resume,step}`.
+- C14. Game command responses: `POST /games` → 201 `GameResponse`; moves → 200 `MoveResponse`; undo/forfeit
+  (`RevisionCommandRequest`) → 200 `GameResponse`; a repeated commandId returns the originally stored response;
+  commands on a non-active game → 409 `REVISION_CONFLICT` if the revision is stale, else 403 `FORBIDDEN`.
