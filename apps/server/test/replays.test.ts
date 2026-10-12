@@ -107,6 +107,7 @@ describe("replays", { timeout: 120_000 }, () => {
     // imports are not games and never reach any board
     expect((await b.get<Page<GameView>>("/games?status=all")).body.items).toEqual([]);
     expect(t.db.raw.prepare("SELECT count(*) AS n FROM games WHERE owner_user_id = (SELECT id FROM users WHERE username_normalized = 'importer_b')").get()).toEqual({ n: 0 });
+    t.db.raw.prepare("UPDATE games SET status = 'completed' WHERE id = ?").run(g.id);
     const board = await b.get<Page<LeaderboardEntry>>("/leaderboards?kind=casual");
     expect(board.body.items.map((e) => e.displayName)).toEqual(["exporter_a"]);
     // an empty (just-started) replay is valid too
