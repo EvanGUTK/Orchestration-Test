@@ -110,3 +110,7 @@ integration (do not commit `package-lock.json` changes from a worker branch).
 - C8. `preferences.keyBindings` is a partial record (any subset of directions). Register/login return
   `AuthResponse` (= `MeResponse`); session clearing is `POST /auth/logout` with `{ "allSessions": true }`;
   logout and password change return `RevokeResponse` `{ ok: true, revokedSessions }`.
+- C9. `chooseMove` returns a tagged union: `{ kind: "move", decision, rng }` or
+  `{ kind: "no-legal-move", reason: "dead-board" | "game-not-active", rng }`. Bot strategies read only
+  `state.status` and `state.board`. The Node runner is the `@g2048/bots/runner` entry; time budgets apply only
+  when a clock is injected (tournaments are node-budget only and machine-independent).
