@@ -7,13 +7,19 @@ import type { AbortSignalLike } from "./types.ts";
 
 export type TournamentEntry = { id: string; config: BotConfig };
 
-export type TournamentOptions = {
+/** The structured-cloneable part of the options (what a worker thread receives). */
+export type SerializableTournamentOptions = {
   entries: TournamentEntry[];
   /** One game per (entry, seed); every entry plays the same seeds. */
   gameSeeds: string[];
   rules?: Ruleset; // default: official duel rules (4x4, 500-move cap)
   maxMoves?: number;
+};
+
+export type TournamentOptions = SerializableTournamentOptions & {
+  /** Polled inside every search: cancels mid-game, not just between games. */
   signal?: AbortSignalLike;
+  /** Progress callback, once per finished game. */
   onGame?: (game: TournamentGame) => void;
 };
 
