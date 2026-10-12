@@ -106,8 +106,12 @@ kbd {
 .brand {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  flex: none;
   gap: var(--space-3);
   min-height: var(--target);
+  /* The link stays a full 44x44 target even when only the 2^inf mark is visible (narrow phones). */
+  min-width: var(--target);
   text-decoration: none;
   font-family: var(--font-display);
   font-weight: 700;
