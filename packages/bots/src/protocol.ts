@@ -34,3 +34,17 @@ export type WorkerMessage =
   | { type: "finished"; final: WorkerFinal }
   | { type: "cancelled"; final: WorkerFinal }
   | { type: "error"; message: string };
+
+/** Tournament-in-a-worker protocol. Control block reuses CTL_CANCEL only. */
+export type TournamentWorkerInit = {
+  runId: string;
+  options: import("./tournament.ts").SerializableTournamentOptions;
+  control: SharedArrayBuffer;
+};
+
+export type TournamentWorkerMessage =
+  | { type: "started"; totalGames: number }
+  | { type: "game"; game: import("./tournament.ts").TournamentGame; completed: number; totalGames: number }
+  | { type: "finished"; result: import("./tournament.ts").TournamentResult }
+  | { type: "cancelled"; result: import("./tournament.ts").TournamentResult }
+  | { type: "error"; message: string };

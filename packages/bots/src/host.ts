@@ -84,6 +84,7 @@ export function startBotRun(options: BotRunOptions): BotRunHandle {
   let settled = false;
   let watchdog: ReturnType<typeof setTimeout> | null = null;
   let cancelTimer: ReturnType<typeof setTimeout> | null = null;
+  let pendingSteps = 0; // step() tokens not yet answered by a progress message
   let resolveDone!: (r: BotRunResult) => void;
   const done = new Promise<BotRunResult>((res) => { resolveDone = res; });
   const watchdogMs = options.watchdogMs !== undefined ? options.watchdogMs : options.ignoreTimeBudget ? null : config.timeBudgetMs * 5 + 2000;
@@ -110,7 +111,7 @@ export function startBotRun(options: BotRunOptions): BotRunHandle {
   const armWatchdog = (): void => {
     if (watchdog) clearTimeout(watchdog);
     watchdog = null;
-    if (watchdogMs === null || settled || status !== "running") return;
+    if (watchdogMs === null || settled || (status !== "running" && pendingSteps === 0)) return;
     watchdog = setTimeout(() => {
       if (settled) return;
       void worker.terminate();
@@ -123,6 +124,7 @@ export function startBotRun(options: BotRunOptions): BotRunHandle {
     switch (m.type) {
       case "progress":
         lastRecord = m.record;
+        if (pendingSteps > 0) pendingSteps--;
         options.onProgress?.(m.record);
         armWatchdog();
         break;
@@ -166,6 +168,7 @@ export function startBotRun(options: BotRunOptions): BotRunHandle {
     resume() {
       if (!requireActive() || status !== "paused") return;
       status = "running";
+      pendingSteps = 0;
       Atomics.store(ctl, CTL_STEP, 0);
       Atomics.store(ctl, CTL_PAUSED, 0);
       ctlWake(ctl);
@@ -178,7 +181,9 @@ export function startBotRun(options: BotRunOptions): BotRunHandle {
         Atomics.store(ctl, CTL_PAUSED, 1);
       }
       Atomics.add(ctl, CTL_STEP, 1);
+      pendingSteps++;
       ctlWake(ctl);
+      armWatchdog();
     },
     cancel() {
       if (!requireActive()) return;

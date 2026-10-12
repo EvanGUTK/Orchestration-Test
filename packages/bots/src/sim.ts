@@ -44,6 +44,19 @@ function lineTables(n: number): Int32Array[] {
   return t;
 }
 
+/**
+ * Number-safety bound for the simulator (documented + tested):
+ * - every entry goes through `toGrid`, which rejects any exponent above MAX_SIM_EXPONENT (10^MAX_EXPONENT_DIGITS - 1,
+ *   the same cap the engine applies to stored cells);
+ * - a search adds at most +1 per merge and at most 2 * BOT_LIMITS.maxDepth plies of merges (<= 16), so every exponent
+ *   the simulator can ever hold is <= MAX_SIM_EXPONENT + SIM_GROWTH_MARGIN < 2^31 - 1, i.e. it fits an Int32Array cell
+ *   and is exactly representable as a Number (far below 2^53). Real games stay <= 1,000,000 (engine merge limit).
+ * Tile VALUES and scores never enter this module as Numbers: greedy gains use BigInt of the merged exponents.
+ */
+export const MAX_SIM_EXPONENT = 10 ** MAX_EXPONENT_DIGITS - 1;
+export const SIM_GROWTH_MARGIN = 64;
+export const MAX_SIM_CELL = MAX_SIM_EXPONENT + SIM_GROWTH_MARGIN;
+
 /** Defensive copy of a board into exponent integers. Throws on malformed boards / exponents beyond the engine guard. */
 export function toGrid(board: Board): { grid: Grid; n: number } {
   const n = board.size;
@@ -56,7 +69,7 @@ export function toGrid(board: Board): { grid: Grid; n: number } {
     if (c === null || c === undefined) continue;
     if (!isExponent(c) || c.length > MAX_EXPONENT_DIGITS) throw new DomainError("RESOURCE_LIMIT", "tile exponent beyond bot search limits");
     const e = Number(c);
-    if (e > 0x7fffffff) throw new DomainError("RESOURCE_LIMIT", "tile exponent beyond bot search limits");
+    if (!Number.isSafeInteger(e) || e > MAX_SIM_EXPONENT) throw new DomainError("RESOURCE_LIMIT", "tile exponent beyond bot search limits");
     grid[i] = e;
   }
   return { grid, n };
