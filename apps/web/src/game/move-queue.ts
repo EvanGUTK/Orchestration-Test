@@ -60,6 +60,15 @@ export class MoveQueue<T> {
     void this.pump();
   }
 
+  /**
+   * Puts an item back at the FRONT and pauses (call from inside `run`). Used when the authority could
+   * not be reached: the move and everything queued behind it wait, in order, for an explicit resume.
+   */
+  requeueFront(item: T): void {
+    this.items.unshift(item);
+    this.paused = true;
+  }
+
   /** Drops queued (not in-flight) moves, e.g. after game over or a new game. Returns how many. */
   clear(): number {
     const n = this.items.length;

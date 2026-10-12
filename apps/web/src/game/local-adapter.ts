@@ -22,7 +22,12 @@ export function createLocalAdapter(engine: EnginePort, saves: GuestSaveStore): G
 
   function withState(state: GameState): GameSession {
     if (!session) throw new Error("No session");
-    session = { ...session, state, undoDepth: history.length };
+    session = {
+      ...session,
+      state,
+      undoDepth: history.length,
+      canUndo: session.rules.undo && history.length > 0,
+    };
     return session;
   }
 
@@ -46,7 +51,16 @@ export function createLocalAdapter(engine: EnginePort, saves: GuestSaveStore): G
       const state = engine.deserialize(saved.state);
       const rules = canonicalGuestRules(saved.rules);
       if (rules && state.board.size === rules.size && state.rulesetVersion === rules.version) {
-        session = { id: saved.id, mode: saved.mode, rules, seed: saved.seed, state, undoDepth: 0 };
+        session = {
+          id: saved.id,
+          mode: saved.mode,
+          rules,
+          seed: saved.seed,
+          state,
+          undoDepth: 0,
+          canUndo: false,
+          authority: "local",
+        };
       }
     } catch {
       session = null;
@@ -67,6 +81,8 @@ export function createLocalAdapter(engine: EnginePort, saves: GuestSaveStore): G
         seed,
         state,
         undoDepth: 0,
+        canUndo: false,
+        authority: "local",
       };
       persist();
       return session;
@@ -106,6 +122,16 @@ export function createLocalAdapter(engine: EnginePort, saves: GuestSaveStore): G
       history = history.slice(0, -1);
       withState(previous);
       persist();
+      return session;
+    },
+    async forfeit() {
+      if (!session || session.state.status !== "active") return session;
+      history = [];
+      withState(engine.forfeit(session.state));
+      persist();
+      return session;
+    },
+    async reload() {
       return session;
     },
     async discard() {

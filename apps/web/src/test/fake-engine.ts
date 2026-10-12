@@ -72,6 +72,7 @@ export function createFakeEngine(): FakeEngine {
       return { state: next, changed: true, scoreDelta: delta, events };
     },
     legalMoves: () => ["up", "right", "down", "left"],
+    forfeit: (state) => ({ ...state, status: "forfeited" }),
     serialize: (state) => JSON.stringify(state),
     deserialize(json: string) {
       const value = JSON.parse(json) as GameState;

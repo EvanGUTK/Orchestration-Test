@@ -2,7 +2,7 @@ import { useId, useState } from "react";
 import type { KeyboardEvent, ReactNode } from "react";
 import { DIRECTIONS } from "@g2048/contracts";
 import type { Direction } from "@g2048/contracts";
-import { useServices, useSettings } from "../app/services.js";
+import { useAuth, useServices, useSettings, useSettingsSync } from "../app/services.js";
 import { Tile } from "../components/Tile.js";
 import { DEFAULT_KEY_BINDINGS, describeKey, normalizeKey, RESERVED_KEYS } from "../input/keyboard.js";
 import type { Settings } from "../settings/store.js";
@@ -143,6 +143,30 @@ function KeyBindingsEditor({
   );
 }
 
+function SyncStatus() {
+  const { settings } = useServices();
+  const auth = useAuth();
+  const sync = useSettingsSync();
+  if (auth.status !== "signed-in") {
+    return <p className="lede">Preferences are saved in this browser for the guest player.</p>;
+  }
+  return (
+    <div className="lede" role="status">
+      {sync.kind === "saving" && <p>Saving to your account…</p>}
+      {sync.kind === "saved" && <p>Preferences are saved to your account ({auth.user.displayName}).</p>}
+      {sync.kind === "error" && (
+        <p className="notice notice--error">
+          {sync.message}{" "}
+          <button type="button" className="button button--small" onClick={() => void settings.retry()}>
+            Retry sync
+          </button>
+        </p>
+      )}
+      {sync.kind === "local" && <p>Preferences are saved in this browser.</p>}
+    </div>
+  );
+}
+
 export function SettingsScreen() {
   const { settings: store } = useServices();
   const settings = useSettings();
@@ -151,7 +175,7 @@ export function SettingsScreen() {
 
   return (
     <div className="panel form">
-      <p className="lede">Preferences are saved in this browser for the guest player.</p>
+      <SyncStatus />
 
       <RadioGroup
         legend="Theme"

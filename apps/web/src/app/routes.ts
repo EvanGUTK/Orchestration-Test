@@ -38,7 +38,7 @@ export const ROUTES: readonly RouteDef[] = [
   { id: "duel", path: "/duel/match", title: "Split-board duel", nav: "Split duel", group: "Compete" },
   { id: "bots", path: "/bots", title: "Bot laboratory", nav: "Bot lab", group: "Compete" },
   { id: "replays", path: "/replays", title: "Replays", nav: "Replays", group: "Compete" },
-  { id: "profile", path: "/profile", title: "Profile statistics", nav: "Profile", group: "You" },
+  { id: "profile", path: "/profile", title: "Profile", nav: "Profile", group: "You" },
   { id: "settings", path: "/settings", title: "Settings", nav: "Settings", group: "You" },
   { id: "data", path: "/data", title: "Data export and backup", nav: "Data & backup", group: "You" },
 ];

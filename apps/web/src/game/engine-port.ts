@@ -9,6 +9,8 @@ export type EnginePort = {
   newGame(rules: Ruleset, seed: string): GameState;
   applyMove(state: GameState, direction: Direction, rules: Ruleset): MoveResult;
   legalMoves(board: Board): Direction[];
+  /** Ends an active game: status "forfeited", same score/rng. */
+  forfeit(state: GameState): GameState;
   serialize(state: GameState): string;
   /** Validates; throws an EngineError-shaped value ({ code }) on bad input/version. */
   deserialize(json: string): GameState;

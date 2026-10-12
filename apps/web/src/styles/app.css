@@ -88,8 +88,8 @@ kbd {
   min-height: 100dvh;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-areas: "head" "nav" "main" "foot";
-  grid-template-rows: auto auto 1fr auto;
+  grid-template-areas: "head" "banner" "nav" "main" "foot";
+  grid-template-rows: auto auto auto 1fr auto;
 }
 
 .masthead {
@@ -253,8 +253,8 @@ kbd {
 @media (min-width: 960px) {
   .shell {
     grid-template-columns: 232px minmax(0, 1fr);
-    grid-template-areas: "head head" "nav main" "nav foot";
-    grid-template-rows: auto 1fr auto;
+    grid-template-areas: "head head" "banner banner" "nav main" "nav foot";
+    grid-template-rows: auto auto 1fr auto;
   }
   .menu-toggle {
     display: none;
@@ -1016,5 +1016,129 @@ kbd {
   .dpad__btn {
     border: 2px solid CanvasText;
     forced-color-adjust: auto;
+  }
+}
+
+/* ---------- Identity, connection, account (FRONTEND-002) ---------- */
+.masthead__right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.identity {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--target);
+  max-width: 11rem;
+  padding: 0 var(--space-3);
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  text-decoration: none;
+  font-weight: 650;
+  font-size: 0.9rem;
+}
+.identity__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.identity__dot {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+}
+.identity--account .identity__dot {
+  background: var(--ok);
+  border-color: var(--ok);
+}
+.banner {
+  grid-area: banner;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--gutter);
+  text-align: center;
+  font-weight: 600;
+  border-bottom: 1px solid var(--line);
+}
+.banner--warn {
+  background: var(--pending-bg);
+  color: var(--pending);
+}
+.banner--error {
+  background: var(--surface-2);
+  color: var(--danger);
+}
+.notice--warn {
+  border-color: var(--pending);
+  background: var(--pending-bg);
+  display: grid;
+  gap: var(--space-3);
+}
+.notice .action-row {
+  margin-top: var(--space-2);
+}
+.field__error {
+  color: var(--danger);
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+input[aria-invalid="true"] {
+  border-color: var(--danger);
+  border-width: 2px;
+}
+.facts {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: var(--space-2) var(--space-4);
+  margin: 0;
+}
+.facts dt {
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+.facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.save-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+}
+.save-list .save-row {
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--line);
+}
+.save-row > div {
+  min-width: 0;
+}
+
+/* Narrow phones: brand mark only (the link keeps its accessible name), compact identity chip. */
+.identity {
+  min-width: 0;
+  flex-shrink: 1;
+}
+@media (max-width: 479px) {
+  .brand__name {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .identity {
+    max-width: 8.5rem;
+  }
+  .menu-toggle {
+    padding: 0 var(--space-3);
   }
 }

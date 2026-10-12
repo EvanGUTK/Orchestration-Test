@@ -1,5 +1,6 @@
 import type { Direction, DomainEvent } from "@g2048/contracts";
 import type { Announcer } from "../a11y/announcer.js";
+import { describeApiError, isApiError } from "../api/client.js";
 import { formatScore, tileDisplay } from "../lib/format.js";
 import type { SoundPlayer } from "../lib/sound.js";
 import type { GameAdapter, GameSession, StartRequest } from "./adapter.js";
@@ -20,9 +21,28 @@ export type GameSnapshot = {
   /** Short visible status line (no-op move, refused input, errors). */
   readonly notice: string | null;
   readonly queued: number;
+  /** Error code of the last failure, for specific recovery actions (e.g. UNAUTHENTICATED -> sign in). */
+  readonly errorCode: string | null;
+  /**
+   * The authority could not be reached: the failed move and everything queued behind it are kept, in
+   * order, until the player retries or discards them.
+   */
+  readonly stalled: { readonly message: string; readonly waiting: number } | null;
 };
 
-type Command = { readonly type: "move"; readonly direction: Direction } | { readonly type: "undo" };
+type Command =
+  | { readonly type: "move"; readonly direction: Direction }
+  | { readonly type: "undo" }
+  | { readonly type: "forfeit" };
+
+const EMPTY: Omit<GameSnapshot, "session"> = {
+  lastMove: null,
+  celebrating: false,
+  notice: null,
+  queued: 0,
+  errorCode: null,
+  stalled: null,
+};
 
 export type ControllerDeps = { announcer: Announcer; sound: SoundPlayer };
 
@@ -42,13 +62,7 @@ export class GameController {
     readonly adapter: GameAdapter,
     private readonly deps: ControllerDeps,
   ) {
-    this.snapshot = {
-      session: adapter.current(),
-      lastMove: null,
-      celebrating: false,
-      notice: null,
-      queued: 0,
-    };
+    this.snapshot = { session: adapter.current(), ...EMPTY };
     this.queue = new MoveQueue<Command>((cmd) => this.execute(cmd), {
       onOverflow: () => this.set({ notice: "Input buffer full — waiting for queued moves to finish." }),
       onError: (_error, cleared) => {
@@ -74,7 +88,7 @@ export class GameController {
   move(direction: Direction, options: { repeat?: boolean } = {}): boolean {
     const session = this.snapshot.session;
     if (!session || session.state.status !== "active" || this.snapshot.celebrating) return false;
-    if (options.repeat && this.queue.busy) return false;
+    if (options.repeat && (this.queue.busy || this.snapshot.stalled)) return false;
     const accepted = this.queue.enqueue({ type: "move", direction });
     if (accepted) this.set({ queued: this.queue.pending });
     return accepted;
@@ -88,22 +102,80 @@ export class GameController {
     return accepted;
   }
 
+  /** Ends the current game after queued moves (casual: abandon; server: forfeit exactly once). */
+  forfeit(): boolean {
+    const session = this.snapshot.session;
+    if (!session || session.state.status !== "active") return false;
+    return this.queue.enqueue({ type: "forfeit" });
+  }
+
   async start(request: StartRequest): Promise<GameSession> {
-    this.queue.clear();
-    await this.queue.idle();
+    await this.settle();
     const session = await this.adapter.start(request);
     this.queue.resume();
-    this.set({ session, lastMove: null, celebrating: false, notice: null, queued: 0 });
+    this.set({ session, ...EMPTY });
     const size = `${session.rules.size} by ${session.rules.size}`;
     this.deps.announcer.announce(`New ${request.mode} game, ${size}. Score 0.`, "important");
     return session;
   }
 
+  /** Loads a session obtained from the adapter (e.g. resuming a saved server game). */
+  async load(open: (adapter: GameAdapter) => Promise<GameSession>): Promise<GameSession> {
+    await this.settle();
+    const session = await open(this.adapter);
+    this.queue.resume();
+    this.set({ session, ...EMPTY });
+    return session;
+  }
+
   async discard(): Promise<void> {
+    await this.settle();
+    await this.adapter.discard();
+    this.queue.resume();
+    this.set({ session: null, ...EMPTY });
+  }
+
+  /** Retries a stalled queue: the unresolved move is re-sent with its original commandId first. */
+  retryStalled(): void {
+    if (!this.snapshot.stalled) return;
+    this.set({ stalled: null, notice: null, errorCode: null });
+    this.queue.resume();
+  }
+
+  /**
+   * Drops the waiting moves and re-reads the authoritative state (which already reflects the unresolved
+   * move if the server applied it). Nothing is applied twice.
+   */
+  async discardStalled(): Promise<void> {
+    const dropped = this.queue.clear();
+    try {
+      const session = await this.adapter.reload();
+      this.set({
+        ...EMPTY,
+        session,
+        notice: `${dropped} waiting move(s) discarded. Showing the saved game.`,
+      });
+      this.queue.resume();
+    } catch {
+      this.set({ notice: "Still can't reach the server. Try again shortly.", queued: 0 });
+    }
+  }
+
+  /** Re-reads the authoritative game state (after a conflict or error). */
+  async reload(): Promise<void> {
+    await this.settle();
+    try {
+      const session = await this.adapter.reload();
+      this.queue.resume();
+      this.set({ session, ...EMPTY });
+    } catch {
+      this.set({ notice: "Couldn't reload the game. Check the connection and try again." });
+    }
+  }
+
+  private async settle() {
     this.queue.clear();
     await this.queue.idle();
-    await this.adapter.discard();
-    this.set({ session: null, lastMove: null, celebrating: false, notice: null, queued: 0 });
   }
 
   /** Closes the one-time 2048 dialog and resumes queued input. */
@@ -138,10 +210,29 @@ export class GameController {
 
   private async execute(cmd: Command): Promise<void> {
     const { announcer, sound } = this.deps;
-    if (cmd.type === "undo") {
-      const session = await this.adapter.undo();
-      if (session) {
-        this.set({ session, lastMove: null, notice: null, queued: this.queue.pending });
+    if (cmd.type === "undo" || cmd.type === "forfeit") {
+      let session: GameSession | null;
+      try {
+        session = cmd.type === "undo" ? await this.adapter.undo() : await this.adapter.forfeit();
+      } catch (error) {
+        const cleared = this.queue.clear();
+        const what = cmd.type === "undo" ? "Undo" : "Ending the game";
+        const message = `${what} failed: ${describeApiError(error)}`;
+        this.set({
+          notice: cleared > 0 ? `${message} ${cleared} queued move(s) cancelled.` : message,
+          errorCode: isApiError(error) ? error.code : "INTERNAL_ERROR",
+          session: this.adapter.current(),
+          queued: 0,
+        });
+        announcer.announce(message, "important");
+        return;
+      }
+      if (cmd.type === "forfeit") {
+        this.queue.clear();
+        this.set({ session, lastMove: null, notice: "Game ended.", queued: 0, errorCode: null });
+        announcer.announce("Game ended.", "important");
+      } else if (session) {
+        this.set({ session, lastMove: null, notice: null, queued: this.queue.pending, errorCode: null });
         announcer.announce(`Move undone. Score ${formatScore(session.state.score).spoken}.`);
       } else {
         this.set({ notice: "Nothing to undo.", queued: this.queue.pending });
@@ -150,6 +241,19 @@ export class GameController {
     }
 
     const outcome = await this.adapter.move(cmd.direction);
+    if (!outcome.ok && outcome.retryable) {
+      // Keep the move (its commandId stays inside the adapter) and everything behind it, in order.
+      this.queue.requeueFront(cmd);
+      const waiting = this.queue.pending;
+      this.set({
+        stalled: { message: outcome.message, waiting },
+        errorCode: outcome.code,
+        notice: null,
+        queued: waiting,
+      });
+      announcer.announce(`Connection problem. ${waiting} move(s) waiting.`, "important");
+      return;
+    }
     if (!outcome.ok) {
       const cleared = this.queue.clear();
       const message =
@@ -161,12 +265,19 @@ export class GameController {
       this.set({
         notice: cleared > 0 ? `${message} ${cleared} queued move(s) cancelled.` : message,
         queued: 0,
+        errorCode: outcome.code,
+        session: this.adapter.current() ?? this.snapshot.session,
       });
       announcer.announce(message, "important");
       return;
     }
     if (!outcome.changed) {
-      this.set({ notice: `No tiles can move ${DIRECTION_WORD[cmd.direction]}.`, queued: this.queue.pending });
+      // Valid no-op (NO_CHANGE): nothing spawned and no move counted.
+      this.set({
+        errorCode: null,
+        notice: `No tiles can move ${DIRECTION_WORD[cmd.direction]}.`,
+        queued: this.queue.pending,
+      });
       announcer.announce(`Can't move ${DIRECTION_WORD[cmd.direction]}.`);
       return;
     }
@@ -201,6 +312,7 @@ export class GameController {
       lastMove: { seq: this.seq, direction: cmd.direction, events: outcome.events },
       celebrating,
       notice: null,
+      errorCode: null,
       queued: this.queue.pending,
     });
   }
