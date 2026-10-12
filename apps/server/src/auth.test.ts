@@ -47,19 +47,21 @@ function setCookieHeaders(res: { headers: Record<string, unknown> }): string[] {
 }
 
 describe("ACC-01 register / login / logout / password change", () => {
-  it("issues a guest session with strict cookie attributes and a bound CSRF token", async () => {
-    const { app } = await server();
+  it("issues a pending guest token with strict cookie attributes and a bound CSRF token", async () => {
+    const { app, db } = await server();
     const client = new TestClient(app);
     const res = await client.request("GET", "/auth/me");
     expect(res.statusCode).toBe(200);
     const body = res.json() as {
       user: unknown;
-      guest: { id: string };
+      guest: { id: string } | null;
       csrfToken: string;
       preferences: unknown;
     };
     expect(body.user).toBeNull();
-    expect(body.guest.id).toMatch(/^[0-9a-f-]{36}$/);
+    expect(body.guest).toBeNull(); // no database row until a guest-owned action (SEC-FIX-001 M2)
+    expect(db.prepare("SELECT COUNT(*) AS n FROM guests").get()).toEqual({ n: 0 });
+    expect(db.prepare("SELECT COUNT(*) AS n FROM sessions").get()).toEqual({ n: 0 });
     expect(body.csrfToken.length).toBeGreaterThan(20);
     expect(body.preferences).toEqual({});
     const cookie = setCookieHeaders(res).find((c) => c.startsWith("gid="));
@@ -291,8 +293,9 @@ describe("ACC-03 guests and account separation", () => {
   it("a guest cannot act as an account", async () => {
     const { app } = await server();
     const guest = new TestClient(app);
-    const me = (await guest.me()) as { user: unknown; guest: { id: string } };
+    const me = (await guest.me()) as { user: unknown; guest: unknown };
     expect(me.user).toBeNull();
+    expect(me.guest).toBeNull();
     expectEnvelope(
       await guest.request("POST", "/auth/password", {
         currentPassword: PASSWORD,
@@ -304,11 +307,13 @@ describe("ACC-03 guests and account separation", () => {
     expectEnvelope(await guest.request("PATCH", "/profile", { displayName: "Sneaky" }), 403, "FORBIDDEN");
     const prefs = await guest.request("PATCH", "/profile", { preferences: { theme: "dark" } });
     expect(prefs.statusCode, prefs.body).toBe(200);
-    expect(prefs.json()).toMatchObject({
-      user: null,
-      guest: { id: me.guest.id },
-      preferences: { theme: "dark" },
-    });
+    const prefsBody = prefs.json() as { user: unknown; guest: { id: string }; csrfToken: string };
+    expect(prefsBody).toMatchObject({ user: null, preferences: { theme: "dark" } });
+    expect(prefsBody.guest.id).toMatch(/^[0-9a-f-]{36}$/);
+    expect(prefsBody.csrfToken).toBe(guest.csrf); // lazily created guest adopts the pending token
+    const again = (await guest.me()) as { guest: { id: string }; preferences: unknown };
+    expect(again.guest.id).toBe(prefsBody.guest.id);
+    expect(again.preferences).toEqual({ theme: "dark" });
 
     // The guest token presented as an account cookie is not an account session.
     const forged = new TestClient(app);
@@ -485,7 +490,7 @@ describe("error envelope, health, logging", () => {
 
   it("hides internal error details and reports DB_BUSY when the writer queue is full", async () => {
     const busy = await server({ writerQueueMax: 0 });
-    const res = await new TestClient(busy.app).request("GET", "/auth/me");
+    const res = await new TestClient(busy.app).register("busy_user");
     expectEnvelope(res, 503, "DB_BUSY");
     expect(res.headers["retry-after"]).toBe("1");
   });

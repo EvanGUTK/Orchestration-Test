@@ -1,6 +1,7 @@
 import type { FastifyError, FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { API_BASE, ERROR_HTTP_STATUS, type ApiError, type ErrorCode } from "@g2048/contracts";
 import { DbBusyError } from "@g2048/database";
+import { isEngineError } from "@g2048/engine";
 
 /** A typed, client-safe failure. `message` and `details` are sent to the client verbatim. */
 export class AppError extends Error {
@@ -43,6 +44,24 @@ export function toAppError(error: unknown): AppError | null {
   if (error instanceof AppError) return error;
   if (error instanceof DbBusyError) {
     return new AppError("DB_BUSY", "The database is busy; retry shortly", undefined, { "retry-after": "1" });
+  }
+  if (isEngineError(error)) {
+    switch (error.code) {
+      case "RESOURCE_LIMIT":
+        return new AppError(
+          "RESOURCE_LIMIT",
+          "That move would exceed the supported tile size; the game was not changed",
+        );
+      case "GAME_NOT_ACTIVE":
+        return new AppError("FORBIDDEN", "Game is not active");
+      case "REPLAY_VERSION_UNSUPPORTED":
+        return new AppError(
+          "REPLAY_VERSION_UNSUPPORTED",
+          "This game was saved by an unsupported engine version",
+        );
+      default:
+        return null; // engine VALIDATION_ERROR on stored data is a server-side integrity problem (500)
+    }
   }
   const fastifyError = error as Partial<FastifyError>;
   switch (fastifyError.code) {

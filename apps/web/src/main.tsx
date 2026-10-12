@@ -10,6 +10,8 @@ const root = document.getElementById("root");
 if (!root) throw new Error("Missing #root");
 
 const services = createAppServices({ engine: loadLocalEngine(), storage: safeLocalStorage() });
+// Find out whether the local server is reachable and who is signed in; guest play works either way.
+void services.auth.refresh();
 
 createRoot(root).render(
   <StrictMode>

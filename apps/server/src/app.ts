@@ -14,6 +14,8 @@ import { healthRoutes } from "./routes/health.js";
 import { profileRoutes } from "./routes/profile.js";
 import { PasswordHasher } from "./security/passwords.js";
 import { AuthService } from "./services/auth-service.js";
+import { GameService } from "./services/game-service.js";
+import { gameRoutes } from "./routes/games.js";
 import type { Clock, ServiceContext } from "./services/context.js";
 
 export type AppOptions = {
@@ -27,10 +29,14 @@ export type AppOptions = {
   writerQueueMax?: number;
   loginAttemptsPerWindow?: number;
   loginWindowMs?: number;
+  registrationsPerWindow?: number;
+  guestsPerWindow?: number;
+  /** Session/guest purge interval; 0 disables the timer (it still runs once when the app is ready). */
+  maintenanceIntervalMs?: number;
 };
 
 /** Services exposed for feature plugins (ports/adapters): later tasks register routes against these. */
-export type AppServices = { ctx: ServiceContext; auth: AuthService };
+export type AppServices = { ctx: ServiceContext; auth: AuthService; games: GameService };
 
 declare module "fastify" {
   interface FastifyInstance {
@@ -56,9 +62,35 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
       ? { loginAttemptsPerWindow: options.loginAttemptsPerWindow }
       : {}),
     ...(options.loginWindowMs !== undefined ? { loginWindowMs: options.loginWindowMs } : {}),
+    ...(options.registrationsPerWindow !== undefined
+      ? { registrationsPerWindow: options.registrationsPerWindow }
+      : {}),
+    ...(options.guestsPerWindow !== undefined ? { guestsPerWindow: options.guestsPerWindow } : {}),
   });
-  app.decorate("services", { ctx, auth });
+  await auth.warmup();
+  const games = new GameService(ctx);
+  app.decorate("services", { ctx, auth, games });
+
+  // Housekeeping: purge expired/revoked sessions and orphaned guests at startup and periodically.
+  const purge = async (): Promise<void> => {
+    try {
+      const purged = await auth.purgeInactive();
+      if (purged.sessions + purged.guests > 0) app.log.info(purged, "purged inactive sessions/guests");
+    } catch (error) {
+      app.log.warn({ err: error }, "session purge failed");
+    }
+  };
+  const intervalMs = options.maintenanceIntervalMs ?? 60 * 60 * 1000;
+  let timer: NodeJS.Timeout | null = null;
+  app.addHook("onReady", async () => {
+    await purge();
+    if (intervalMs > 0) {
+      timer = setInterval(() => void purge(), intervalMs);
+      timer.unref();
+    }
+  });
   app.addHook("onClose", async () => {
+    if (timer) clearInterval(timer);
     await writer.close();
   });
 
@@ -69,6 +101,7 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   await app.register(healthRoutes, { prefix: API_BASE, db });
   await app.register(authRoutes, { prefix: API_BASE, auth });
   await app.register(profileRoutes, { prefix: API_BASE, auth });
+  await app.register(gameRoutes, { prefix: API_BASE, auth, games });
 
   const serveWeb = webDist !== null && existsSync(webDist);
   if (serveWeb) await app.register(fastifyStatic, { root: webDist, wildcard: false });

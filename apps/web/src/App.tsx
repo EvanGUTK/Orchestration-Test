@@ -5,6 +5,7 @@ import type { RouteGroup, RouteId } from "./app/routes.js";
 import { ServicesProvider, useServices, useSettings } from "./app/services.js";
 import type { AppServices } from "./app/services.js";
 import { LiveRegion } from "./components/LiveRegion.js";
+import { ConnectionBanner, IdentityChip } from "./components/StatusBar.js";
 import { DataScreen } from "./screens/DataScreen.js";
 import { ModesScreen } from "./screens/ModesScreen.js";
 import {
@@ -13,9 +14,9 @@ import {
   DuelScreen,
   LeaderboardsScreen,
   LobbyScreen,
-  ProfileScreen,
   ReplaysScreen,
 } from "./screens/PendingScreens.js";
+import { ProfileScreen } from "./screens/ProfileScreen.js";
 import { PlayScreen } from "./screens/PlayScreen.js";
 import { PracticeScreen } from "./screens/PracticeScreen.js";
 import { SavesScreen } from "./screens/SavesScreen.js";
@@ -101,17 +102,21 @@ function Shell() {
           </span>
           <span className="brand__name">2048 Infinite</span>
         </a>
-        <button
-          type="button"
-          className="menu-toggle"
-          aria-expanded={menuOpen}
-          aria-controls="site-nav"
-          onClick={() => setMenuOpen((v) => !v)}
-        >
-          <span aria-hidden="true" className="menu-toggle__icon" />
-          Menu
-        </button>
+        <div className="masthead__right">
+          <IdentityChip />
+          <button
+            type="button"
+            className="menu-toggle"
+            aria-expanded={menuOpen}
+            aria-controls="site-nav"
+            onClick={() => setMenuOpen((v) => !v)}
+          >
+            <span aria-hidden="true" className="menu-toggle__icon" />
+            Menu
+          </button>
+        </div>
       </header>
+      <ConnectionBanner />
       <nav id="site-nav" className="site-nav" data-open={menuOpen} aria-label="Main">
         {GROUPS.map((group) => (
           <div className="site-nav__group" key={group}>

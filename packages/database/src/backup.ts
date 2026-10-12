@@ -3,8 +3,9 @@ import { copyFileSync, existsSync, mkdirSync, renameSync, rmSync, statSync } fro
 import { basename, dirname, join } from "node:path";
 import { backup as sqliteBackup, DatabaseSync } from "node:sqlite";
 import { RestoreError } from "./errors.js";
-import { lockHolder } from "./lock.js";
-import { inspectMigrations, type Migration } from "./migrate.js";
+import { acquireDatabaseLock, DatabaseLockedError } from "./lock.js";
+import { inspectMigrations, migrate, type Migration } from "./migrate.js";
+import { sha256Hex } from "./rulesets.js";
 
 function stamp(): string {
   return new Date().toISOString().replace(/[:.]/g, "-");
@@ -48,6 +49,58 @@ export async function backupDatabase(db: DatabaseSync, destination: string): Pro
   return destination;
 }
 
+type SchemaObject = { type: string; name: string; tbl_name: string; sql: string | null };
+
+function schemaObjects(db: DatabaseSync): SchemaObject[] {
+  return db
+    .prepare(
+      "SELECT type, name, tbl_name, sql FROM sqlite_master WHERE name NOT LIKE 'sqlite_%' ORDER BY type, name",
+    )
+    .all() as SchemaObject[];
+}
+
+/** SHA-256 over every schema object definition (type, name, table, SQL), excluding sqlite internals. */
+export function schemaDigest(db: DatabaseSync): string {
+  return sha256Hex(JSON.stringify(schemaObjects(db)));
+}
+
+/** Schema objects of a fresh in-memory database migrated to exactly `version`. */
+function expectedSchema(migrations: readonly Migration[], version: number): SchemaObject[] {
+  const mem = new DatabaseSync(":memory:");
+  try {
+    migrate(mem, migrations.slice(0, version));
+    return schemaObjects(mem);
+  } finally {
+    mem.close();
+  }
+}
+
+/**
+ * Every object a fresh database at `version` has must exist with byte-identical SQL (no dropped or
+ * edited tables, constraints, indexes, or triggers). Extra plain tables/indexes are tolerated (the
+ * app never reads them); extra triggers or views are rejected because they can change behaviour.
+ * Returns a problem description, or null when the schema is acceptable.
+ */
+export function compareSchema(
+  db: DatabaseSync,
+  migrations: readonly Migration[],
+  version: number,
+): string | null {
+  const actual = new Map(schemaObjects(db).map((o) => [`${o.type}:${o.name}`, o]));
+  for (const expected of expectedSchema(migrations, version)) {
+    const found = actual.get(`${expected.type}:${expected.name}`);
+    if (!found) return `missing ${expected.type} ${expected.name}`;
+    if (found.sql !== expected.sql || found.tbl_name !== expected.tbl_name) {
+      return `modified ${expected.type} ${expected.name}`;
+    }
+    actual.delete(`${expected.type}:${expected.name}`);
+  }
+  for (const extra of actual.values()) {
+    if (extra.type === "trigger" || extra.type === "view") return `unexpected ${extra.type} ${extra.name}`;
+  }
+  return null;
+}
+
 export type ValidationReport = { appliedMigrations: number[]; pendingMigrations: number[] };
 
 /**
@@ -83,6 +136,15 @@ export function validateDatabaseFile(path: string, migrations: readonly Migratio
     if (status.mismatched.length > 0) {
       throw new RestoreError(`migration checksum mismatch for [${status.mismatched.join(", ")}]`);
     }
+    const maxApplied = Math.max(...status.applied);
+    if (status.applied.length !== maxApplied) {
+      throw new RestoreError("migration history has gaps");
+    }
+    // Same versions must mean the same schema: reject hand-edited tables, triggers, or indexes.
+    const problem = compareSchema(db, migrations, maxApplied);
+    if (problem) {
+      throw new RestoreError(`schema does not match migration ${maxApplied} of this build: ${problem}`);
+    }
     return { appliedMigrations: status.applied, pendingMigrations: status.pending.map((m) => m.version) };
   } catch (error) {
     if (error instanceof RestoreError) throw error;
@@ -103,9 +165,11 @@ export type RestoreResult = {
 
 /**
  * Offline restore. Rules:
- *  1. Refuses while a live process holds `<target>.lock` (the server must be stopped).
+ *  1. Refuses while a live process holds `<target>.lock` (the server must be stopped), and holds
+ *     that lock itself until the restore finishes. Refuses a source with a `-wal` sidecar.
  *  2. Copies the source to a staging file next to the target and validates the STAGED copy
- *     (integrity_check, foreign_key_check, known migration versions/checksums). Any failure deletes
+ *     (integrity_check, foreign_key_check, known migration versions/checksums, and a schema digest
+ *     matching a fresh database migrated to the same version; see compareSchema). Any failure deletes
  *     the staging file and leaves the active database untouched.
  *  3. Checkpoints the current target and saves it via the backup API as `<target>.pre-restore-<stamp>`.
  *  4. Atomically renames the staged file over the target and removes stale -wal/-shm sidecars.
@@ -116,13 +180,38 @@ export async function restoreDatabase(
   target: string,
   migrations: readonly Migration[],
 ): Promise<RestoreResult> {
-  const holder = lockHolder(target);
-  if (holder)
-    throw new RestoreError(
-      `refusing to restore: the server (pid ${holder.pid}) holds the database; stop it first`,
-    );
+  let release: () => void;
+  try {
+    // Hold the owner lock for the whole restore so a server cannot start mid-restore (L4).
+    release = acquireDatabaseLock(target);
+  } catch (error) {
+    if (error instanceof DatabaseLockedError) {
+      throw new RestoreError(
+        `refusing to restore: the server (pid ${error.holderPid}) holds the database; stop it first`,
+      );
+    }
+    throw error;
+  }
+  try {
+    return await restoreLocked(source, target, migrations);
+  } finally {
+    release();
+  }
+}
+
+async function restoreLocked(
+  source: string,
+  target: string,
+  migrations: readonly Migration[],
+): Promise<RestoreResult> {
   if (!existsSync(source) || !statSync(source).isFile())
     throw new RestoreError(`backup not found: ${source}`);
+  if (existsSync(`${source}-wal`)) {
+    throw new RestoreError(
+      `${source}-wal exists: the source looks like a live or uncheckpointed database. ` +
+        "Restore only files written by `npm run db:backup`, or stop the program using it so SQLite checkpoints its WAL.",
+    );
+  }
   mkdirSync(dirname(target), { recursive: true });
 
   const staged = join(dirname(target), `.${basename(target)}.restore-${randomBytes(4).toString("hex")}`);

@@ -76,17 +76,47 @@ function derive(password: string, salt: Buffer, params: PasswordParams): Promise
   });
 }
 
+/** Small FIFO semaphore bounding concurrent Argon2 derivations (each uses ~19 MiB and a pool thread). */
+class Semaphore {
+  #free: number;
+  readonly #waiters: (() => void)[] = [];
+  constructor(slots: number) {
+    this.#free = Math.max(1, slots);
+  }
+  async run<T>(work: () => Promise<T>): Promise<T> {
+    if (this.#free > 0) this.#free -= 1;
+    else await new Promise<void>((resolve) => this.#waiters.push(resolve));
+    try {
+      return await work();
+    } finally {
+      const next = this.#waiters.shift();
+      if (next) next();
+      else this.#free += 1;
+    }
+  }
+}
+
+export const DEFAULT_HASH_CONCURRENCY = 2;
+
 export class PasswordHasher {
   readonly params: PasswordParams;
+  readonly #limit: Semaphore;
   #dummy: Promise<string> | null = null;
 
-  constructor(params: PasswordParams = CURRENT_PASSWORD_PARAMS) {
+  constructor(params: PasswordParams = CURRENT_PASSWORD_PARAMS, options: { concurrency?: number } = {}) {
     this.params = params;
+    this.#limit = new Semaphore(options.concurrency ?? DEFAULT_HASH_CONCURRENCY);
+  }
+
+  /** Builds the dummy hash used for unknown usernames ahead of the first login (SEC-FIX-001 L1). */
+  async warmup(): Promise<void> {
+    this.#dummy ??= this.hash("dummy-password-for-timing-equalization");
+    await this.#dummy;
   }
 
   async hash(password: string): Promise<string> {
     const salt = randomBytes(this.params.saltLength);
-    const tag = await derive(password, salt, this.params);
+    const tag = await this.#limit.run(() => derive(password, salt, this.params));
     const p = this.params;
     return `$argon2id$v=19$pv=${p.version},m=${p.memoryKiB},t=${p.passes},p=${p.parallelism}$${b64(salt)}$${b64(tag)}`;
   }
@@ -95,7 +125,7 @@ export class PasswordHasher {
   async verify(password: string, stored: string): Promise<boolean> {
     const parsed = parse(stored);
     if (!parsed) return false;
-    const tag = await derive(password, parsed.salt, parsed.params);
+    const tag = await this.#limit.run(() => derive(password, parsed.salt, parsed.params));
     return tag.length === parsed.tag.length && timingSafeEqual(tag, parsed.tag);
   }
 
