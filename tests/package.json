@@ -1,0 +1,17 @@
+{
+  "name": "@g2048/tests",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@g2048/bots": "0.1.0",
+    "@g2048/competition": "0.1.0",
+    "@g2048/contracts": "0.1.0",
+    "@g2048/database": "0.1.0",
+    "@g2048/engine": "0.1.0",
+    "@g2048/server": "0.1.0"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.13.0"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2023", "DOM"],
+    "rootDir": ".",
+    "outDir": "../build/tests-tsc",
+    "emitDeclarationOnly": true,
+    "tsBuildInfoFile": "../build/tests-tsc/.tsbuildinfo"
+  },
+  "include": ["acceptance/**/*.ts", "integration/**/*.ts", "performance/**/*.ts"],
+  "references": [
+    { "path": "../packages/contracts" },
+    { "path": "../packages/engine" },
+    { "path": "../packages/database" },
+    { "path": "../packages/bots" },
+    { "path": "../packages/competition" },
+    { "path": "../apps/server" }
+  ]
+}

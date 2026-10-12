@@ -1,0 +1,13 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/contracts" },
+    { "path": "packages/engine" },
+    { "path": "packages/database" },
+    { "path": "packages/bots" },
+    { "path": "packages/competition" },
+    { "path": "apps/server" },
+    { "path": "apps/web" },
+    { "path": "tests" }
+  ]
+}

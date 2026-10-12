@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": { "rootDir": "src", "outDir": "dist", "tsBuildInfoFile": "dist/.tsbuildinfo" },
+  "include": ["src"],
+  "references": [
+    { "path": "../../packages/contracts" },
+    { "path": "../../packages/engine" },
+    { "path": "../../packages/database" },
+    { "path": "../../packages/bots" },
+    { "path": "../../packages/competition" }
+  ]
+}
