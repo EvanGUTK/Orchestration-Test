@@ -8,8 +8,13 @@
       "source": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./runner": {
+      "source": "./src/runner/index.ts",
+      "types": "./dist/runner/index.d.ts",
+      "default": "./dist/runner/index.js"
     }
   },
   "files": ["dist"],
-  "dependencies": { "@g2048/contracts": "0.1.0", "@g2048/engine": "0.1.0" }
+  "dependencies": { "@g2048/competition": "0.1.0", "@g2048/contracts": "0.1.0", "@g2048/engine": "0.1.0" }
 }
