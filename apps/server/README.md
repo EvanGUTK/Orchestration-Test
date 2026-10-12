@@ -48,6 +48,33 @@ Shared requirements: [architecture](../../docs/ARCHITECTURE.md).
   without echo on a terminal). It revokes all sessions and refuses while the server holds the
   database or migrations are pending.
 
+## Authoritative games (BACKEND-003)
+
+| Endpoint | Notes |
+| --- | --- |
+| `POST /games` | `CreateGameRequest`: `classic` (optional seed) or `practice` (`practiceRuleset`, 3x3..8x8). Guests allowed (created lazily); always casual. 201 `GameResponse`. |
+| `GET /games` | Caller's resumable (`active`) games, newest activity first, `PageQuery` keyset cursor. |
+| `GET /games/:id` | Owner only; any other caller gets 404. |
+| `POST /games/:id/moves` | `MoveRequest`. No-op → 200 `changed:false`, `code:"NO_CHANGE"`, nothing but the command recorded. |
+| `POST /games/:id/undo` | `RevisionCommandRequest`; only when the ruleset allows undo (classic, practice with `undo:true`), at most `historyLimit` (100) consecutive undos; ranked/duel → 403. |
+| `POST /games/:id/forfeit` | Ends an active game exactly once (a repeat with the same `commandId` returns the stored result). |
+| `GET /games/:id/events` | `EventsQuery` (`afterRevision`, `limit` ≤ 500): one record per accepted command (`move` / `undo` / `forfeit`) with its post-state checksum. |
+
+- One writer transaction per command: ownership → stored `commandId` (same payload hash → stored
+  response; different → 409 `IDEMPOTENCY_CONFLICT`) → `expectedRevision` (409 `REVISION_CONFLICT`,
+  `details.currentRevision`) → pure engine transition → `game_commands` + `game_moves` + snapshot +
+  `games` row + profile statistics. The client never supplies state or scores.
+- Every accepted command increments `revision` (an undo restores board/score/PRNG/`acceptedMoves`
+  of the prior state at a new revision; the undone move is kept and marked `undone` so replays of
+  the final path exclude it). Snapshots: creation, every `SNAPSHOT_INTERVAL` revisions, every
+  undo/forfeit and terminal state. Hence the log after the nearest snapshot is plain moves.
+- Restart: before listening, every active game is rebuilt from its nearest snapshot plus the move log
+  and compared checksum by checksum (`GameService.verifyIntegrity`); failures are logged, never
+  repaired. On demand: `node --conditions=source --import tsx apps/server/src/cli.ts verify-games [id]`.
+- A saved state whose checksum does not match is refused (500, logged). Engine `RESOURCE_LIMIT` →
+  503 with the game unchanged; writer queue full → 503 `DB_BUSY`.
+- Later features create games through `GameService.createInTransaction(db, owner, { mode, rules, seed })`.
+
 ## Local-only threat model (security gate 1 notes)
 
 The product binds to loopback and has no remote users. Anyone with OS access to the data directory
