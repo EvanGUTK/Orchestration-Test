@@ -7,6 +7,7 @@ import { Field, EmptyState, ErrorPanel, PageHeading, Spinner } from "../componen
 import { formatDate, groupDecimal, maxExponentOf, tileLabel } from "../format.ts";
 import { Link, useNavigate } from "../router.tsx";
 import { useApp } from "../state/app.tsx";
+import { useStartGame } from "../state/startGame.ts";
 import { loadGuestGame } from "../state/guestSave.ts";
 import { useAsync } from "../state/useAsync.ts";
 import { isEngineAvailable } from "../engine/port.ts";
@@ -25,41 +26,18 @@ export function validatePractice(input: { size: string; fours: string; seed: str
 }
 
 export function PracticeScreen() {
-  const { identity, api } = useApp();
-  const navigate = useNavigate();
+  const { start, busy, error } = useStartGame();
   const [size, setSize] = useState("4");
   const [seed, setSeed] = useState("");
   const [fours, setFours] = useState("1");
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [error, setError] = useState<unknown>(null);
-  const [busy, setBusy] = useState(false);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     const found = validatePractice({ size, fours, seed });
     setErrors(found);
     if (Object.keys(found).length > 0) return;
-    const n = Number(size);
-    const f = Number(fours);
-    setError(null);
-    if (!identity) {
-      const query = new URLSearchParams({ new: "1", size: String(n), fours: String(f), t: String(Date.now()) });
-      if (seed.trim()) query.set("seed", seed.trim());
-      navigate(`/play?${query.toString()}`);
-      return;
-    }
-    setBusy(true);
-    try {
-      const game = await api.createGame({
-        mode: "practice",
-        custom: { boardSize: n, spawnFourTenths: f, ...(seed.trim() ? { seed: seed.trim() } : {}) },
-      });
-      navigate(`/play/${game.id}`);
-    } catch (e) {
-      setError(e);
-    } finally {
-      setBusy(false);
-    }
+    await start("practice", { boardSize: Number(size), spawnFourTenths: Number(fours), ...(seed.trim() ? { seed: seed.trim() } : {}) });
   };
 
   return (
@@ -193,12 +171,12 @@ export function SavesScreen() {
 
 // --- challenges --------------------------------------------------------------------
 export function ChallengesScreen() {
-  const { api, identity } = useApp();
-  const list = useAsync(async (signal) => challengeItems(await api.challenges(signal)), [api, identity?.userId]);
+  const { api, identity, isUser } = useApp();
+  const list = useAsync(async (signal) => (isUser ? challengeItems(await api.challenges(signal)) : []), [api, identity?.userId]);
   return (
     <>
       <PageHeading title="Ranked challenges" subtitle="Fixed 4x4 rules, 500 accepted moves, no undo. One official attempt each." />
-      {!identity ? (
+      {!isUser ? (
         <EmptyState title="Ranked play needs a local account">
           <Link to="/login">Sign in</Link> or <Link to="/register">create an account</Link>. Guests cannot enter ranked ladders.
         </EmptyState>
@@ -231,9 +209,9 @@ export function ChallengesScreen() {
 }
 
 export function ChallengeDetailScreen(props: { id: string }) {
-  const { api, identity } = useApp();
+  const { api, identity, isUser } = useApp();
   const navigate = useNavigate();
-  const list = useAsync(async (signal) => challengeItems(await api.challenges(signal)), [api, identity?.userId]);
+  const list = useAsync(async (signal) => (isUser ? challengeItems(await api.challenges(signal)) : []), [api, identity?.userId]);
   const [error, setError] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);
   const challenge: Challenge | undefined = list.data?.find((c) => c.id === props.id);
@@ -251,7 +229,7 @@ export function ChallengeDetailScreen(props: { id: string }) {
     }
   };
 
-  if (!identity) {
+  if (!isUser) {
     return (
       <EmptyState title="Sign in to enter a challenge">
         <Link to="/login">Sign in</Link> first. Guests cannot enter ranked ladders.

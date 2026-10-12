@@ -7,7 +7,7 @@ import { EmptyState, ErrorPanel, PageHeading, Spinner } from "../components/comm
 import { GamePlay } from "../components/GamePlay.tsx";
 import { getEngine, isEngineAvailable } from "../engine/port.ts";
 import { GameController } from "../game/controller.ts";
-import { useGameController } from "../game/hooks.ts";
+import { useControllerSnapshot, useGameController } from "../game/hooks.ts";
 import { LocalTransport, RemoteTransport } from "../game/transports.ts";
 import { Link, useNavigate, useRoute } from "../router.tsx";
 import { useApp } from "../state/app.tsx";
@@ -174,6 +174,7 @@ function RemoteGame(props: { view: GameView }) {
   };
 
   const official = view.mode === "ranked" || view.mode === "duel";
+  const liveStatus = useControllerSnapshot(controller).state.status;
   return (
     <>
       <PageHeading title={modeTitle(view)} subtitle={official ? "Official rules: no undo, 500 accepted moves. Abandoning forfeits." : "Saved on the local server."} />
@@ -185,11 +186,11 @@ function RemoteGame(props: { view: GameView }) {
         statusNote={view.seed ? `Seed ${view.seed}` : "Seed hidden until the attempt ends"}
         actions={
           <>
-            {official ? (
+            {liveStatus === "active" ? (
               confirm ? (
                 <>
                   <button type="button" className="btn btn-danger" onClick={() => void forfeit()}>
-                    Confirm forfeit
+                    {official ? "Confirm forfeit" : "Confirm end game"}
                   </button>
                   <button type="button" className="btn" onClick={() => setConfirm(false)}>
                     Keep playing
@@ -197,7 +198,7 @@ function RemoteGame(props: { view: GameView }) {
                 </>
               ) : (
                 <button type="button" className="btn" onClick={() => setConfirm(true)}>
-                  Forfeit
+                  {official ? "Forfeit" : "End game"}
                 </button>
               )
             ) : null}
@@ -208,7 +209,7 @@ function RemoteGame(props: { view: GameView }) {
         }
       />
       {forfeitError ? <ErrorPanel error={forfeitError} onRetry={() => void forfeit()} /> : null}
-      {view.state.status !== "active" ? (
+      {liveStatus !== "active" ? (
         <p>
           <Link to={`/replays/${view.id}`}>Open the replay</Link>
         </p>

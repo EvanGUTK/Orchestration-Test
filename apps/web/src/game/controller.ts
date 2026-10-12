@@ -72,7 +72,7 @@ export class GameController {
   constructor(initial: GameState, transport: GameTransport, options: ControllerOptions & { undoAvailable?: number } = {}) {
     this.transport = transport;
     this.opts = {
-      maxQueue: options.maxQueue ?? 8,
+      maxQueue: options.maxQueue ?? 32,
       maxNetworkRetries: options.maxNetworkRetries ?? 3,
       retryDelayMs: options.retryDelayMs ?? 400,
       maxConflictRetries: options.maxConflictRetries ?? 3,

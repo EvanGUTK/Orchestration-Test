@@ -51,7 +51,7 @@ const NAV: { to: string; label: string; needsAccount?: boolean }[] = [
 ];
 
 function Header() {
-  const { identity, serverStatus, signOut } = useApp();
+  const { identity, isUser, serverStatus, signOut } = useApp();
   const route = useRoute();
   return (
     <header className="app-header">
@@ -67,7 +67,7 @@ function Header() {
                 href={`#${item.to}`}
                 className={`nav-link${route.path === item.to || route.path.startsWith(`${item.to}/`) ? " nav-active" : ""}`}
                 aria-current={route.path === item.to ? "page" : undefined}
-                title={item.needsAccount && !identity ? "Needs a local account" : undefined}
+                title={item.needsAccount && !isUser ? "Needs a local account" : undefined}
               >
                 {item.label}
               </a>
@@ -81,7 +81,7 @@ function Header() {
             Server offline
           </span>
         ) : null}
-        {identity ? (
+        {isUser && identity ? (
           <>
             <Link to="/profile" className="nav-link">
               {identity.displayName}
@@ -92,7 +92,7 @@ function Header() {
           </>
         ) : (
           <>
-            <span className="muted">Guest</span>
+            <span className="muted">{identity ? identity.displayName : "Guest (offline)"}</span>
             <Link to="/login" className="btn btn-small">
               Sign in
             </Link>

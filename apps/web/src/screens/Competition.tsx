@@ -55,7 +55,7 @@ export function defaultBot(): BotConfig {
 
 // --- duel lobby --------------------------------------------------------------------
 export function DuelLobbyScreen() {
-  const { identity, api } = useApp();
+  const { isUser, api } = useApp();
   const navigate = useNavigate();
   const [kind, setKind] = useState<MatchKind>("human-vs-human");
   const [bot, setBot] = useState<BotConfig>(defaultBot);
@@ -64,7 +64,7 @@ export function DuelLobbyScreen() {
   const [error, setError] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);
 
-  if (!identity) {
+  if (!isUser) {
     return (
       <>
         <PageHeading title="Duel lobby" />
@@ -195,7 +195,7 @@ function MySeat(props: { view: GameView; onChanged(): void }) {
 }
 
 export function DuelScreen(props: { id: string }) {
-  const { api, identity } = useApp();
+  const { api, isUser } = useApp();
   const match = useAsync((signal) => api.getMatch(props.id, signal), [api, props.id]);
   const [live, setLive] = useState<MatchView | null>(null);
   const [tick, setTick] = useState(0);
@@ -217,10 +217,10 @@ export function DuelScreen(props: { id: string }) {
     () => {
       void api.getMatch(props.id).then(setLive, () => undefined);
     },
-    Boolean(identity),
+    isUser,
   );
 
-  if (!identity) return <EmptyState title="Sign in to view this match"><Link to="/login">Sign in</Link></EmptyState>;
+  if (!isUser) return <EmptyState title="Sign in to view this match"><Link to="/login">Sign in</Link></EmptyState>;
   if (match.status === "loading") return <Spinner label="Loading match" />;
   if (match.status === "error") return <ErrorPanel error={match.error} onRetry={match.reload} />;
   if (!current) return null;
@@ -303,7 +303,7 @@ function SeatColumn(props: { seat: SeatView | null; tick: number }) {
 
 // --- bot laboratory ----------------------------------------------------------------
 export function BotLabScreen() {
-  const { identity, api, prefs } = useApp();
+  const { isUser, api, prefs } = useApp();
   const [config, setConfig] = useState<BotConfig>(defaultBot);
   const [boardSize, setBoardSize] = useState("4");
   const [gameSeed, setGameSeed] = useState("");
@@ -342,7 +342,24 @@ export function BotLabScreen() {
     if (run?.gameId && !game) void refreshGame(run.gameId);
   }, [run?.gameId]);
 
-  if (!identity) {
+  // Polling keeps the lab correct when the WebSocket is down (it is only an accelerator).
+  const runId = run?.id;
+  const active = run?.status === "running" || run?.status === "paused";
+  useEffect(() => {
+    if (!runId || !active) return;
+    const timer = setInterval(() => {
+      api.getBotRun(runId).then(
+        (next) => {
+          setRun(next);
+          if (next.gameId) void refreshGame(next.gameId);
+        },
+        () => undefined,
+      );
+    }, 1500);
+    return () => clearInterval(timer);
+  }, [runId, active]);
+
+  if (!isUser) {
     return (
       <>
         <PageHeading title="Bot laboratory" />
@@ -374,10 +391,13 @@ export function BotLabScreen() {
     }
   };
 
-  const cancel = async () => {
+  const act = async (action: "pause" | "resume" | "step" | "cancel") => {
     if (!run) return;
+    setError(null);
     try {
-      setRun(await api.cancelBotRun(run.id));
+      const next = await api.botRunAction(run.id, action);
+      setRun(next);
+      if (next.gameId) void refreshGame(next.gameId);
     } catch (e) {
       setError(e);
     }
@@ -401,11 +421,17 @@ export function BotLabScreen() {
             <button type="submit" className="btn btn-primary" disabled={busy || running}>
               {busy ? "Starting..." : "Start run"}
             </button>
-            <button type="button" className="btn" disabled={!running} onClick={() => void cancel()}>
+            <button type="button" className="btn" disabled={!running} onClick={() => void act(run?.status === "paused" ? "resume" : "pause")}>
+              {run?.status === "paused" ? "Resume" : "Pause"}
+            </button>
+            <button type="button" className="btn" disabled={run?.status !== "paused"} onClick={() => void act("step")}>
+              Step
+            </button>
+            <button type="button" className="btn" disabled={!running} onClick={() => void act("cancel")}>
               Stop
             </button>
           </div>
-          <p className="muted">Playback speed preference: {prefs.botSpeed}. Pause and single-step controls appear here when the server exposes them.</p>
+          <p className="muted">Playback speed preference: {prefs.botSpeed}.</p>
         </form>
         <section className="panel" aria-label="Run progress" aria-live="polite">
           <h2 className="panel-title">Run</h2>
