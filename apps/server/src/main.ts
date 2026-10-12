@@ -19,7 +19,7 @@ try {
 }
 const { db } = prepared;
 const webDist = config.webDist ?? fileURLToPath(new URL("../../web/dist", import.meta.url));
-const app = await buildApp({ db, webDist, logger: true });
+const app = await buildApp({ db, webDist, logger: true, allowedHosts: config.allowedHosts });
 await app.listen({ host: config.host, port: config.port });
 
 for (const signal of ["SIGINT", "SIGTERM"] as const) {
