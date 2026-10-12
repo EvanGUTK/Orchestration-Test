@@ -1,0 +1,3877 @@
+{
+  "schemaVersion": 1,
+  "contract": "CONTRACT-001",
+  "contractVersion": "v1",
+  "generator": "tests/acceptance/oracle/generate_vectors.py",
+  "conventions": {
+    "seedDerivation": "SHA-256(UTF-8('2048-infinite/v1:' + seed)); first 16 bytes -> 4 little-endian uint32 words; all-zero -> [1,0,0,0]",
+    "prng": "xoshiro128** (xoshiro128ss-v1), words [s0,s1,s2,s3], output uint32",
+    "uniform": "limit = 2^32 - (2^32 mod n); draw until x < limit; return x mod n; each raw draw (incl. rejected, and the single draw for n=1) advances the PRNG",
+    "spawn": "empties row-major; pos = empties[uniform(len)]; v = uniform(10); exponent '2' if v < fourWeight else '1'; default fourWeight = 1",
+    "newGame": "two spawns on empty board; rulesetVersion classic-v1 for 4x4 else practice-v1",
+    "checksum": "lowercase hex SHA-256 of UTF-8 canonical JSON (fixed key order, no whitespace)",
+    "engineVersion": "1.0.0"
+  },
+  "seedDerivation": [
+    {
+      "seed": "0",
+      "hashInputUtf8Hex": "323034382d696e66696e6974652f76313a30",
+      "sha256": "12261334389328250df5d7e39e5b15e97a48d94ef3bc431db95c0af14c209eb5",
+      "words": [
+        873670162,
+        623416120,
+        3822581005,
+        3910491038
+      ]
+    },
+    {
+      "seed": "1",
+      "hashInputUtf8Hex": "323034382d696e66696e6974652f76313a31",
+      "sha256": "4e665cc0134755f96dfb104a15c7b8b410d1483860bd1f7f63adb7b966a6804d",
+      "words": [
+        3227280974,
+        4183115539,
+        1242626925,
+        3032008469
+      ]
+    },
+    {
+      "seed": "abc",
+      "hashInputUtf8Hex": "323034382d696e66696e6974652f76313a616263",
+      "sha256": "fd0cf0981d8d4423ee0b72f30c19fa2f9a848d15afc86b4db91bf219ea7777ac",
+      "words": [
+        2565868797,
+        591695133,
+        4084337646,
+        804919564
+      ]
+    },
+    {
+      "seed": "2048-infinite",
+      "hashInputUtf8Hex": "323034382d696e66696e6974652f76313a323034382d696e66696e697465",
+      "sha256": "320f75afd2a93e4390f72aa66f586e95c28b83048687f5119dfd159c224fb933",
+      "words": [
+        2943684402,
+        1128180178,
+        2787833744,
+        2507036783
+      ]
+    },
+    {
+      "seed": "ünïcødé",
+      "hashInputUtf8Hex": "323034382d696e66696e6974652f76313ac3bc6ec3af63c3b864c3a9",
+      "sha256": "b2c35b330859205d892c2ba061671d7828b17128c54d8c0f005a968744ca3ea0",
+      "words": [
+        861651890,
+        1562401032,
+        2687184009,
+        2015192929
+      ]
+    },
+    {
+      "seed": "challenge:2026-10-12",
+      "hashInputUtf8Hex": "323034382d696e66696e6974652f76313a6368616c6c656e67653a323032362d31302d3132",
+      "sha256": "4e480774e6893166f16a71d168c63c9d2390bd110a145dca591b533dd94a322f",
+      "words": [
+        1946634318,
+        1714522598,
+        3513871089,
+        2638005864
+      ]
+    }
+  ],
+  "xoshiro": [
+    {
+      "label": "reference-state-1-2-3-4",
+      "seed": null,
+      "initialWords": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "outputs": [
+        11520,
+        0,
+        5927040,
+        70819200,
+        2031721883,
+        1637235492,
+        1287239034,
+        3734860849,
+        3729100597,
+        4258142804,
+        337829053,
+        2142557243,
+        3576906021,
+        2006103318,
+        3870238204,
+        1001584594,
+        3804789018,
+        2299676403,
+        3571406116,
+        2962224741
+      ],
+      "wordsAfter": [
+        2573144539,
+        2122557695,
+        2957551883,
+        1847963737
+      ]
+    },
+    {
+      "label": "seed:0",
+      "seed": "0",
+      "initialWords": [
+        873670162,
+        623416120,
+        3822581005,
+        3910491038
+      ],
+      "outputs": [
+        284192572,
+        3282268375,
+        3509637454,
+        3032594605,
+        2591688829,
+        289747438,
+        658416763,
+        3557914351,
+        1522615417,
+        4230369293,
+        3628574757,
+        4057612363,
+        1242190183,
+        3918486768,
+        109349052,
+        2500512353,
+        587989632,
+        641677588,
+        2600307538,
+        2216908150
+      ],
+      "wordsAfter": [
+        4272887295,
+        1432033381,
+        887105179,
+        1657275047
+      ]
+    },
+    {
+      "label": "seed:abc",
+      "seed": "abc",
+      "initialWords": [
+        2565868797,
+        591695133,
+        4084337646,
+        804919564
+      ],
+      "outputs": [
+        2254901144,
+        1931623645,
+        1815523187,
+        2048527714,
+        3444132460,
+        3328517304,
+        3358530496,
+        1268063186,
+        1123411522,
+        2933364352,
+        1373868705,
+        81270503,
+        1425919090,
+        3025051876,
+        1410962083,
+        3258579235,
+        1170347225,
+        1835669196,
+        3745470704,
+        2683603937
+      ],
+      "wordsAfter": [
+        421782319,
+        3960806746,
+        2860794996,
+        1042233583
+      ]
+    }
+  ],
+  "uniform": {
+    "seed": "abc",
+    "sequences": [
+      {
+        "n": 1,
+        "limit": 4294967296,
+        "initialWords": [
+          2565868797,
+          591695133,
+          4084337646,
+          804919564
+        ],
+        "results": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "rawDraws": [
+          2254901144,
+          1931623645,
+          1815523187,
+          2048527714,
+          3444132460,
+          3328517304,
+          3358530496,
+          1268063186,
+          1123411522,
+          2933364352
+        ],
+        "rejectedRawDraws": [],
+        "rawDrawsConsumed": 10,
+        "wordsAfter": [
+          3913452415,
+          2319968251,
+          1337143034,
+          1011371621
+        ]
+      },
+      {
+        "n": 2,
+        "limit": 4294967296,
+        "initialWords": [
+          2565868797,
+          591695133,
+          4084337646,
+          804919564
+        ],
+        "results": [
+          0,
+          1,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "rawDraws": [
+          2254901144,
+          1931623645,
+          1815523187,
+          2048527714,
+          3444132460,
+          3328517304,
+          3358530496,
+          1268063186,
+          1123411522,
+          2933364352
+        ],
+        "rejectedRawDraws": [],
+        "rawDrawsConsumed": 10,
+        "wordsAfter": [
+          3913452415,
+          2319968251,
+          1337143034,
+          1011371621
+        ]
+      },
+      {
+        "n": 3,
+        "limit": 4294967295,
+        "initialWords": [
+          2565868797,
+          591695133,
+          4084337646,
+          804919564
+        ],
+        "results": [
+          2,
+          1,
+          2,
+          1,
+          1,
+          0,
+          1,
+          2,
+          1,
+          1
+        ],
+        "rawDraws": [
+          2254901144,
+          1931623645,
+          1815523187,
+          2048527714,
+          3444132460,
+          3328517304,
+          3358530496,
+          1268063186,
+          1123411522,
+          2933364352
+        ],
+        "rejectedRawDraws": [],
+        "rawDrawsConsumed": 10,
+        "wordsAfter": [
+          3913452415,
+          2319968251,
+          1337143034,
+          1011371621
+        ]
+      },
+      {
+        "n": 10,
+        "limit": 4294967290,
+        "initialWords": [
+          2565868797,
+          591695133,
+          4084337646,
+          804919564
+        ],
+        "results": [
+          4,
+          5,
+          7,
+          4,
+          0,
+          4,
+          6,
+          6,
+          2,
+          2
+        ],
+        "rawDraws": [
+          2254901144,
+          1931623645,
+          1815523187,
+          2048527714,
+          3444132460,
+          3328517304,
+          3358530496,
+          1268063186,
+          1123411522,
+          2933364352
+        ],
+        "rejectedRawDraws": [],
+        "rawDrawsConsumed": 10,
+        "wordsAfter": [
+          3913452415,
+          2319968251,
+          1337143034,
+          1011371621
+        ]
+      },
+      {
+        "n": 16,
+        "limit": 4294967296,
+        "initialWords": [
+          2565868797,
+          591695133,
+          4084337646,
+          804919564
+        ],
+        "results": [
+          8,
+          13,
+          3,
+          2,
+          12,
+          8,
+          0,
+          2,
+          2,
+          0
+        ],
+        "rawDraws": [
+          2254901144,
+          1931623645,
+          1815523187,
+          2048527714,
+          3444132460,
+          3328517304,
+          3358530496,
+          1268063186,
+          1123411522,
+          2933364352
+        ],
+        "rejectedRawDraws": [],
+        "rawDrawsConsumed": 10,
+        "wordsAfter": [
+          3913452415,
+          2319968251,
+          1337143034,
+          1011371621
+        ]
+      },
+      {
+        "n": 15,
+        "limit": 4294967295,
+        "initialWords": [
+          2565868797,
+          591695133,
+          4084337646,
+          804919564
+        ],
+        "results": [
+          14,
+          10,
+          2,
+          4,
+          10,
+          9,
+          1,
+          11,
+          7,
+          7
+        ],
+        "rawDraws": [
+          2254901144,
+          1931623645,
+          1815523187,
+          2048527714,
+          3444132460,
+          3328517304,
+          3358530496,
+          1268063186,
+          1123411522,
+          2933364352
+        ],
+        "rejectedRawDraws": [],
+        "rawDrawsConsumed": 10,
+        "wordsAfter": [
+          3913452415,
+          2319968251,
+          1337143034,
+          1011371621
+        ]
+      },
+      {
+        "n": 4294967295,
+        "limit": 4294967295,
+        "initialWords": [
+          2565868797,
+          591695133,
+          4084337646,
+          804919564
+        ],
+        "results": [
+          2254901144,
+          1931623645,
+          1815523187,
+          2048527714,
+          3444132460,
+          3328517304,
+          3358530496,
+          1268063186,
+          1123411522,
+          2933364352
+        ],
+        "rawDraws": [
+          2254901144,
+          1931623645,
+          1815523187,
+          2048527714,
+          3444132460,
+          3328517304,
+          3358530496,
+          1268063186,
+          1123411522,
+          2933364352
+        ],
+        "rejectedRawDraws": [],
+        "rawDrawsConsumed": 10,
+        "wordsAfter": [
+          3913452415,
+          2319968251,
+          1337143034,
+          1011371621
+        ]
+      },
+      {
+        "n": 2147483649,
+        "limit": 2147483649,
+        "initialWords": [
+          2565868797,
+          591695133,
+          4084337646,
+          804919564
+        ],
+        "results": [
+          1931623645,
+          1815523187,
+          2048527714,
+          1268063186,
+          1123411522,
+          1373868705,
+          81270503,
+          1425919090,
+          1410962083,
+          1170347225
+        ],
+        "rawDraws": [
+          2254901144,
+          1931623645,
+          1815523187,
+          2048527714,
+          3444132460,
+          3328517304,
+          3358530496,
+          1268063186,
+          1123411522,
+          2933364352,
+          1373868705,
+          81270503,
+          1425919090,
+          3025051876,
+          1410962083,
+          3258579235,
+          1170347225
+        ],
+        "rejectedRawDraws": [
+          2254901144,
+          3444132460,
+          3328517304,
+          3358530496,
+          2933364352,
+          3025051876,
+          3258579235
+        ],
+        "rawDrawsConsumed": 17,
+        "wordsAfter": [
+          481769126,
+          2443081342,
+          2714458442,
+          1354813320
+        ]
+      },
+      {
+        "n": 4294967296,
+        "limit": 4294967296,
+        "initialWords": [
+          2565868797,
+          591695133,
+          4084337646,
+          804919564
+        ],
+        "results": [
+          2254901144,
+          1931623645,
+          1815523187,
+          2048527714,
+          3444132460,
+          3328517304,
+          3358530496,
+          1268063186,
+          1123411522,
+          2933364352
+        ],
+        "rawDraws": [
+          2254901144,
+          1931623645,
+          1815523187,
+          2048527714,
+          3444132460,
+          3328517304,
+          3358530496,
+          1268063186,
+          1123411522,
+          2933364352
+        ],
+        "rejectedRawDraws": [],
+        "rawDrawsConsumed": 10,
+        "wordsAfter": [
+          3913452415,
+          2319968251,
+          1337143034,
+          1011371621
+        ]
+      }
+    ],
+    "rejectionCase": {
+      "description": "uniform(n) where the first raw draw(s) are >= limit and are rejected; every rejected draw still advances the PRNG",
+      "seed": "rejection-0",
+      "n": 2147483649,
+      "limit": 2147483649,
+      "initialWords": [
+        4006184519,
+        2413574580,
+        2782948748,
+        1315103766
+      ],
+      "rawDraws": [
+        {
+          "raw": 3675411871,
+          "accepted": false
+        },
+        {
+          "raw": 2600480076,
+          "accepted": false
+        },
+        {
+          "raw": 4243071150,
+          "accepted": false
+        },
+        {
+          "raw": 2194663525,
+          "accepted": false
+        },
+        {
+          "raw": 1260297708,
+          "accepted": true
+        }
+      ],
+      "rejectedRawDraws": [
+        3675411871,
+        2600480076,
+        4243071150,
+        2194663525
+      ],
+      "result": 1260297708,
+      "rawDrawsConsumed": 5,
+      "wordsAfter": [
+        1136978489,
+        1647172257,
+        3089987750,
+        2191229813
+      ]
+    }
+  },
+  "newGame": [
+    {
+      "size": 3,
+      "seed": "0",
+      "initialWords": [
+        873670162,
+        623416120,
+        3822581005,
+        3910491038
+      ],
+      "spawns": [
+        {
+          "index": 4,
+          "exponent": "1",
+          "emptyCount": 9,
+          "positionDraw": 4,
+          "valueDraw": 5
+        },
+        {
+          "index": 7,
+          "exponent": "1",
+          "emptyCount": 8,
+          "positionDraw": 6,
+          "valueDraw": 5
+        }
+      ],
+      "state": {
+        "schemaVersion": 1,
+        "engineVersion": "1.0.0",
+        "rulesetVersion": "practice-v1",
+        "board": {
+          "size": 3,
+          "cells": [
+            null,
+            null,
+            null,
+            null,
+            "1",
+            null,
+            null,
+            "1",
+            null
+          ]
+        },
+        "score": "0",
+        "acceptedMoves": 0,
+        "revision": 0,
+        "rng": {
+          "algorithm": "xoshiro128ss-v1",
+          "words": [
+            2081783154,
+            4012814359,
+            4142435522,
+            113724152
+          ]
+        },
+        "status": "active",
+        "celebrated2048": false
+      },
+      "canonicalJson": "{\"schemaVersion\":1,\"engineVersion\":\"1.0.0\",\"rulesetVersion\":\"practice-v1\",\"board\":{\"size\":3,\"cells\":[null,null,null,null,\"1\",null,null,\"1\",null]},\"score\":\"0\",\"acceptedMoves\":0,\"revision\":0,\"rng\":{\"algorithm\":\"xoshiro128ss-v1\",\"words\":[2081783154,4012814359,4142435522,113724152]},\"status\":\"active\",\"celebrated2048\":false}",
+      "checksum": "e1608fb79a6cad5fceded0700fb3492e04d4c30cd7143f1f9687cdf47d7c780e"
+    },
+    {
+      "size": 3,
+      "seed": "abc",
+      "initialWords": [
+        2565868797,
+        591695133,
+        4084337646,
+        804919564
+      ],
+      "spawns": [
+        {
+          "index": 5,
+          "exponent": "1",
+          "emptyCount": 9,
+          "positionDraw": 5,
+          "valueDraw": 5
+        },
+        {
+          "index": 3,
+          "exponent": "1",
+          "emptyCount": 8,
+          "positionDraw": 3,
+          "valueDraw": 4
+        }
+      ],
+      "state": {
+        "schemaVersion": 1,
+        "engineVersion": "1.0.0",
+        "rulesetVersion": "practice-v1",
+        "board": {
+          "size": 3,
+          "cells": [
+            null,
+            null,
+            null,
+            "1",
+            null,
+            "1",
+            null,
+            null,
+            null
+          ]
+        },
+        "score": "0",
+        "acceptedMoves": 0,
+        "revision": 0,
+        "rng": {
+          "algorithm": "xoshiro128ss-v1",
+          "words": [
+            3493950572,
+            946087268,
+            562510829,
+            1424478131
+          ]
+        },
+        "status": "active",
+        "celebrated2048": false
+      },
+      "canonicalJson": "{\"schemaVersion\":1,\"engineVersion\":\"1.0.0\",\"rulesetVersion\":\"practice-v1\",\"board\":{\"size\":3,\"cells\":[null,null,null,\"1\",null,\"1\",null,null,null]},\"score\":\"0\",\"acceptedMoves\":0,\"revision\":0,\"rng\":{\"algorithm\":\"xoshiro128ss-v1\",\"words\":[3493950572,946087268,562510829,1424478131]},\"status\":\"active\",\"celebrated2048\":false}",
+      "checksum": "83b3a81708a0124c09f25cf3c917a627f8f124cc78d9165ff14848cda4caf648"
+    },
+    {
+      "size": 3,
+      "seed": "2048-infinite",
+      "initialWords": [
+        2943684402,
+        1128180178,
+        2787833744,
+        2507036783
+      ],
+      "spawns": [
+        {
+          "index": 5,
+          "exponent": "1",
+          "emptyCount": 9,
+          "positionDraw": 5,
+          "valueDraw": 5
+        },
+        {
+          "index": 2,
+          "exponent": "1",
+          "emptyCount": 8,
+          "positionDraw": 2,
+          "valueDraw": 8
+        }
+      ],
+      "state": {
+        "schemaVersion": 1,
+        "engineVersion": "1.0.0",
+        "rulesetVersion": "practice-v1",
+        "board": {
+          "size": 3,
+          "cells": [
+            null,
+            null,
+            "1",
+            null,
+            null,
+            "1",
+            null,
+            null,
+            null
+          ]
+        },
+        "score": "0",
+        "acceptedMoves": 0,
+        "revision": 0,
+        "rng": {
+          "algorithm": "xoshiro128ss-v1",
+          "words": [
+            492619095,
+            1087499554,
+            1765500703,
+            453592153
+          ]
+        },
+        "status": "active",
+        "celebrated2048": false
+      },
+      "canonicalJson": "{\"schemaVersion\":1,\"engineVersion\":\"1.0.0\",\"rulesetVersion\":\"practice-v1\",\"board\":{\"size\":3,\"cells\":[null,null,\"1\",null,null,\"1\",null,null,null]},\"score\":\"0\",\"acceptedMoves\":0,\"revision\":0,\"rng\":{\"algorithm\":\"xoshiro128ss-v1\",\"words\":[492619095,1087499554,1765500703,453592153]},\"status\":\"active\",\"celebrated2048\":false}",
+      "checksum": "95205db470bdd1cc487aff061a21f38f40ea213def16cc2737de8c3b24b6f8d1"
+    },
+    {
+      "size": 4,
+      "seed": "0",
+      "initialWords": [
+        873670162,
+        623416120,
+        3822581005,
+        3910491038
+      ],
+      "spawns": [
+        {
+          "index": 12,
+          "exponent": "1",
+          "emptyCount": 16,
+          "positionDraw": 12,
+          "valueDraw": 5
+        },
+        {
+          "index": 4,
+          "exponent": "1",
+          "emptyCount": 15,
+          "positionDraw": 4,
+          "valueDraw": 5
+        }
+      ],
+      "state": {
+        "schemaVersion": 1,
+        "engineVersion": "1.0.0",
+        "rulesetVersion": "classic-v1",
+        "board": {
+          "size": 4,
+          "cells": [
+            null,
+            null,
+            null,
+            null,
+            "1",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            "1",
+            null,
+            null,
+            null
+          ]
+        },
+        "score": "0",
+        "acceptedMoves": 0,
+        "revision": 0,
+        "rng": {
+          "algorithm": "xoshiro128ss-v1",
+          "words": [
+            2081783154,
+            4012814359,
+            4142435522,
+            113724152
+          ]
+        },
+        "status": "active",
+        "celebrated2048": false
+      },
+      "canonicalJson": "{\"schemaVersion\":1,\"engineVersion\":\"1.0.0\",\"rulesetVersion\":\"classic-v1\",\"board\":{\"size\":4,\"cells\":[null,null,null,null,\"1\",null,null,null,null,null,null,null,\"1\",null,null,null]},\"score\":\"0\",\"acceptedMoves\":0,\"revision\":0,\"rng\":{\"algorithm\":\"xoshiro128ss-v1\",\"words\":[2081783154,4012814359,4142435522,113724152]},\"status\":\"active\",\"celebrated2048\":false}",
+      "checksum": "935ff29d17b2f2a8e693d30aa4ddb6b073eff769a727e2af3430eb5c837e4f31"
+    },
+    {
+      "size": 4,
+      "seed": "abc",
+      "initialWords": [
+        2565868797,
+        591695133,
+        4084337646,
+        804919564
+      ],
+      "spawns": [
+        {
+          "index": 8,
+          "exponent": "1",
+          "emptyCount": 16,
+          "positionDraw": 8,
+          "valueDraw": 5
+        },
+        {
+          "index": 2,
+          "exponent": "1",
+          "emptyCount": 15,
+          "positionDraw": 2,
+          "valueDraw": 4
+        }
+      ],
+      "state": {
+        "schemaVersion": 1,
+        "engineVersion": "1.0.0",
+        "rulesetVersion": "classic-v1",
+        "board": {
+          "size": 4,
+          "cells": [
+            null,
+            null,
+            "1",
+            null,
+            null,
+            null,
+            null,
+            null,
+            "1",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        "score": "0",
+        "acceptedMoves": 0,
+        "revision": 0,
+        "rng": {
+          "algorithm": "xoshiro128ss-v1",
+          "words": [
+            3493950572,
+            946087268,
+            562510829,
+            1424478131
+          ]
+        },
+        "status": "active",
+        "celebrated2048": false
+      },
+      "canonicalJson": "{\"schemaVersion\":1,\"engineVersion\":\"1.0.0\",\"rulesetVersion\":\"classic-v1\",\"board\":{\"size\":4,\"cells\":[null,null,\"1\",null,null,null,null,null,\"1\",null,null,null,null,null,null,null]},\"score\":\"0\",\"acceptedMoves\":0,\"revision\":0,\"rng\":{\"algorithm\":\"xoshiro128ss-v1\",\"words\":[3493950572,946087268,562510829,1424478131]},\"status\":\"active\",\"celebrated2048\":false}",
+      "checksum": "49772054c55558302b6dd57d3662dd240e6bcf40124bcfa95c0a51caebd89a1b"
+    },
+    {
+      "size": 4,
+      "seed": "2048-infinite",
+      "initialWords": [
+        2943684402,
+        1128180178,
+        2787833744,
+        2507036783
+      ],
+      "spawns": [
+        {
+          "index": 8,
+          "exponent": "1",
+          "emptyCount": 16,
+          "positionDraw": 8,
+          "valueDraw": 5
+        },
+        {
+          "index": 2,
+          "exponent": "1",
+          "emptyCount": 15,
+          "positionDraw": 2,
+          "valueDraw": 8
+        }
+      ],
+      "state": {
+        "schemaVersion": 1,
+        "engineVersion": "1.0.0",
+        "rulesetVersion": "classic-v1",
+        "board": {
+          "size": 4,
+          "cells": [
+            null,
+            null,
+            "1",
+            null,
+            null,
+            null,
+            null,
+            null,
+            "1",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        "score": "0",
+        "acceptedMoves": 0,
+        "revision": 0,
+        "rng": {
+          "algorithm": "xoshiro128ss-v1",
+          "words": [
+            492619095,
+            1087499554,
+            1765500703,
+            453592153
+          ]
+        },
+        "status": "active",
+        "celebrated2048": false
+      },
+      "canonicalJson": "{\"schemaVersion\":1,\"engineVersion\":\"1.0.0\",\"rulesetVersion\":\"classic-v1\",\"board\":{\"size\":4,\"cells\":[null,null,\"1\",null,null,null,null,null,\"1\",null,null,null,null,null,null,null]},\"score\":\"0\",\"acceptedMoves\":0,\"revision\":0,\"rng\":{\"algorithm\":\"xoshiro128ss-v1\",\"words\":[492619095,1087499554,1765500703,453592153]},\"status\":\"active\",\"celebrated2048\":false}",
+      "checksum": "f24867ea38c0b2c2293d1b03baba67ab6f30cce67c980c2cd7d50a80c211d18b"
+    },
+    {
+      "size": 8,
+      "seed": "0",
+      "initialWords": [
+        873670162,
+        623416120,
+        3822581005,
+        3910491038
+      ],
+      "spawns": [
+        {
+          "index": 60,
+          "exponent": "1",
+          "emptyCount": 64,
+          "positionDraw": 60,
+          "valueDraw": 5
+        },
+        {
+          "index": 1,
+          "exponent": "1",
+          "emptyCount": 63,
+          "positionDraw": 1,
+          "valueDraw": 5
+        }
+      ],
+      "state": {
+        "schemaVersion": 1,
+        "engineVersion": "1.0.0",
+        "rulesetVersion": "practice-v1",
+        "board": {
+          "size": 8,
+          "cells": [
+            null,
+            "1",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            "1",
+            null,
+            null,
+            null
+          ]
+        },
+        "score": "0",
+        "acceptedMoves": 0,
+        "revision": 0,
+        "rng": {
+          "algorithm": "xoshiro128ss-v1",
+          "words": [
+            2081783154,
+            4012814359,
+            4142435522,
+            113724152
+          ]
+        },
+        "status": "active",
+        "celebrated2048": false
+      },
+      "canonicalJson": "{\"schemaVersion\":1,\"engineVersion\":\"1.0.0\",\"rulesetVersion\":\"practice-v1\",\"board\":{\"size\":8,\"cells\":[null,\"1\",null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,\"1\",null,null,null]},\"score\":\"0\",\"acceptedMoves\":0,\"revision\":0,\"rng\":{\"algorithm\":\"xoshiro128ss-v1\",\"words\":[2081783154,4012814359,4142435522,113724152]},\"status\":\"active\",\"celebrated2048\":false}",
+      "checksum": "956e7892903b67838440b66701258cb44e9289650306d4efb63fa9c923ca8cbc"
+    },
+    {
+      "size": 8,
+      "seed": "abc",
+      "initialWords": [
+        2565868797,
+        591695133,
+        4084337646,
+        804919564
+      ],
+      "spawns": [
+        {
+          "index": 24,
+          "exponent": "1",
+          "emptyCount": 64,
+          "positionDraw": 24,
+          "valueDraw": 5
+        },
+        {
+          "index": 23,
+          "exponent": "1",
+          "emptyCount": 63,
+          "positionDraw": 23,
+          "valueDraw": 4
+        }
+      ],
+      "state": {
+        "schemaVersion": 1,
+        "engineVersion": "1.0.0",
+        "rulesetVersion": "practice-v1",
+        "board": {
+          "size": 8,
+          "cells": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            "1",
+            "1",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        "score": "0",
+        "acceptedMoves": 0,
+        "revision": 0,
+        "rng": {
+          "algorithm": "xoshiro128ss-v1",
+          "words": [
+            3493950572,
+            946087268,
+            562510829,
+            1424478131
+          ]
+        },
+        "status": "active",
+        "celebrated2048": false
+      },
+      "canonicalJson": "{\"schemaVersion\":1,\"engineVersion\":\"1.0.0\",\"rulesetVersion\":\"practice-v1\",\"board\":{\"size\":8,\"cells\":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,\"1\",\"1\",null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]},\"score\":\"0\",\"acceptedMoves\":0,\"revision\":0,\"rng\":{\"algorithm\":\"xoshiro128ss-v1\",\"words\":[3493950572,946087268,562510829,1424478131]},\"status\":\"active\",\"celebrated2048\":false}",
+      "checksum": "a29049f5685839dbbb30c3706bfde2f3e85e7b64bc714d6ee916d0b835d4ced7"
+    },
+    {
+      "size": 8,
+      "seed": "2048-infinite",
+      "initialWords": [
+        2943684402,
+        1128180178,
+        2787833744,
+        2507036783
+      ],
+      "spawns": [
+        {
+          "index": 40,
+          "exponent": "1",
+          "emptyCount": 64,
+          "positionDraw": 40,
+          "valueDraw": 5
+        },
+        {
+          "index": 60,
+          "exponent": "1",
+          "emptyCount": 63,
+          "positionDraw": 59,
+          "valueDraw": 8
+        }
+      ],
+      "state": {
+        "schemaVersion": 1,
+        "engineVersion": "1.0.0",
+        "rulesetVersion": "practice-v1",
+        "board": {
+          "size": 8,
+          "cells": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            "1",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            "1",
+            null,
+            null,
+            null
+          ]
+        },
+        "score": "0",
+        "acceptedMoves": 0,
+        "revision": 0,
+        "rng": {
+          "algorithm": "xoshiro128ss-v1",
+          "words": [
+            492619095,
+            1087499554,
+            1765500703,
+            453592153
+          ]
+        },
+        "status": "active",
+        "celebrated2048": false
+      },
+      "canonicalJson": "{\"schemaVersion\":1,\"engineVersion\":\"1.0.0\",\"rulesetVersion\":\"practice-v1\",\"board\":{\"size\":8,\"cells\":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,\"1\",null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,\"1\",null,null,null]},\"score\":\"0\",\"acceptedMoves\":0,\"revision\":0,\"rng\":{\"algorithm\":\"xoshiro128ss-v1\",\"words\":[492619095,1087499554,1765500703,453592153]},\"status\":\"active\",\"celebrated2048\":false}",
+      "checksum": "76115e81c85ff6877b3bc9b0681249766cdf0866e657997ce62f59c46717002f"
+    }
+  ],
+  "moveSequences": [
+    {
+      "seed": "0",
+      "size": 4,
+      "directions": [
+        "up",
+        "right",
+        "down",
+        "left",
+        "left",
+        "left",
+        "up",
+        "up",
+        "right",
+        "right",
+        "down",
+        "down",
+        "left",
+        "up",
+        "right",
+        "down",
+        "down",
+        "down",
+        "left",
+        "left",
+        "up",
+        "right",
+        "right",
+        "right",
+        "down",
+        "left",
+        "up",
+        "up",
+        "up",
+        "right",
+        "down",
+        "left",
+        "left",
+        "down",
+        "down",
+        "right",
+        "up",
+        "left",
+        "left",
+        "up"
+      ],
+      "initial": {
+        "state": {
+          "schemaVersion": 1,
+          "engineVersion": "1.0.0",
+          "rulesetVersion": "classic-v1",
+          "board": {
+            "size": 4,
+            "cells": [
+              null,
+              null,
+              null,
+              null,
+              "1",
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              "1",
+              null,
+              null,
+              null
+            ]
+          },
+          "score": "0",
+          "acceptedMoves": 0,
+          "revision": 0,
+          "rng": {
+            "algorithm": "xoshiro128ss-v1",
+            "words": [
+              2081783154,
+              4012814359,
+              4142435522,
+              113724152
+            ]
+          },
+          "status": "active",
+          "celebrated2048": false
+        },
+        "canonicalJson": "{\"schemaVersion\":1,\"engineVersion\":\"1.0.0\",\"rulesetVersion\":\"classic-v1\",\"board\":{\"size\":4,\"cells\":[null,null,null,null,\"1\",null,null,null,null,null,null,null,\"1\",null,null,null]},\"score\":\"0\",\"acceptedMoves\":0,\"revision\":0,\"rng\":{\"algorithm\":\"xoshiro128ss-v1\",\"words\":[2081783154,4012814359,4142435522,113724152]},\"status\":\"active\",\"celebrated2048\":false}",
+        "checksum": "935ff29d17b2f2a8e693d30aa4ddb6b073eff769a727e2af3430eb5c837e4f31"
+      },
+      "steps": [
+        {
+          "step": 0,
+          "direction": "up",
+          "changed": true,
+          "scoreDelta": "4",
+          "spawn": {
+            "index": 5,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "4",
+          "acceptedMoves": 1,
+          "revision": 1,
+          "status": "active",
+          "rngWords": [
+            3220748661,
+            665983370,
+            3840022061,
+            569852240
+          ],
+          "checksum": "336560912362342555c1a57cc52d4a56a1c221d5209e7f739390c9c909c75749"
+        },
+        {
+          "step": 1,
+          "direction": "right",
+          "changed": true,
+          "scoreDelta": "0",
+          "spawn": {
+            "index": 13,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "4",
+          "acceptedMoves": 2,
+          "revision": 2,
+          "status": "active",
+          "rngWords": [
+            4023617359,
+            4198296613,
+            3623485175,
+            1932985011
+          ],
+          "checksum": "4a55fca4d74a914bcbff6d2c5f037fb4ae0e22454af8dd593c34d83dc3051c45"
+        },
+        {
+          "step": 2,
+          "direction": "down",
+          "changed": true,
+          "scoreDelta": "0",
+          "spawn": {
+            "index": 12,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "4",
+          "acceptedMoves": 3,
+          "revision": 3,
+          "status": "active",
+          "rngWords": [
+            4223289356,
+            3845967868,
+            167862369,
+            286174443
+          ],
+          "checksum": "af2b1af4a717c711d48d097b778c1ad09390ccf29604550882bfd60a629d7a02"
+        },
+        {
+          "step": 3,
+          "direction": "left",
+          "changed": true,
+          "scoreDelta": "4",
+          "spawn": {
+            "index": 2,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "8",
+          "acceptedMoves": 4,
+          "revision": 4,
+          "status": "active",
+          "rngWords": [
+            2283238187,
+            2469076199,
+            2288245110,
+            4206986300
+          ],
+          "checksum": "b33621687e1cba9e54e62a055eee48ff182f47f10bff21f692afdf5d59bf27aa"
+        },
+        {
+          "step": 4,
+          "direction": "left",
+          "changed": true,
+          "scoreDelta": "0",
+          "spawn": {
+            "index": 9,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "8",
+          "acceptedMoves": 5,
+          "revision": 5,
+          "status": "active",
+          "rngWords": [
+            644122117,
+            619657495,
+            148765613,
+            3413093948
+          ],
+          "checksum": "f26acd7aadd5e2f7ceb82b99ac132bd31fcaa2f0ad922f7646893ffd827efc13"
+        },
+        {
+          "step": 5,
+          "direction": "left",
+          "changed": false,
+          "scoreDelta": "0",
+          "spawn": null,
+          "rawDrawsConsumed": 0,
+          "score": "8",
+          "acceptedMoves": 5,
+          "revision": 5,
+          "status": "active",
+          "rngWords": [
+            644122117,
+            619657495,
+            148765613,
+            3413093948
+          ],
+          "checksum": "f26acd7aadd5e2f7ceb82b99ac132bd31fcaa2f0ad922f7646893ffd827efc13"
+        },
+        {
+          "step": 6,
+          "direction": "up",
+          "changed": true,
+          "scoreDelta": "12",
+          "spawn": {
+            "index": 10,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "20",
+          "acceptedMoves": 6,
+          "revision": 6,
+          "status": "active",
+          "rngWords": [
+            3339389677,
+            863569465,
+            2510699654,
+            2027821175
+          ],
+          "checksum": "400c1c2eb255a7661c813a6e17bb586a9c28a2e19e02dda202e12a459cac733b"
+        },
+        {
+          "step": 7,
+          "direction": "up",
+          "changed": true,
+          "scoreDelta": "0",
+          "spawn": {
+            "index": 3,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "20",
+          "acceptedMoves": 7,
+          "revision": 7,
+          "status": "active",
+          "rngWords": [
+            3582613164,
+            1306091674,
+            2221798600,
+            839940809
+          ],
+          "checksum": "37a71888b8c0830408999daf865e424559e1da970ce153bb4e57002079db9092"
+        },
+        {
+          "step": 8,
+          "direction": "right",
+          "changed": true,
+          "scoreDelta": "4",
+          "spawn": {
+            "index": 14,
+            "exponent": "2"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "24",
+          "acceptedMoves": 8,
+          "revision": 8,
+          "status": "active",
+          "rngWords": [
+            4272887295,
+            1432033381,
+            887105179,
+            1657275047
+          ],
+          "checksum": "467acddf737fa66f828a44c9e1696f07199a0b8480882eac68328fca7430c3a5"
+        },
+        {
+          "step": 9,
+          "direction": "right",
+          "changed": true,
+          "scoreDelta": "8",
+          "spawn": {
+            "index": 12,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "32",
+          "acceptedMoves": 9,
+          "revision": 9,
+          "status": "active",
+          "rngWords": [
+            3472766336,
+            710401368,
+            2635461721,
+            299231294
+          ],
+          "checksum": "503790b3d90fd810eea0e817d7c514eec356ddb6faa347258857dbdf5e255bca"
+        },
+        {
+          "step": 10,
+          "direction": "down",
+          "changed": true,
+          "scoreDelta": "16",
+          "spawn": {
+            "index": 5,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "48",
+          "acceptedMoves": 10,
+          "revision": 10,
+          "status": "active",
+          "rngWords": [
+            2641046971,
+            1888579006,
+            1897165631,
+            3110792000
+          ],
+          "checksum": "d3ccfc77306324d820a73455d5014ab93610b5a026684b1e06fed8444a0a1e17"
+        },
+        {
+          "step": 11,
+          "direction": "down",
+          "changed": true,
+          "scoreDelta": "0",
+          "spawn": {
+            "index": 6,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "48",
+          "acceptedMoves": 11,
+          "revision": 11,
+          "status": "active",
+          "rngWords": [
+            340356656,
+            114998011,
+            1179844033,
+            3458968070
+          ],
+          "checksum": "aec0b0de830e17a177064074924cae53c3d5b23c826c7af74887ec5408ef7911"
+        },
+        {
+          "step": 12,
+          "direction": "left",
+          "changed": true,
+          "scoreDelta": "4",
+          "spawn": {
+            "index": 5,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "52",
+          "acceptedMoves": 12,
+          "revision": 12,
+          "status": "active",
+          "rngWords": [
+            16693632,
+            1863791158,
+            3112439612,
+            909799138
+          ],
+          "checksum": "9d34433b21fd343d0b009942def58fefc232b70c191a5bbc3bb88b5ce7d7c15b"
+        },
+        {
+          "step": 13,
+          "direction": "up",
+          "changed": true,
+          "scoreDelta": "4",
+          "spawn": {
+            "index": 6,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "56",
+          "acceptedMoves": 13,
+          "revision": 13,
+          "status": "active",
+          "rngWords": [
+            3847799575,
+            413186914,
+            365177832,
+            1496456676
+          ],
+          "checksum": "4637d1c91adc7ad82be55ad4f43c6651de11809964d91030f5f7de51187687f5"
+        },
+        {
+          "step": 14,
+          "direction": "right",
+          "changed": true,
+          "scoreDelta": "8",
+          "spawn": {
+            "index": 10,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "64",
+          "acceptedMoves": 14,
+          "revision": 14,
+          "status": "active",
+          "rngWords": [
+            3653370880,
+            4246477555,
+            1837593454,
+            1124895720
+          ],
+          "checksum": "39d646f82425a7ef4c3bb011ab5f00fab1f9a93001b325e1f1c236ed5c3853a2"
+        },
+        {
+          "step": 15,
+          "direction": "down",
+          "changed": true,
+          "scoreDelta": "0",
+          "spawn": {
+            "index": 8,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "64",
+          "acceptedMoves": 15,
+          "revision": 15,
+          "status": "active",
+          "rngWords": [
+            2852332918,
+            2734385640,
+            1501118069,
+            2374200942
+          ],
+          "checksum": "65e8edc85a406353a60248c670cdc80aeec396cfe20da41f70722b64a4b531c2"
+        },
+        {
+          "step": 16,
+          "direction": "down",
+          "changed": true,
+          "scoreDelta": "0",
+          "spawn": {
+            "index": 2,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "64",
+          "acceptedMoves": 16,
+          "revision": 16,
+          "status": "active",
+          "rngWords": [
+            348545376,
+            3511917336,
+            2184658931,
+            3927737485
+          ],
+          "checksum": "6d403599a6031b2669333480d0c82e3a02b7544c721301b30e9fbd67479e394c"
+        },
+        {
+          "step": 17,
+          "direction": "down",
+          "changed": true,
+          "scoreDelta": "4",
+          "spawn": {
+            "index": 1,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "68",
+          "acceptedMoves": 17,
+          "revision": 17,
+          "status": "active",
+          "rngWords": [
+            282530468,
+            1508693485,
+            1539638886,
+            4083321338
+          ],
+          "checksum": "4f73d0c1d79372f5ac25c59cbf8795f714ebfb46dadf680b8f4de14108a9165c"
+        },
+        {
+          "step": 18,
+          "direction": "left",
+          "changed": true,
+          "scoreDelta": "4",
+          "spawn": {
+            "index": 15,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "72",
+          "acceptedMoves": 18,
+          "revision": 18,
+          "status": "active",
+          "rngWords": [
+            3662099144,
+            975061342,
+            3580026481,
+            4091796224
+          ],
+          "checksum": "1c1e5ff312a818f31627a75ed3511a98bcdc9fe738b06df6a3dbc8395c6b84b6"
+        },
+        {
+          "step": 19,
+          "direction": "left",
+          "changed": true,
+          "scoreDelta": "8",
+          "spawn": {
+            "index": 2,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "80",
+          "acceptedMoves": 19,
+          "revision": 19,
+          "status": "active",
+          "rngWords": [
+            3394499390,
+            354833864,
+            1464219183,
+            1256015567
+          ],
+          "checksum": "13ac42227df163a31cd764fa22dc6528441739e495a516b53a3568126c987bac"
+        },
+        {
+          "step": 20,
+          "direction": "up",
+          "changed": true,
+          "scoreDelta": "4",
+          "spawn": {
+            "index": 15,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "84",
+          "acceptedMoves": 20,
+          "revision": 20,
+          "status": "active",
+          "rngWords": [
+            3305327135,
+            3424986609,
+            590808872,
+            1565602437
+          ],
+          "checksum": "e517d88cf476a4393837bb5f4fca2ee302c34bd5bfe49f7eeb858d397994cbf3"
+        },
+        {
+          "step": 21,
+          "direction": "right",
+          "changed": true,
+          "scoreDelta": "8",
+          "spawn": {
+            "index": 10,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "92",
+          "acceptedMoves": 21,
+          "revision": 21,
+          "status": "active",
+          "rngWords": [
+            3739062566,
+            3524893338,
+            3671686748,
+            1449290837
+          ],
+          "checksum": "49c94cc3a7607b9cd9ea38570802832e73c1790dea5b5d6d869ab5a3d143acb8"
+        },
+        {
+          "step": 22,
+          "direction": "right",
+          "changed": false,
+          "scoreDelta": "0",
+          "spawn": null,
+          "rawDrawsConsumed": 0,
+          "score": "92",
+          "acceptedMoves": 21,
+          "revision": 21,
+          "status": "active",
+          "rngWords": [
+            3739062566,
+            3524893338,
+            3671686748,
+            1449290837
+          ],
+          "checksum": "49c94cc3a7607b9cd9ea38570802832e73c1790dea5b5d6d869ab5a3d143acb8"
+        },
+        {
+          "step": 23,
+          "direction": "right",
+          "changed": false,
+          "scoreDelta": "0",
+          "spawn": null,
+          "rawDrawsConsumed": 0,
+          "score": "92",
+          "acceptedMoves": 21,
+          "revision": 21,
+          "status": "active",
+          "rngWords": [
+            3739062566,
+            3524893338,
+            3671686748,
+            1449290837
+          ],
+          "checksum": "49c94cc3a7607b9cd9ea38570802832e73c1790dea5b5d6d869ab5a3d143acb8"
+        },
+        {
+          "step": 24,
+          "direction": "down",
+          "changed": true,
+          "scoreDelta": "0",
+          "spawn": {
+            "index": 8,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "92",
+          "acceptedMoves": 22,
+          "revision": 22,
+          "status": "active",
+          "rngWords": [
+            1393389098,
+            3146434931,
+            1467776147,
+            1481513037
+          ],
+          "checksum": "53581b012e2d1d7049bc4c61d628c7cb4f8ca4f67cf6845bee35c101a2a1d3db"
+        },
+        {
+          "step": 25,
+          "direction": "left",
+          "changed": true,
+          "scoreDelta": "20",
+          "spawn": {
+            "index": 15,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "112",
+          "acceptedMoves": 23,
+          "revision": 23,
+          "status": "active",
+          "rngWords": [
+            700158912,
+            517050471,
+            1453186989,
+            2439423179
+          ],
+          "checksum": "7ae0fb9aa7f4727152106b98360a8c628bb0896e33d1076de73086b79ae2a0d8"
+        },
+        {
+          "step": 26,
+          "direction": "up",
+          "changed": true,
+          "scoreDelta": "0",
+          "spawn": {
+            "index": 13,
+            "exponent": "2"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "112",
+          "acceptedMoves": 24,
+          "revision": 24,
+          "status": "active",
+          "rngWords": [
+            2120097563,
+            469629195,
+            2511483137,
+            2512633538
+          ],
+          "checksum": "dc166755a2e2f85413e7638889d781ed9c700fbf842c98c409fc7e141a27a20e"
+        },
+        {
+          "step": 27,
+          "direction": "up",
+          "changed": true,
+          "scoreDelta": "0",
+          "spawn": {
+            "index": 10,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "112",
+          "acceptedMoves": 25,
+          "revision": 25,
+          "status": "active",
+          "rngWords": [
+            4065313714,
+            275757017,
+            3285205704,
+            2094727185
+          ],
+          "checksum": "11ea63a3e6df8dac45fe6c41d57444ef75f0407d36577878a15da5920619262e"
+        },
+        {
+          "step": 28,
+          "direction": "up",
+          "changed": true,
+          "scoreDelta": "4",
+          "spawn": {
+            "index": 10,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "116",
+          "acceptedMoves": 26,
+          "revision": 26,
+          "status": "active",
+          "rngWords": [
+            448070076,
+            1375433123,
+            2422604032,
+            1940796450
+          ],
+          "checksum": "f44fa1668133094f6303aab07b88c2efc53aa124306a41ffd9f81f274ec78aa1"
+        },
+        {
+          "step": 29,
+          "direction": "right",
+          "changed": true,
+          "scoreDelta": "8",
+          "spawn": {
+            "index": 14,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "124",
+          "acceptedMoves": 27,
+          "revision": 27,
+          "status": "active",
+          "rngWords": [
+            1239694384,
+            2683859870,
+            338836609,
+            599813000
+          ],
+          "checksum": "2934ab22df7871a089db60f46c24e3f1388766d6ccd0ca3977fa6e8dc625e639"
+        },
+        {
+          "step": 30,
+          "direction": "down",
+          "changed": true,
+          "scoreDelta": "4",
+          "spawn": {
+            "index": 9,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "128",
+          "acceptedMoves": 28,
+          "revision": 28,
+          "status": "active",
+          "rngWords": [
+            4147307240,
+            2596498360,
+            67847831,
+            1983279127
+          ],
+          "checksum": "9ba4cb9adb9bf64999be5ce94f79a045b31bfced5ab5e1c8009c9468b52f6919"
+        },
+        {
+          "step": 31,
+          "direction": "left",
+          "changed": true,
+          "scoreDelta": "16",
+          "spawn": {
+            "index": 10,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "144",
+          "acceptedMoves": 29,
+          "revision": 29,
+          "status": "active",
+          "rngWords": [
+            3672132071,
+            131326719,
+            2612437816,
+            1032128009
+          ],
+          "checksum": "27e95d28b4a51e575b0860e5c6a1dd8aecbb1e10dfd86f78ee0ddd86025bd7b4"
+        },
+        {
+          "step": 32,
+          "direction": "left",
+          "changed": false,
+          "scoreDelta": "0",
+          "spawn": null,
+          "rawDrawsConsumed": 0,
+          "score": "144",
+          "acceptedMoves": 29,
+          "revision": 29,
+          "status": "active",
+          "rngWords": [
+            3672132071,
+            131326719,
+            2612437816,
+            1032128009
+          ],
+          "checksum": "27e95d28b4a51e575b0860e5c6a1dd8aecbb1e10dfd86f78ee0ddd86025bd7b4"
+        },
+        {
+          "step": 33,
+          "direction": "down",
+          "changed": true,
+          "scoreDelta": "40",
+          "spawn": {
+            "index": 10,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "184",
+          "acceptedMoves": 30,
+          "revision": 30,
+          "status": "active",
+          "rngWords": [
+            286528739,
+            1084273134,
+            204863950,
+            365926285
+          ],
+          "checksum": "e86ecd2aca8f69407b4e6083b1950d08ee56208f0df9bdd1cc788390c997a0e2"
+        },
+        {
+          "step": 34,
+          "direction": "down",
+          "changed": false,
+          "scoreDelta": "0",
+          "spawn": null,
+          "rawDrawsConsumed": 0,
+          "score": "184",
+          "acceptedMoves": 30,
+          "revision": 30,
+          "status": "active",
+          "rngWords": [
+            286528739,
+            1084273134,
+            204863950,
+            365926285
+          ],
+          "checksum": "e86ecd2aca8f69407b4e6083b1950d08ee56208f0df9bdd1cc788390c997a0e2"
+        },
+        {
+          "step": 35,
+          "direction": "right",
+          "changed": true,
+          "scoreDelta": "12",
+          "spawn": {
+            "index": 3,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "196",
+          "acceptedMoves": 31,
+          "revision": 31,
+          "status": "active",
+          "rngWords": [
+            1623815400,
+            1169710958,
+            444630445,
+            2452832549
+          ],
+          "checksum": "83e07d00a1f9c67d49fec5d18699a6d29164bd9030f2f9a65450e745dd3dae2a"
+        },
+        {
+          "step": 36,
+          "direction": "up",
+          "changed": true,
+          "scoreDelta": "8",
+          "spawn": {
+            "index": 12,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "204",
+          "acceptedMoves": 32,
+          "revision": 32,
+          "status": "active",
+          "rngWords": [
+            3493960244,
+            2185554381,
+            1592332774,
+            528792376
+          ],
+          "checksum": "de6b70efabf9cda1a2fd6c378bbdb9b8d65c10184c67d63a122d9c9af4a70ec3"
+        },
+        {
+          "step": 37,
+          "direction": "left",
+          "changed": true,
+          "scoreDelta": "0",
+          "spawn": {
+            "index": 9,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "204",
+          "acceptedMoves": 33,
+          "revision": 33,
+          "status": "active",
+          "rngWords": [
+            1140459056,
+            1175894796,
+            2453595923,
+            3732375667
+          ],
+          "checksum": "64f35f3fe5a30bf6f0c2682fc9c8ca280f2e6db334f88f18786f1a02799d96db"
+        },
+        {
+          "step": 38,
+          "direction": "left",
+          "changed": false,
+          "scoreDelta": "0",
+          "spawn": null,
+          "rawDrawsConsumed": 0,
+          "score": "204",
+          "acceptedMoves": 33,
+          "revision": 33,
+          "status": "active",
+          "rngWords": [
+            1140459056,
+            1175894796,
+            2453595923,
+            3732375667
+          ],
+          "checksum": "64f35f3fe5a30bf6f0c2682fc9c8ca280f2e6db334f88f18786f1a02799d96db"
+        },
+        {
+          "step": 39,
+          "direction": "up",
+          "changed": false,
+          "scoreDelta": "0",
+          "spawn": null,
+          "rawDrawsConsumed": 0,
+          "score": "204",
+          "acceptedMoves": 33,
+          "revision": 33,
+          "status": "active",
+          "rngWords": [
+            1140459056,
+            1175894796,
+            2453595923,
+            3732375667
+          ],
+          "checksum": "64f35f3fe5a30bf6f0c2682fc9c8ca280f2e6db334f88f18786f1a02799d96db"
+        }
+      ],
+      "noOpSteps": [
+        5,
+        22,
+        23,
+        32,
+        34,
+        38,
+        39
+      ],
+      "final": {
+        "state": {
+          "schemaVersion": 1,
+          "engineVersion": "1.0.0",
+          "rulesetVersion": "classic-v1",
+          "board": {
+            "size": 4,
+            "cells": [
+              "2",
+              "4",
+              "1",
+              null,
+              "5",
+              "3",
+              null,
+              null,
+              "3",
+              "1",
+              null,
+              null,
+              "1",
+              null,
+              null,
+              null
+            ]
+          },
+          "score": "204",
+          "acceptedMoves": 33,
+          "revision": 33,
+          "rng": {
+            "algorithm": "xoshiro128ss-v1",
+            "words": [
+              1140459056,
+              1175894796,
+              2453595923,
+              3732375667
+            ]
+          },
+          "status": "active",
+          "celebrated2048": false
+        },
+        "canonicalJson": "{\"schemaVersion\":1,\"engineVersion\":\"1.0.0\",\"rulesetVersion\":\"classic-v1\",\"board\":{\"size\":4,\"cells\":[\"2\",\"4\",\"1\",null,\"5\",\"3\",null,null,\"3\",\"1\",null,null,\"1\",null,null,null]},\"score\":\"204\",\"acceptedMoves\":33,\"revision\":33,\"rng\":{\"algorithm\":\"xoshiro128ss-v1\",\"words\":[1140459056,1175894796,2453595923,3732375667]},\"status\":\"active\",\"celebrated2048\":false}",
+        "checksum": "64f35f3fe5a30bf6f0c2682fc9c8ca280f2e6db334f88f18786f1a02799d96db"
+      }
+    },
+    {
+      "seed": "abc",
+      "size": 4,
+      "directions": [
+        "up",
+        "right",
+        "down",
+        "left",
+        "left",
+        "left",
+        "up",
+        "up",
+        "right",
+        "right",
+        "down",
+        "down",
+        "left",
+        "up",
+        "right",
+        "down",
+        "down",
+        "down",
+        "left",
+        "left",
+        "up",
+        "right",
+        "right",
+        "right",
+        "down",
+        "left",
+        "up",
+        "up",
+        "up",
+        "right",
+        "down",
+        "left",
+        "left",
+        "down",
+        "down",
+        "right",
+        "up",
+        "left",
+        "left",
+        "up"
+      ],
+      "initial": {
+        "state": {
+          "schemaVersion": 1,
+          "engineVersion": "1.0.0",
+          "rulesetVersion": "classic-v1",
+          "board": {
+            "size": 4,
+            "cells": [
+              null,
+              null,
+              "1",
+              null,
+              null,
+              null,
+              null,
+              null,
+              "1",
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          },
+          "score": "0",
+          "acceptedMoves": 0,
+          "revision": 0,
+          "rng": {
+            "algorithm": "xoshiro128ss-v1",
+            "words": [
+              3493950572,
+              946087268,
+              562510829,
+              1424478131
+            ]
+          },
+          "status": "active",
+          "celebrated2048": false
+        },
+        "canonicalJson": "{\"schemaVersion\":1,\"engineVersion\":\"1.0.0\",\"rulesetVersion\":\"classic-v1\",\"board\":{\"size\":4,\"cells\":[null,null,\"1\",null,null,null,null,null,\"1\",null,null,null,null,null,null,null]},\"score\":\"0\",\"acceptedMoves\":0,\"revision\":0,\"rng\":{\"algorithm\":\"xoshiro128ss-v1\",\"words\":[3493950572,946087268,562510829,1424478131]},\"status\":\"active\",\"celebrated2048\":false}",
+        "checksum": "49772054c55558302b6dd57d3662dd240e6bcf40124bcfa95c0a51caebd89a1b"
+      },
+      "steps": [
+        {
+          "step": 0,
+          "direction": "up",
+          "changed": true,
+          "scoreDelta": "0",
+          "spawn": {
+            "index": 8,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "0",
+          "acceptedMoves": 1,
+          "revision": 1,
+          "status": "active",
+          "rngWords": [
+            1781944122,
+            1290564575,
+            3248214842,
+            2794196663
+          ],
+          "checksum": "ad75ba5d890cf5d12a200a0dbbfc37cbe767b91be6fef9b7214f0a10d36d8b4d"
+        },
+        {
+          "step": 1,
+          "direction": "right",
+          "changed": true,
+          "scoreDelta": "4",
+          "spawn": {
+            "index": 7,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "4",
+          "acceptedMoves": 2,
+          "revision": 2,
+          "status": "active",
+          "rngWords": [
+            1694276318,
+            341704589,
+            1891872338,
+            1430546213
+          ],
+          "checksum": "7a8fde1747024d51c266d6c51bac545d1834778c23ce5a2b2a9a543bb31c1f9a"
+        },
+        {
+          "step": 2,
+          "direction": "down",
+          "changed": true,
+          "scoreDelta": "4",
+          "spawn": {
+            "index": 2,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "8",
+          "acceptedMoves": 3,
+          "revision": 3,
+          "status": "active",
+          "rngWords": [
+            3913452415,
+            2319968251,
+            1337143034,
+            1011371621
+          ],
+          "checksum": "0a313086fcdf31ce8ddf880169e02d6a36031686a530ef3793205e10eb025ed9"
+        },
+        {
+          "step": 3,
+          "direction": "left",
+          "changed": true,
+          "scoreDelta": "0",
+          "spawn": {
+            "index": 2,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "8",
+          "acceptedMoves": 4,
+          "revision": 4,
+          "status": "active",
+          "rngWords": [
+            246912303,
+            1522873114,
+            452431204,
+            3586028175
+          ],
+          "checksum": "5596ca23cbeaf44e2c1aa361dce3fc9bce0bc289a49da3322f3498c9057bf047"
+        },
+        {
+          "step": 4,
+          "direction": "left",
+          "changed": true,
+          "scoreDelta": "4",
+          "spawn": {
+            "index": 14,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "12",
+          "acceptedMoves": 5,
+          "revision": 5,
+          "status": "active",
+          "rngWords": [
+            356864912,
+            1366283168,
+            364665585,
+            1278825636
+          ],
+          "checksum": "52749b76b27903ca6fa6758eae860c45135a58e78ecea1b293caef97f32dfc89"
+        },
+        {
+          "step": 5,
+          "direction": "left",
+          "changed": true,
+          "scoreDelta": "0",
+          "spawn": {
+            "index": 9,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "12",
+          "acceptedMoves": 6,
+          "revision": 6,
+          "status": "active",
+          "rngWords": [
+            3988598463,
+            2262517556,
+            4210565109,
+            2010210093
+          ],
+          "checksum": "8d34f1e326e6425c12b761986d530b661e99944e9761d7d33c4f795d56ab6c42"
+        },
+        {
+          "step": 6,
+          "direction": "up",
+          "changed": true,
+          "scoreDelta": "12",
+          "spawn": {
+            "index": 11,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "24",
+          "acceptedMoves": 7,
+          "revision": 7,
+          "status": "active",
+          "rngWords": [
+            3723071312,
+            753015186,
+            2173735916,
+            4124030474
+          ],
+          "checksum": "85528fa952eabd75e29f1ea2289dbbe9ff02955d25e3f2d82ba687bab21ec8c1"
+        },
+        {
+          "step": 7,
+          "direction": "up",
+          "changed": true,
+          "scoreDelta": "0",
+          "spawn": {
+            "index": 12,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "24",
+          "acceptedMoves": 8,
+          "revision": 8,
+          "status": "active",
+          "rngWords": [
+            421782319,
+            3960806746,
+            2860794996,
+            1042233583
+          ],
+          "checksum": "6cb10df4587f8f1d91ebf5b59a459e3b95662e4ab684ed35f0d4f1ecc69d603a"
+        },
+        {
+          "step": 8,
+          "direction": "right",
+          "changed": true,
+          "scoreDelta": "0",
+          "spawn": {
+            "index": 8,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "24",
+          "acceptedMoves": 9,
+          "revision": 9,
+          "status": "active",
+          "rngWords": [
+            3317092875,
+            218525632,
+            935385025,
+            4171532404
+          ],
+          "checksum": "ed292fd30ebdd044bc8189f21170a7a227b97fa6a425d486a6f0752a49474426"
+        },
+        {
+          "step": 9,
+          "direction": "right",
+          "changed": true,
+          "scoreDelta": "0",
+          "spawn": {
+            "index": 0,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "24",
+          "acceptedMoves": 10,
+          "revision": 10,
+          "status": "active",
+          "rngWords": [
+            3629774872,
+            835574399,
+            778675317,
+            1852653378
+          ],
+          "checksum": "9f2a93dc5297ded0972a8b7074462110647235294e6b885b9562ed617b4e20c3"
+        },
+        {
+          "step": 10,
+          "direction": "down",
+          "changed": true,
+          "scoreDelta": "4",
+          "spawn": {
+            "index": 6,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "28",
+          "acceptedMoves": 11,
+          "revision": 11,
+          "status": "active",
+          "rngWords": [
+            1194160586,
+            763378010,
+            292657992,
+            2741468678
+          ],
+          "checksum": "bf6380a52a4a70e2e96fda46b674ac8c0d30438554a78002e66626c5398b8310"
+        },
+        {
+          "step": 11,
+          "direction": "down",
+          "changed": true,
+          "scoreDelta": "8",
+          "spawn": {
+            "index": 9,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "36",
+          "acceptedMoves": 12,
+          "revision": 12,
+          "status": "active",
+          "rngWords": [
+            2284585273,
+            3828923340,
+            641980436,
+            834501135
+          ],
+          "checksum": "cf778743e862932543f4c65c2c83abfb76414fd7b67b8ab3b9ff22e637368865"
+        },
+        {
+          "step": 12,
+          "direction": "left",
+          "changed": true,
+          "scoreDelta": "4",
+          "spawn": {
+            "index": 10,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "40",
+          "acceptedMoves": 13,
+          "revision": 13,
+          "status": "active",
+          "rngWords": [
+            972078263,
+            3370574646,
+            745817047,
+            3420613410
+          ],
+          "checksum": "88dc16e210d99f3f7057564cbd07082124e2b3023d93ce728b56f469a8c75184"
+        },
+        {
+          "step": 13,
+          "direction": "up",
+          "changed": true,
+          "scoreDelta": "0",
+          "spawn": {
+            "index": 8,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "40",
+          "acceptedMoves": 14,
+          "revision": 14,
+          "status": "active",
+          "rngWords": [
+            3285616877,
+            1070906261,
+            646843331,
+            367163337
+          ],
+          "checksum": "f4384689763019c0fd2d52302731565f9c31171be29566c96f627631b307549a"
+        },
+        {
+          "step": 14,
+          "direction": "right",
+          "changed": true,
+          "scoreDelta": "4",
+          "spawn": {
+            "index": 14,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "44",
+          "acceptedMoves": 15,
+          "revision": 15,
+          "status": "active",
+          "rngWords": [
+            2232327515,
+            2135151908,
+            3183385503,
+            1993298791
+          ],
+          "checksum": "3ae7af440e9b5528d1e7be9095bd853526be787a2dc2229c0eee5a1d666612eb"
+        },
+        {
+          "step": 15,
+          "direction": "down",
+          "changed": true,
+          "scoreDelta": "0",
+          "spawn": {
+            "index": 8,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "44",
+          "acceptedMoves": 16,
+          "revision": 16,
+          "status": "active",
+          "rngWords": [
+            2940457140,
+            1953203772,
+            3560936924,
+            241000734
+          ],
+          "checksum": "300b1bd584595cae470e4aae7c5c24fbef1f3d0f153d10532f4dcf6ca3af2f87"
+        },
+        {
+          "step": 16,
+          "direction": "down",
+          "changed": true,
+          "scoreDelta": "0",
+          "spawn": {
+            "index": 1,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "44",
+          "acceptedMoves": 17,
+          "revision": 17,
+          "status": "active",
+          "rngWords": [
+            1834739475,
+            1980942762,
+            1451467518,
+            1988373953
+          ],
+          "checksum": "380da2ba98b9c0e614b8a0e69a2893ca5074e8f5da733e0b0c235df78fae82ba"
+        },
+        {
+          "step": 17,
+          "direction": "down",
+          "changed": true,
+          "scoreDelta": "0",
+          "spawn": {
+            "index": 8,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "44",
+          "acceptedMoves": 18,
+          "revision": 18,
+          "status": "active",
+          "rngWords": [
+            2535774011,
+            1045208786,
+            3869154453,
+            1319247831
+          ],
+          "checksum": "74bf199cb24617189f10689e2d358b99e75b29f6c3e25f389fda58934c15e467"
+        },
+        {
+          "step": 18,
+          "direction": "left",
+          "changed": true,
+          "scoreDelta": "8",
+          "spawn": {
+            "index": 2,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "52",
+          "acceptedMoves": 19,
+          "revision": 19,
+          "status": "active",
+          "rngWords": [
+            3694438597,
+            1086024940,
+            3806806416,
+            4160215519
+          ],
+          "checksum": "0c318b14bf423f080a1d14aee5f1b1da0980b6f3cc9e0058888abd9a5a0ee5de"
+        },
+        {
+          "step": 19,
+          "direction": "left",
+          "changed": true,
+          "scoreDelta": "8",
+          "spawn": {
+            "index": 7,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "60",
+          "acceptedMoves": 20,
+          "revision": 20,
+          "status": "active",
+          "rngWords": [
+            1891173877,
+            1562028314,
+            4068040355,
+            146807006
+          ],
+          "checksum": "f6c5329c43d4cab86a0743a4e7a2fec7ac596b4a48dee5fe56b8c365c875e1fc"
+        },
+        {
+          "step": 20,
+          "direction": "up",
+          "changed": true,
+          "scoreDelta": "28",
+          "spawn": {
+            "index": 10,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "88",
+          "acceptedMoves": 21,
+          "revision": 21,
+          "status": "active",
+          "rngWords": [
+            792159443,
+            1294674219,
+            655704935,
+            2793869394
+          ],
+          "checksum": "ef4775feb554d734acc97338b640f5787320b487c5069a825a6b890a36aefa88"
+        },
+        {
+          "step": 21,
+          "direction": "right",
+          "changed": true,
+          "scoreDelta": "0",
+          "spawn": {
+            "index": 4,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "88",
+          "acceptedMoves": 22,
+          "revision": 22,
+          "status": "active",
+          "rngWords": [
+            3763969128,
+            3756139137,
+            2297827870,
+            370020646
+          ],
+          "checksum": "c9558fe1ea7e7870630cf3038416d07eb553800c91dc4e89f08608d4bd48d35d"
+        },
+        {
+          "step": 22,
+          "direction": "right",
+          "changed": true,
+          "scoreDelta": "4",
+          "spawn": {
+            "index": 15,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "92",
+          "acceptedMoves": 23,
+          "revision": 23,
+          "status": "active",
+          "rngWords": [
+            4284824951,
+            840077134,
+            503762361,
+            2224408246
+          ],
+          "checksum": "4899c66abbb6aef410274884f654b76b3834f35788196b48b713efd4ecdebc11"
+        },
+        {
+          "step": 23,
+          "direction": "right",
+          "changed": true,
+          "scoreDelta": "8",
+          "spawn": {
+            "index": 12,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "100",
+          "acceptedMoves": 24,
+          "revision": 24,
+          "status": "active",
+          "rngWords": [
+            2698825403,
+            1592682433,
+            1868568641,
+            4124157769
+          ],
+          "checksum": "dcc33c8a9124e0d389a7eaddecb3eb842a0d32da1974daeccc625984651af3a3"
+        },
+        {
+          "step": 24,
+          "direction": "down",
+          "changed": true,
+          "scoreDelta": "4",
+          "spawn": {
+            "index": 5,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "104",
+          "acceptedMoves": 25,
+          "revision": 25,
+          "status": "active",
+          "rngWords": [
+            1689647697,
+            2311252978,
+            3186765001,
+            3080917882
+          ],
+          "checksum": "862f2bc67bb07ca54636298ff9cdf2f29dbb0685218c9e022d334ddfe3f3a076"
+        },
+        {
+          "step": 25,
+          "direction": "left",
+          "changed": true,
+          "scoreDelta": "20",
+          "spawn": {
+            "index": 7,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "124",
+          "acceptedMoves": 26,
+          "revision": 26,
+          "status": "active",
+          "rngWords": [
+            93683264,
+            1455492395,
+            205448257,
+            199543546
+          ],
+          "checksum": "59da02d25ef56bcaefe4f756dfd9b6380c13775b636e53a7d8fa8f9707b85483"
+        },
+        {
+          "step": 26,
+          "direction": "up",
+          "changed": true,
+          "scoreDelta": "40",
+          "spawn": {
+            "index": 12,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "164",
+          "acceptedMoves": 27,
+          "revision": 27,
+          "status": "active",
+          "rngWords": [
+            702850130,
+            2355880634,
+            103752080,
+            2699959178
+          ],
+          "checksum": "3a828661d229a20c13057bdc47f1f9db2a5ca3656b73480c587668d3ce978e49"
+        },
+        {
+          "step": 27,
+          "direction": "up",
+          "changed": true,
+          "scoreDelta": "4",
+          "spawn": {
+            "index": 7,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "168",
+          "acceptedMoves": 28,
+          "revision": 28,
+          "status": "active",
+          "rngWords": [
+            2299050878,
+            1590676440,
+            3181468832,
+            1328604259
+          ],
+          "checksum": "5349ff277a26ead9e275330f4d20a659c56cfc0cc7fe5f21c942ad41b4cebd1a"
+        },
+        {
+          "step": 28,
+          "direction": "up",
+          "changed": true,
+          "scoreDelta": "4",
+          "spawn": {
+            "index": 9,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "172",
+          "acceptedMoves": 29,
+          "revision": 29,
+          "status": "active",
+          "rngWords": [
+            200040524,
+            1504702237,
+            4287745819,
+            3752086680
+          ],
+          "checksum": "f584c9c6bdf2f55ac155711464da8e6536621c7d292733e46e14c9edf1d2b495"
+        },
+        {
+          "step": 29,
+          "direction": "right",
+          "changed": true,
+          "scoreDelta": "8",
+          "spawn": {
+            "index": 6,
+            "exponent": "2"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "180",
+          "acceptedMoves": 30,
+          "revision": 30,
+          "status": "active",
+          "rngWords": [
+            2099883955,
+            2341869268,
+            2193932958,
+            1935923078
+          ],
+          "checksum": "29a290c956e51679e829685824c9ec05e16c35520669a387b15256bd602c0a91"
+        },
+        {
+          "step": 30,
+          "direction": "down",
+          "changed": true,
+          "scoreDelta": "0",
+          "spawn": {
+            "index": 4,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "180",
+          "acceptedMoves": 31,
+          "revision": 31,
+          "status": "active",
+          "rngWords": [
+            1605206751,
+            577228853,
+            2699778508,
+            2405562067
+          ],
+          "checksum": "ec27fff9944ebc00095d106627cfbede213c24b52fdc7272d65b0203d211e315"
+        },
+        {
+          "step": 31,
+          "direction": "left",
+          "changed": true,
+          "scoreDelta": "16",
+          "spawn": {
+            "index": 0,
+            "exponent": "2"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "196",
+          "acceptedMoves": 32,
+          "revision": 32,
+          "status": "active",
+          "rngWords": [
+            515742327,
+            527179276,
+            2153470250,
+            2985457504
+          ],
+          "checksum": "11bbef407722a4fb072b4d44887085ec279d17eba5eb8ab180ac71399fd0bc64"
+        },
+        {
+          "step": 32,
+          "direction": "left",
+          "changed": false,
+          "scoreDelta": "0",
+          "spawn": null,
+          "rawDrawsConsumed": 0,
+          "score": "196",
+          "acceptedMoves": 32,
+          "revision": 32,
+          "status": "active",
+          "rngWords": [
+            515742327,
+            527179276,
+            2153470250,
+            2985457504
+          ],
+          "checksum": "11bbef407722a4fb072b4d44887085ec279d17eba5eb8ab180ac71399fd0bc64"
+        },
+        {
+          "step": 33,
+          "direction": "down",
+          "changed": true,
+          "scoreDelta": "0",
+          "spawn": {
+            "index": 10,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "196",
+          "acceptedMoves": 33,
+          "revision": 33,
+          "status": "active",
+          "rngWords": [
+            3269610302,
+            2004088087,
+            3812854342,
+            230763414
+          ],
+          "checksum": "666fb014c5c2ebce8d0f5b050a91b4956fff7652e657dfaa8fb1aa7885ae41a0"
+        },
+        {
+          "step": 34,
+          "direction": "down",
+          "changed": false,
+          "scoreDelta": "0",
+          "spawn": null,
+          "rawDrawsConsumed": 0,
+          "score": "196",
+          "acceptedMoves": 33,
+          "revision": 33,
+          "status": "active",
+          "rngWords": [
+            3269610302,
+            2004088087,
+            3812854342,
+            230763414
+          ],
+          "checksum": "666fb014c5c2ebce8d0f5b050a91b4956fff7652e657dfaa8fb1aa7885ae41a0"
+        },
+        {
+          "step": 35,
+          "direction": "right",
+          "changed": true,
+          "scoreDelta": "0",
+          "spawn": {
+            "index": 4,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "196",
+          "acceptedMoves": 34,
+          "revision": 34,
+          "status": "active",
+          "rngWords": [
+            2021042693,
+            684281512,
+            3665011911,
+            838718977
+          ],
+          "checksum": "46964307313b3b10819651fc34701661fde3a86d6bc1c9c6e105a2c136806b11"
+        },
+        {
+          "step": 36,
+          "direction": "up",
+          "changed": true,
+          "scoreDelta": "12",
+          "spawn": {
+            "index": 13,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "208",
+          "acceptedMoves": 35,
+          "revision": 35,
+          "status": "active",
+          "rngWords": [
+            1330330127,
+            3675663364,
+            3378165870,
+            1212488048
+          ],
+          "checksum": "1261606ff2c2049d2840a3a5814b943f759e45e837d2f04efb7c736e3c9b38c9"
+        },
+        {
+          "step": 37,
+          "direction": "left",
+          "changed": true,
+          "scoreDelta": "0",
+          "spawn": {
+            "index": 9,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "208",
+          "acceptedMoves": 36,
+          "revision": 36,
+          "status": "active",
+          "rngWords": [
+            414451076,
+            727067519,
+            2030915354,
+            1616379429
+          ],
+          "checksum": "04dde9f44f62d1f5ce0483484d65a2fae11c7c81a210c8611f21defb9a7b2c2a"
+        },
+        {
+          "step": 38,
+          "direction": "left",
+          "changed": true,
+          "scoreDelta": "4",
+          "spawn": {
+            "index": 10,
+            "exponent": "1"
+          },
+          "rawDrawsConsumed": 2,
+          "score": "212",
+          "acceptedMoves": 37,
+          "revision": 37,
+          "status": "active",
+          "rngWords": [
+            401630055,
+            3568633249,
+            1083811392,
+            765315618
+          ],
+          "checksum": "c394e8dd7968be57356876c1bdfe83cc39aa9536812978cf5b1ac62bdf490798"
+        },
+        {
+          "step": 39,
+          "direction": "up",
+          "changed": false,
+          "scoreDelta": "0",
+          "spawn": null,
+          "rawDrawsConsumed": 0,
+          "score": "212",
+          "acceptedMoves": 37,
+          "revision": 37,
+          "status": "active",
+          "rngWords": [
+            401630055,
+            3568633249,
+            1083811392,
+            765315618
+          ],
+          "checksum": "c394e8dd7968be57356876c1bdfe83cc39aa9536812978cf5b1ac62bdf490798"
+        }
+      ],
+      "noOpSteps": [
+        32,
+        34,
+        39
+      ],
+      "final": {
+        "state": {
+          "schemaVersion": 1,
+          "engineVersion": "1.0.0",
+          "rulesetVersion": "classic-v1",
+          "board": {
+            "size": 4,
+            "cells": [
+              "1",
+              "4",
+              "3",
+              "2",
+              "3",
+              "5",
+              "2",
+              null,
+              "2",
+              null,
+              "1",
+              null,
+              "1",
+              null,
+              null,
+              null
+            ]
+          },
+          "score": "212",
+          "acceptedMoves": 37,
+          "revision": 37,
+          "rng": {
+            "algorithm": "xoshiro128ss-v1",
+            "words": [
+              401630055,
+              3568633249,
+              1083811392,
+              765315618
+            ]
+          },
+          "status": "active",
+          "celebrated2048": false
+        },
+        "canonicalJson": "{\"schemaVersion\":1,\"engineVersion\":\"1.0.0\",\"rulesetVersion\":\"classic-v1\",\"board\":{\"size\":4,\"cells\":[\"1\",\"4\",\"3\",\"2\",\"3\",\"5\",\"2\",null,\"2\",null,\"1\",null,\"1\",null,null,null]},\"score\":\"212\",\"acceptedMoves\":37,\"revision\":37,\"rng\":{\"algorithm\":\"xoshiro128ss-v1\",\"words\":[401630055,3568633249,1083811392,765315618]},\"status\":\"active\",\"celebrated2048\":false}",
+        "checksum": "c394e8dd7968be57356876c1bdfe83cc39aa9536812978cf5b1ac62bdf490798"
+      }
+    }
+  ],
+  "highValue": {
+    "description": "hand-built 4x4 state; tiles 53,53 (row 0) and 4095,4095 (row 1) slide left; rng words = derive('high-value')",
+    "direction": "left",
+    "before": {
+      "state": {
+        "schemaVersion": 1,
+        "engineVersion": "1.0.0",
+        "rulesetVersion": "classic-v1",
+        "board": {
+          "size": 4,
+          "cells": [
+            "53",
+            "53",
+            null,
+            null,
+            "4095",
+            "4095",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        "score": "0",
+        "acceptedMoves": 0,
+        "revision": 0,
+        "rng": {
+          "algorithm": "xoshiro128ss-v1",
+          "words": [
+            4026295930,
+            2202057294,
+            2166216489,
+            4033169682
+          ]
+        },
+        "status": "active",
+        "celebrated2048": false
+      },
+      "canonicalJson": "{\"schemaVersion\":1,\"engineVersion\":\"1.0.0\",\"rulesetVersion\":\"classic-v1\",\"board\":{\"size\":4,\"cells\":[\"53\",\"53\",null,null,\"4095\",\"4095\",null,null,null,null,null,null,null,null,null,null]},\"score\":\"0\",\"acceptedMoves\":0,\"revision\":0,\"rng\":{\"algorithm\":\"xoshiro128ss-v1\",\"words\":[4026295930,2202057294,2166216489,4033169682]},\"status\":\"active\",\"celebrated2048\":false}",
+      "checksum": "b6b18c5520e02967e3957fd1c2b9f1e52a259762d113938a55f3288efe29f4c6"
+    },
+    "slide": {
+      "cells": [
+        "54",
+        null,
+        null,
+        null,
+        "4096",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "changed": true,
+      "merges": [
+        {
+          "to": 0,
+          "exponent": "54",
+          "value": "18014398509481984"
+        },
+        {
+          "to": 4,
+          "exponent": "4096",
+          "value": "1044388881413152506691752710716624382579964249047383780384233483283953907971557456848826811934997558340890106714439262837987573438185793607263236087851365277945956976543709998340361590134383718314428070011855946226376318839397712745672334684344586617496807908705803704071284048740118609114467977783598029006686938976881787785946905630190260940599579453432823469303026696443059025015972399867714215541693835559885291486318237914434496734087811872639496475100189041349008417061675093668333850551032972088269550769983616369411933015213796825837188091833656751221318492846368125550225998300412344784862595674492194617023806505913245610825731835380087608622102834270197698202313169017678006675195485079921636419370285375124784014907159135459982790513399611551794271106831134090584272884279791554849782954323534517065223269061394905987693002122963395687782878948440616007412945674919823050571642377154816321380631045902916136926708342856440730447899971901781465763473223850267253059899795996090799469201774624817718449867455659250178329070473119433165550807568221846571746373296884912819520317457002440926616910874148385078411929804522981857338977648103126085903001302413467189726673216491511131602920781738033436090243804708340403154190336"
+        }
+      ],
+      "scoreDelta": "1044388881413152506691752710716624382579964249047383780384233483283953907971557456848826811934997558340890106714439262837987573438185793607263236087851365277945956976543709998340361590134383718314428070011855946226376318839397712745672334684344586617496807908705803704071284048740118609114467977783598029006686938976881787785946905630190260940599579453432823469303026696443059025015972399867714215541693835559885291486318237914434496734087811872639496475100189041349008417061675093668333850551032972088269550769983616369411933015213796825837188091833656751221318492846368125550225998300412344784862595674492194617023806505913245610825731835380087608622102834270197698202313169017678006675195485079921636419370285375124784014907159135459982790513399611551794271106831134090584272884279791554849782954323534517065223269061394905987693002122963395687782878948440616007412945674919823050571642377154816321380631045902916136926708342856440730447899971901781465763473223850267253059899795996090799469201774624817718449867455659250178329070473119433165550807568221846571746373296884912819520317457002440926616910874148385078411929804522981857338977648103126085903001302413467189726673216491511131602920781738033436090243804726354801663672320",
+      "scoreDeltaSha256": "e9a03839f3f441f151e11195b7dac96902ea3b01e8fdf9a5b11dccefbfb81489",
+      "scoreDeltaDigits": 1234
+    },
+    "applyMove": {
+      "changed": true,
+      "scoreDelta": "1044388881413152506691752710716624382579964249047383780384233483283953907971557456848826811934997558340890106714439262837987573438185793607263236087851365277945956976543709998340361590134383718314428070011855946226376318839397712745672334684344586617496807908705803704071284048740118609114467977783598029006686938976881787785946905630190260940599579453432823469303026696443059025015972399867714215541693835559885291486318237914434496734087811872639496475100189041349008417061675093668333850551032972088269550769983616369411933015213796825837188091833656751221318492846368125550225998300412344784862595674492194617023806505913245610825731835380087608622102834270197698202313169017678006675195485079921636419370285375124784014907159135459982790513399611551794271106831134090584272884279791554849782954323534517065223269061394905987693002122963395687782878948440616007412945674919823050571642377154816321380631045902916136926708342856440730447899971901781465763473223850267253059899795996090799469201774624817718449867455659250178329070473119433165550807568221846571746373296884912819520317457002440926616910874148385078411929804522981857338977648103126085903001302413467189726673216491511131602920781738033436090243804726354801663672320",
+      "spawn": {
+        "index": 14,
+        "exponent": "1"
+      },
+      "after": {
+        "state": {
+          "schemaVersion": 1,
+          "engineVersion": "1.0.0",
+          "rulesetVersion": "classic-v1",
+          "board": {
+            "size": 4,
+            "cells": [
+              "54",
+              null,
+              null,
+              null,
+              "4096",
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              "1",
+              null
+            ]
+          },
+          "score": "1044388881413152506691752710716624382579964249047383780384233483283953907971557456848826811934997558340890106714439262837987573438185793607263236087851365277945956976543709998340361590134383718314428070011855946226376318839397712745672334684344586617496807908705803704071284048740118609114467977783598029006686938976881787785946905630190260940599579453432823469303026696443059025015972399867714215541693835559885291486318237914434496734087811872639496475100189041349008417061675093668333850551032972088269550769983616369411933015213796825837188091833656751221318492846368125550225998300412344784862595674492194617023806505913245610825731835380087608622102834270197698202313169017678006675195485079921636419370285375124784014907159135459982790513399611551794271106831134090584272884279791554849782954323534517065223269061394905987693002122963395687782878948440616007412945674919823050571642377154816321380631045902916136926708342856440730447899971901781465763473223850267253059899795996090799469201774624817718449867455659250178329070473119433165550807568221846571746373296884912819520317457002440926616910874148385078411929804522981857338977648103126085903001302413467189726673216491511131602920781738033436090243804726354801663672320",
+          "acceptedMoves": 1,
+          "revision": 1,
+          "rng": {
+            "algorithm": "xoshiro128ss-v1",
+            "words": [
+              1591901602,
+              2666378088,
+              828015221,
+              3745785361
+            ]
+          },
+          "status": "active",
+          "celebrated2048": true
+        },
+        "canonicalJson": "{\"schemaVersion\":1,\"engineVersion\":\"1.0.0\",\"rulesetVersion\":\"classic-v1\",\"board\":{\"size\":4,\"cells\":[\"54\",null,null,null,\"4096\",null,null,null,null,null,null,null,null,null,\"1\",null]},\"score\":\"1044388881413152506691752710716624382579964249047383780384233483283953907971557456848826811934997558340890106714439262837987573438185793607263236087851365277945956976543709998340361590134383718314428070011855946226376318839397712745672334684344586617496807908705803704071284048740118609114467977783598029006686938976881787785946905630190260940599579453432823469303026696443059025015972399867714215541693835559885291486318237914434496734087811872639496475100189041349008417061675093668333850551032972088269550769983616369411933015213796825837188091833656751221318492846368125550225998300412344784862595674492194617023806505913245610825731835380087608622102834270197698202313169017678006675195485079921636419370285375124784014907159135459982790513399611551794271106831134090584272884279791554849782954323534517065223269061394905987693002122963395687782878948440616007412945674919823050571642377154816321380631045902916136926708342856440730447899971901781465763473223850267253059899795996090799469201774624817718449867455659250178329070473119433165550807568221846571746373296884912819520317457002440926616910874148385078411929804522981857338977648103126085903001302413467189726673216491511131602920781738033436090243804726354801663672320\",\"acceptedMoves\":1,\"revision\":1,\"rng\":{\"algorithm\":\"xoshiro128ss-v1\",\"words\":[1591901602,2666378088,828015221,3745785361]},\"status\":\"active\",\"celebrated2048\":true}",
+        "checksum": "62ab53fbafb5efdd69d015253694a35e0f049778b86ef822f065f9c28a18dffd"
+      }
+    }
+  },
+  "transitions": [
+    {
+      "id": "first-2048-celebrates",
+      "direction": "left",
+      "before": {
+        "state": {
+          "schemaVersion": 1,
+          "engineVersion": "1.0.0",
+          "rulesetVersion": "classic-v1",
+          "board": {
+            "size": 4,
+            "cells": [
+              "10",
+              "10",
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          },
+          "score": "100",
+          "acceptedMoves": 0,
+          "revision": 0,
+          "rng": {
+            "algorithm": "xoshiro128ss-v1",
+            "words": [
+              767673924,
+              4240917241,
+              1078290515,
+              3996010796
+            ]
+          },
+          "status": "active",
+          "celebrated2048": false
+        },
+        "canonicalJson": "{\"schemaVersion\":1,\"engineVersion\":\"1.0.0\",\"rulesetVersion\":\"classic-v1\",\"board\":{\"size\":4,\"cells\":[\"10\",\"10\",null,null,null,null,null,null,null,null,null,null,null,null,null,null]},\"score\":\"100\",\"acceptedMoves\":0,\"revision\":0,\"rng\":{\"algorithm\":\"xoshiro128ss-v1\",\"words\":[767673924,4240917241,1078290515,3996010796]},\"status\":\"active\",\"celebrated2048\":false}",
+        "checksum": "d7651cbc31e8e0a35ea1a57e63590272fff9becf4cb38bfa0ba30bd6e8aabfc0"
+      },
+      "changed": true,
+      "scoreDelta": "2048",
+      "after": {
+        "state": {
+          "schemaVersion": 1,
+          "engineVersion": "1.0.0",
+          "rulesetVersion": "classic-v1",
+          "board": {
+            "size": 4,
+            "cells": [
+              "11",
+              null,
+              null,
+              null,
+              null,
+              "1",
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          },
+          "score": "2148",
+          "acceptedMoves": 1,
+          "revision": 1,
+          "rng": {
+            "algorithm": "xoshiro128ss-v1",
+            "words": [
+              3862268392,
+              1298824552,
+              1542475142,
+              3928215240
+            ]
+          },
+          "status": "active",
+          "celebrated2048": true
+        },
+        "canonicalJson": "{\"schemaVersion\":1,\"engineVersion\":\"1.0.0\",\"rulesetVersion\":\"classic-v1\",\"board\":{\"size\":4,\"cells\":[\"11\",null,null,null,null,\"1\",null,null,null,null,null,null,null,null,null,null]},\"score\":\"2148\",\"acceptedMoves\":1,\"revision\":1,\"rng\":{\"algorithm\":\"xoshiro128ss-v1\",\"words\":[3862268392,1298824552,1542475142,3928215240]},\"status\":\"active\",\"celebrated2048\":true}",
+        "checksum": "8c122cb0b970eb3d3f4110275fd55484ab0f543b690b86fd51cb8ddb2019e4c9"
+      }
+    },
+    {
+      "id": "already-celebrated-stays-true",
+      "direction": "left",
+      "before": {
+        "state": {
+          "schemaVersion": 1,
+          "engineVersion": "1.0.0",
+          "rulesetVersion": "classic-v1",
+          "board": {
+            "size": 4,
+            "cells": [
+              "11",
+              "11",
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          },
+          "score": "5000",
+          "acceptedMoves": 7,
+          "revision": 7,
+          "rng": {
+            "algorithm": "xoshiro128ss-v1",
+            "words": [
+              767673924,
+              4240917241,
+              1078290515,
+              3996010796
+            ]
+          },
+          "status": "active",
+          "celebrated2048": true
+        },
+        "canonicalJson": "{\"schemaVersion\":1,\"engineVersion\":\"1.0.0\",\"rulesetVersion\":\"classic-v1\",\"board\":{\"size\":4,\"cells\":[\"11\",\"11\",null,null,null,null,null,null,null,null,null,null,null,null,null,null]},\"score\":\"5000\",\"acceptedMoves\":7,\"revision\":7,\"rng\":{\"algorithm\":\"xoshiro128ss-v1\",\"words\":[767673924,4240917241,1078290515,3996010796]},\"status\":\"active\",\"celebrated2048\":true}",
+        "checksum": "9b5ac82b50408aa19abe35da2406156f96dda53c1dd1530f9d7595b9cdc404ac"
+      },
+      "changed": true,
+      "scoreDelta": "4096",
+      "after": {
+        "state": {
+          "schemaVersion": 1,
+          "engineVersion": "1.0.0",
+          "rulesetVersion": "classic-v1",
+          "board": {
+            "size": 4,
+            "cells": [
+              "12",
+              null,
+              null,
+              null,
+              null,
+              "1",
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          },
+          "score": "9096",
+          "acceptedMoves": 8,
+          "revision": 8,
+          "rng": {
+            "algorithm": "xoshiro128ss-v1",
+            "words": [
+              3862268392,
+              1298824552,
+              1542475142,
+              3928215240
+            ]
+          },
+          "status": "active",
+          "celebrated2048": true
+        },
+        "canonicalJson": "{\"schemaVersion\":1,\"engineVersion\":\"1.0.0\",\"rulesetVersion\":\"classic-v1\",\"board\":{\"size\":4,\"cells\":[\"12\",null,null,null,null,\"1\",null,null,null,null,null,null,null,null,null,null]},\"score\":\"9096\",\"acceptedMoves\":8,\"revision\":8,\"rng\":{\"algorithm\":\"xoshiro128ss-v1\",\"words\":[3862268392,1298824552,1542475142,3928215240]},\"status\":\"active\",\"celebrated2048\":true}",
+        "checksum": "ac9905eb6262ff8f1ac53cf2042450fcac96491694eccfad62dce8a706a1dba2"
+      }
+    },
+    {
+      "id": "move-completes-game",
+      "direction": "right",
+      "before": {
+        "state": {
+          "schemaVersion": 1,
+          "engineVersion": "1.0.0",
+          "rulesetVersion": "classic-v1",
+          "board": {
+            "size": 4,
+            "cells": [
+              "1",
+              "2",
+              "1",
+              "2",
+              "2",
+              "1",
+              "2",
+              "1",
+              "1",
+              "2",
+              "1",
+              "2",
+              "3",
+              "4",
+              "5",
+              null
+            ]
+          },
+          "score": "0",
+          "acceptedMoves": 0,
+          "revision": 0,
+          "rng": {
+            "algorithm": "xoshiro128ss-v1",
+            "words": [
+              4224238913,
+              1160863993,
+              4100699672,
+              3456343090
+            ]
+          },
+          "status": "active",
+          "celebrated2048": false
+        },
+        "canonicalJson": "{\"schemaVersion\":1,\"engineVersion\":\"1.0.0\",\"rulesetVersion\":\"classic-v1\",\"board\":{\"size\":4,\"cells\":[\"1\",\"2\",\"1\",\"2\",\"2\",\"1\",\"2\",\"1\",\"1\",\"2\",\"1\",\"2\",\"3\",\"4\",\"5\",null]},\"score\":\"0\",\"acceptedMoves\":0,\"revision\":0,\"rng\":{\"algorithm\":\"xoshiro128ss-v1\",\"words\":[4224238913,1160863993,4100699672,3456343090]},\"status\":\"active\",\"celebrated2048\":false}",
+        "checksum": "b47f8233d62c85afffa9b2822261956e1326deddf5631e9169a989fde99c15ef"
+      },
+      "changed": true,
+      "scoreDelta": "0",
+      "after": {
+        "state": {
+          "schemaVersion": 1,
+          "engineVersion": "1.0.0",
+          "rulesetVersion": "classic-v1",
+          "board": {
+            "size": 4,
+            "cells": [
+              "1",
+              "2",
+              "1",
+              "2",
+              "2",
+              "1",
+              "2",
+              "1",
+              "1",
+              "2",
+              "1",
+              "2",
+              "2",
+              "3",
+              "4",
+              "5"
+            ]
+          },
+          "score": "0",
+          "acceptedMoves": 1,
+          "revision": 1,
+          "rng": {
+            "algorithm": "xoshiro128ss-v1",
+            "words": [
+              2911794803,
+              1460317043,
+              968882387,
+              2726285035
+            ]
+          },
+          "status": "completed",
+          "celebrated2048": false
+        },
+        "canonicalJson": "{\"schemaVersion\":1,\"engineVersion\":\"1.0.0\",\"rulesetVersion\":\"classic-v1\",\"board\":{\"size\":4,\"cells\":[\"1\",\"2\",\"1\",\"2\",\"2\",\"1\",\"2\",\"1\",\"1\",\"2\",\"1\",\"2\",\"2\",\"3\",\"4\",\"5\"]},\"score\":\"0\",\"acceptedMoves\":1,\"revision\":1,\"rng\":{\"algorithm\":\"xoshiro128ss-v1\",\"words\":[2911794803,1460317043,968882387,2726285035]},\"status\":\"completed\",\"celebrated2048\":false}",
+        "checksum": "346dfd02686aa5b4cc64bc8cc052c8efc76f8f1006e32f292f83a4e461d2a1c8"
+      }
+    },
+    {
+      "id": "completed-board-all-noop",
+      "board": {
+        "size": 4,
+        "cells": [
+          "1",
+          "2",
+          "1",
+          "2",
+          "2",
+          "1",
+          "2",
+          "1",
+          "1",
+          "2",
+          "1",
+          "2",
+          "2",
+          "3",
+          "4",
+          "5"
+        ]
+      },
+      "isGameOver": true,
+      "legalMoves": []
+    },
+    {
+      "id": "full-mergeable-board-active",
+      "board": {
+        "size": 4,
+        "cells": [
+          "1",
+          "2",
+          "1",
+          "2",
+          "2",
+          "1",
+          "2",
+          "1",
+          "1",
+          "2",
+          "1",
+          "2",
+          "2",
+          "1",
+          "2",
+          "2"
+        ]
+      },
+      "isGameOver": false,
+      "legalMoves": [
+        "up",
+        "right",
+        "down",
+        "left"
+      ]
+    }
+  ]
+}
