@@ -2,6 +2,7 @@ import type { FastifyError, FastifyInstance, FastifyReply, FastifyRequest } from
 import { ERROR_HTTP_STATUS, type ApiError, type ErrorCode } from "@g2048/contracts";
 import { DbBusyError } from "@g2048/database";
 import { isEngineError } from "@g2048/engine";
+import { CompetitionError } from "@g2048/competition";
 
 /** A typed, client-safe failure. `message` and `details` are sent to the client verbatim. */
 export class AppError extends Error {
@@ -44,6 +45,12 @@ export function toAppError(error: unknown): AppError | null {
   if (error instanceof AppError) return error;
   if (error instanceof DbBusyError) {
     return new AppError("DB_BUSY", "The database is busy; retry shortly", undefined, { "retry-after": "1" });
+  }
+  if (error instanceof CompetitionError) {
+    // Rule violations from the pure competition reducers (e.g. ATTEMPT_CONSUMED, CHALLENGE_CLOSED).
+    return error.code === "VALIDATION_ERROR"
+      ? new AppError("VALIDATION_ERROR", error.message)
+      : new AppError("FORBIDDEN", error.message, { reason: error.code });
   }
   if (isEngineError(error)) {
     switch (error.code) {
@@ -119,4 +126,25 @@ export function installErrorHandling(app: FastifyInstance): void {
 
 export function apiNotFound(request: FastifyRequest, reply: FastifyReply): FastifyReply {
   return sendError(reply, request, new AppError("NOT_FOUND", "Not found"));
+}
+
+/**
+ * Route-level handler for replay imports: body-parsing failures (oversize, malformed JSON, wrong
+ * content type) are reported as IMPORT_INVALID so the client gets an actionable, typed rejection.
+ */
+export function importErrorHandler(
+  error: unknown,
+  request: FastifyRequest,
+  reply: FastifyReply,
+): FastifyReply {
+  const code = (error as Partial<FastifyError>).code ?? "";
+  if (code.startsWith("FST_ERR_CTP_")) {
+    const message =
+      code === "FST_ERR_CTP_BODY_TOO_LARGE" ? "Replay file is too large" : "Replay file is not valid JSON";
+    return sendError(reply, request, new AppError("IMPORT_INVALID", message));
+  }
+  const known = toAppError(error);
+  if (known) return sendError(reply, request, known);
+  request.log.error({ err: error }, "unhandled error");
+  return sendError(reply, request, new AppError("INTERNAL_ERROR", "Internal server error"));
 }

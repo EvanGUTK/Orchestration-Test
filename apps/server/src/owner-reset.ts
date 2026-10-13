@@ -39,9 +39,12 @@ export async function ownerResetPassword(
     }
     throw error;
   }
-  const db = openDatabase(databasePath);
-  const writer = new DatabaseWriter(db);
+  // Everything after the lock is inside try/finally so no failure can leak it (gate 3 N1).
+  let db: ReturnType<typeof openDatabase> | null = null;
+  let writer: DatabaseWriter | null = null;
   try {
+    db = openDatabase(databasePath);
+    writer = new DatabaseWriter(db);
     const status = inspectMigrations(db, MIGRATIONS);
     if (
       status.applied.length === 0 ||
@@ -57,8 +60,11 @@ export async function ownerResetPassword(
     if (error instanceof AppError) throw new Error(error.message, { cause: error });
     throw error;
   } finally {
-    await writer.close();
-    db.close();
-    release();
+    try {
+      await writer?.close();
+      db?.close();
+    } finally {
+      release();
+    }
   }
 }

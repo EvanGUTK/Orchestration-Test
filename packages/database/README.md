@@ -21,6 +21,13 @@ SHA-256 digest on every boot; a stored ruleset whose digest differs fails startu
 
 Decimal ordering: `decimalOrderBy("score")` → `length(score) DESC, score DESC`. Never `CAST`.
 
+## Later migrations
+
+- 2: `games.undo_available` (bounded undo stack), `game_commands_outcome` index.
+- 3: `replay_imports` (verified, never-ranked imported replays) and the `games_casual_best` index.
+- 4: `match_events` (per-match event log; `matches.sequence` = max sequence, same transaction) and
+  `match_seats.bot_rng_json` (requested by the competition lane for BACKEND-005).
+
 ## Writer
 
 `DatabaseWriter` is the single authoritative writer: FIFO, one `BEGIN IMMEDIATE` transaction per
