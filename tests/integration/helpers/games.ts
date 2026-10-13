@@ -129,3 +129,23 @@ export function gameRow(db: DatabaseSync, gameId: string): Record<string, unknow
   if (!row) throw new Error(`no games row ${gameId}`);
   return row;
 }
+
+/**
+ * Full GameState from the private test database (CONTRACT-001 C20: ranked/duel API responses omit
+ * `state.rng`, so tests that need the complete state read it from the `games` row).
+ */
+export function stateFromDb(db: DatabaseSync, gameId: string): GameState {
+  const r = gameRow(db, gameId);
+  return {
+    schemaVersion: 1,
+    engineVersion: String(r.engine_version),
+    rulesetVersion: String(r.ruleset_version),
+    board: JSON.parse(String(r.board_json)) as GameState["board"],
+    score: String(r.score),
+    acceptedMoves: Number(r.accepted_moves),
+    revision: Number(r.revision),
+    rng: JSON.parse(String(r.rng_state)) as GameState["rng"],
+    status: String(r.status) as GameState["status"],
+    celebrated2048: Number(r.celebrated_2048) === 1,
+  };
+}
