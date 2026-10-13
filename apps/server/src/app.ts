@@ -5,7 +5,7 @@ import Fastify, { type FastifyInstance } from "fastify";
 import fastifyCookie from "@fastify/cookie";
 import fastifyStatic from "@fastify/static";
 import { API_BASE, LIMITS } from "@g2048/contracts";
-import { DatabaseWriter } from "@g2048/database";
+import { DatabaseWriter, transactionSync } from "@g2048/database";
 import { apiNotFound, installErrorHandling } from "./http/errors.js";
 import { loggerOptions, type LogDestination } from "./http/logging.js";
 import { installSecurityHooks, isApiRequest } from "./http/security-hooks.js";
@@ -17,6 +17,12 @@ import { AuthService } from "./services/auth-service.js";
 import { EventBus } from "./services/event-bus.js";
 import { GameService } from "./services/game-service.js";
 import { gameRoutes } from "./routes/games.js";
+import { competitionRoutes } from "./routes/competition.js";
+import { BotRunService } from "./services/bot-run-service.js";
+import { ChallengeService } from "./services/challenge-service.js";
+import { LeaderboardService } from "./services/leaderboard-service.js";
+import { ReplayService } from "./services/replay-service.js";
+import { createBotServices, type BotServices } from "@g2048/bots/runner";
 import type { Clock, ServiceContext } from "./services/context.js";
 
 export type AppOptions = {
@@ -35,10 +41,22 @@ export type AppOptions = {
   maxGuests?: number;
   /** Session/guest purge interval; 0 disables the timer (it still runs once when the app is ready). */
   maintenanceIntervalMs?: number;
+  /** Bot worker pool + runner; created once per app when omitted (shut down on close). */
+  botServices?: BotServices;
 };
 
 /** Services exposed for feature plugins (ports/adapters): later tasks register routes against these. */
-export type AppServices = { ctx: ServiceContext; auth: AuthService; games: GameService; events: EventBus };
+export type AppServices = {
+  ctx: ServiceContext;
+  auth: AuthService;
+  games: GameService;
+  events: EventBus;
+  challenges: ChallengeService;
+  leaderboards: LeaderboardService;
+  replays: ReplayService;
+  botRuns: BotRunService;
+  bots: BotServices;
+};
 
 declare module "fastify" {
   interface FastifyInstance {
@@ -73,7 +91,12 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   await auth.warmup();
   const events = new EventBus(writer);
   const games = new GameService(ctx, events);
-  app.decorate("services", { ctx, auth, games, events });
+  const challenges = new ChallengeService(ctx, games);
+  const leaderboards = new LeaderboardService(ctx);
+  const replays = new ReplayService(ctx, games);
+  const bots = options.botServices ?? createBotServices();
+  const botRuns = new BotRunService(ctx, games, bots, events);
+  app.decorate("services", { ctx, auth, games, events, challenges, leaderboards, replays, botRuns, bots });
 
   // Housekeeping: purge expired/revoked sessions and orphaned guests at startup and periodically.
   const purge = async (): Promise<void> => {
@@ -87,6 +110,11 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   const intervalMs = options.maintenanceIntervalMs ?? 60 * 60 * 1000;
   let timer: NodeJS.Timeout | null = null;
   app.addHook("onReady", async () => {
+    // Before any request: seed the season/challenge catalog and cancel bot runs a crash interrupted.
+    // Direct transactions on the writer connection: nothing else runs before the server is ready.
+    transactionSync(db, (tx) => challenges.ensureCatalogInTransaction(tx));
+    const interrupted = transactionSync(db, (tx) => botRuns.recoverInterruptedInTransaction(tx));
+    if (interrupted > 0) app.log.warn({ interrupted }, "bot runs interrupted by a restart were cancelled");
     await purge();
     if (intervalMs > 0) {
       timer = setInterval(() => void purge(), intervalMs);
@@ -95,6 +123,7 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   });
   app.addHook("onClose", async () => {
     if (timer) clearInterval(timer);
+    await botRuns.shutdown(); // cancels runs and waits for their results to be persisted
     await writer.close();
   });
 
@@ -106,6 +135,14 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   await app.register(authRoutes, { prefix: API_BASE, auth });
   await app.register(profileRoutes, { prefix: API_BASE, auth });
   await app.register(gameRoutes, { prefix: API_BASE, auth, games });
+  await app.register(competitionRoutes, {
+    prefix: API_BASE,
+    auth,
+    challenges,
+    leaderboards,
+    replays,
+    botRuns,
+  });
 
   const serveWeb = webDist !== null && existsSync(webDist);
   if (serveWeb) await app.register(fastifyStatic, { root: webDist, wildcard: false });

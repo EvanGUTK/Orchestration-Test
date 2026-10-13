@@ -389,6 +389,17 @@ export const gamesRepo = {
     return row ? toMove(row) : null;
   },
 
+  /** Directions of accepted, not-undone moves in revision order (the replayable final path). */
+  finalPath(db: DatabaseSync, gameId: string): ("up" | "right" | "down" | "left")[] {
+    return (
+      db
+        .prepare(
+          "SELECT direction FROM game_moves WHERE game_id = ? AND kind = 'move' AND undone = 0 ORDER BY revision",
+        )
+        .all(gameId) as { direction: "up" | "right" | "down" | "left" }[]
+    ).map((r) => r.direction);
+  },
+
   /** Number of consecutive `undo` records at the end of the log (bounded by `limit`). */
   trailingUndoCount(db: DatabaseSync, gameId: string, limit: number): number {
     const kinds = db

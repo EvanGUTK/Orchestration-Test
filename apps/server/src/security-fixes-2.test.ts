@@ -1,4 +1,4 @@
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -276,5 +276,16 @@ describe("R2-05 resource caps and retention", () => {
     now = new Date(now.getTime() + LIMITS.sessionTtlMs + 31 * 24 * 60 * 60 * 1000);
     expect(await s.app.services.auth.purgeInactive()).toEqual({ sessions: 1, guests: 1 });
     expect(s.db.prepare("SELECT COUNT(*) AS n FROM games").get()).toEqual({ n: 0 });
+  });
+});
+
+describe("gate 3 N1 owner reset never leaks the lock", () => {
+  it("releases <db>.lock when the database cannot be opened", async () => {
+    const base = mkdtempSync(join(tmpdir(), "g2048-n1-"));
+    dirs.add(base);
+    const notADatabase = join(base, "game.sqlite3");
+    mkdirSync(notADatabase); // a directory: opening it as SQLite fails after the lock is taken
+    await expect(ownerResetPassword(notADatabase, "alice", "a valid new password")).rejects.toThrow();
+    expect(lockHolder(notADatabase)).toBeNull();
   });
 });

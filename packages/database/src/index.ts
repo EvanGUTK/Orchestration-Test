@@ -37,6 +37,18 @@ export { usersRepo, type UserRow } from "./repositories/users.js";
 export { sessionsRepo, type SessionRow, type SessionKind } from "./repositories/sessions.js";
 export { profilesRepo, type ProfileRow } from "./repositories/profiles.js";
 export { guestsRepo, type GuestRow } from "./repositories/guests.js";
+export {
+  competitionRepo,
+  type AttemptRow,
+  type BoardKey,
+  type BoardQuery,
+  type BoardRow,
+  type BotRunRow,
+  type BotSeatRow,
+  type ChallengeRow,
+  type EloRow,
+  type SeasonRow,
+} from "./repositories/competition.js";
 export { gamesRepo, type GameOwnerRef, type GameRecord, type MoveLogRow } from "./repositories/games.js";
 
 /** Applies pending migrations from this build (see migrate.ts for the guarantees). */

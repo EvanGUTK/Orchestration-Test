@@ -254,7 +254,10 @@ export class GameService {
       checksum: sum,
       now,
     });
-    if (owner && "userId" in owner) gamesRepo.bumpProfileGamesStarted(db, owner.userId, now);
+    // Profile statistics are human play only: bot games never count toward an account.
+    if (owner && "userId" in owner && RESUMABLE_MODES.includes(spec.mode)) {
+      gamesRepo.bumpProfileGamesStarted(db, owner.userId, now);
+    }
     const record = gamesRepo.get(db, id);
     if (!record) throw new Error("created game not found");
     this.#publish(record, "create");
@@ -372,7 +375,7 @@ export class GameService {
     // Bounded undo stack: push, dropping the oldest beyond the history limit (C11 / SEC-R2-07).
     const undoAvailable = rules.undo ? Math.min(record.undoAvailable + 1, rules.historyLimit) : 0;
     this.#writeState(db, record, next, sum, max, now, undoAvailable);
-    if (record.ownerUserId) {
+    if (record.ownerUserId && RESUMABLE_MODES.includes(record.mode)) {
       gamesRepo.recordProfileMove(db, record.ownerUserId, {
         countsForBest: record.mode === "classic",
         score: next.score,
@@ -456,6 +459,44 @@ export class GameService {
     });
     this.#publish({ ...record, state: ended }, "forfeit");
     return response;
+  }
+
+  /**
+   * Records a finished bot-lab game (mode `bot-exhibition`, owned by the requester) by re-applying
+   * the bot's moves through the authoritative transition, so its log, checksums, and snapshots are
+   * exactly those of a played game. Returns the game; the caller compares its final checksum.
+   */
+  recordBotGameInTransaction(
+    db: DatabaseSync,
+    owner: GameOwnerRef | null,
+    spec: { rules: Ruleset; seed: string; directions: readonly Direction[] },
+  ): GameRecord {
+    const game = this.createInTransaction(db, owner, {
+      mode: "bot-exhibition",
+      rules: spec.rules,
+      seed: spec.seed,
+    });
+    const access: GameAccess = { owner: null, allowedModes: ["bot-exhibition"] };
+    let revision = 0;
+    spec.directions.forEach((direction, i) => {
+      const result = this.moveInTransaction(
+        db,
+        game.id,
+        { commandId: `botmove-${String(i + 1).padStart(6, "0")}`, expectedRevision: revision, direction },
+        access,
+      );
+      if (!result.changed)
+        throw new GameIntegrityError(game.id, `bot move ${i + 1} did not change the board`);
+      revision = result.state.revision;
+    });
+    const recorded = gamesRepo.get(db, game.id);
+    if (!recorded) throw new GameIntegrityError(game.id, "bot game vanished");
+    return recorded;
+  }
+
+  /** Directions of the accepted, not-undone moves in order: the replayable final path. */
+  finalPathInTransaction(db: DatabaseSync, id: string): Direction[] {
+    return gamesRepo.finalPath(db, id);
   }
 
   /** State of game `id` at `revision`, rebuilt from the nearest snapshot (checksums verified). */

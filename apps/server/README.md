@@ -114,6 +114,55 @@ is for non-database events such as `server.recovering`. GameService publishes `g
 (`sequence` = game revision, payload `{ gameId, kind, revision, status }`) after every create/move/
 undo/forfeit. The writer primitive behind it is `writer.afterCommit(callback)`.
 
+## Challenges, leaderboards, replays, bot runs (BACKEND-004)
+
+| Endpoint | Notes |
+| --- | --- |
+| `GET /challenges` | 200 `Page<ChallengeSummary>` (all seasons' catalog, `myAttempt` for accounts). |
+| `POST /challenges/:id/attempts` | Account only (guests/anonymous 403). 201 `GameResponse` + `attempt` when a new official attempt starts, 200 when resuming the in-progress one; completed/forfeited (consumed) or closed → 403. The body is ignored: rules (ranked-v1) and seed come from the catalog. |
+| `GET /leaderboards` | `LeaderboardQuery` → `Page<LeaderboardEntry>`; scopes below. |
+| `GET /replays/:id` | `ReplayFile` for a game id or an import id (rules below). |
+| `POST /replays/import` | ≤ 5 MiB; 201 `{ id, rulesetVersion, moves, finalChecksum, score }`. |
+| `POST /bots/runs` | `CreateBotRunRequest` → 201 `BotRunView` (guests allowed). |
+| `GET /bots/runs/:id` | `BotRunView` for polling (owner only, C13). |
+| `POST /bots/runs/:id/{cancel,pause,resume,step}` | Owner only; on a finished run they return its final view (cancel is idempotent). `step` requires a paused run (400 otherwise). |
+
+- **Seasons/catalog** (C18): first boot creates active seasons `s1` (ranked-v1) and `duel-s1`
+  (duel-v1) and the deterministic catalog `ch-s1-1..10` (seed `challenge:s1:n`, 500-move cap) from
+  `@g2048/competition`. Other services read seasons; they never create them.
+- **Attempts**: `reduceChallengeAttempt` decides start/resume/consumed; the attempt is completed
+  (move-cap/dead-board) or forfeited by a GameService terminal listener in the SAME transaction as the
+  move/forfeit, from the server's final state (official score = server score, RANK-04).
+- **Leaderboards** (all exact: canonical decimal TEXT, `length` then value, never REAL; total order
+  score ↓, max exponent ↓, created_at ↑, id ↑; keyset cursors; `rank` is the position in the full
+  order, so `account=<id>` returns that account's global rank):
+  - `casual`: each human account's best `classic-v1` game (guests, practice, bot games excluded).
+    Counts client- and server-seeded games and casual undo, so it is NOT tamper-proof (C19);
+  - `challenge`: completed official attempts (`challenge`, `season`, `ruleset` filters optional);
+    forfeited attempts consume the attempt but are not ranked;
+  - `duel-elo`: `ratings` for the season (default: active duel season) and ruleset (default duel-v1);
+  - `bot-league`: `computeBotLeague` over finished bot-vs-bot matches (`displayName` = entrant key,
+    `score` = best score); never mixed with human boards.
+- **Replay export rule**: the owner may export their own classic/practice/ranked/bot-exhibition game;
+  any local user may export a FINISHED ranked or human-duel game (public competitive record);
+  ranked/duel games are never exported while active (the file contains the PRNG). The file always
+  includes `rules` (C16); `initialState` is the stored revision-0 state; `moves` is the final path
+  (accepted, not undone) with canonical revisions 1..n and checksums re-derived by the engine (C12)
+  and checked against the saved game. `meta.displayName` is the owning account's display name (null
+  for guests); no account id, username, session, or credential data is ever included.
+- **Import**: route body limit 5 MiB; unknown `replaySchemaVersion`/`engineVersion` → 400
+  `REPLAY_VERSION_UNSUPPORTED`; anything else (malformed JSON, oversize, missing fields, rules that
+  differ from the official ruleset, failed `verifyReplay`) → 400 `IMPORT_INVALID` with `atMove` when
+  known. Verified files are stored in `replay_imports` (migration 3), owner-only, never a game and
+  never ranked.
+- **Bot runs**: one `createBotServices()` per process (worker_threads pool; shut down on close).
+  `bot_runs` records strategy, bot version, config, node/time budgets, seed, status, moves and metrics.
+  A finished bot-v1 run (≤ 5 000 moves) is re-applied through the authoritative transition into a
+  `bot-exhibition` game owned by the requester (`gameId`; readable via `GET /games/:id`, never
+  commandable, never on human boards or profile stats). A run is reported terminal only after its
+  result is persisted. Runs in flight at a crash are marked `cancelled` (`metrics.interruptedByRestart`)
+  at the next start, never counted as results. `bot.progress` / `bot.finished` events go to the bus.
+
 ## Local-only threat model (security gate 1 notes)
 
 The product binds to loopback and has no remote users. Anyone with OS access to the data directory
