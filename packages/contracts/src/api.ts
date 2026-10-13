@@ -111,7 +111,7 @@ export const BotConfigSchema = z.object({
 export type BotConfig = z.infer<typeof BotConfigSchema>;
 
 export const CreateMatchRequest = z.discriminatedUnion("kind", [
-  z.object({ kind: z.literal("human-human") }),
+  z.object({ kind: z.literal("human-human"), invite: z.boolean().optional() }),
   z.object({ kind: z.literal("human-bot"), bot: BotConfigSchema }),
   z.object({
     kind: z.literal("bot-bot"),

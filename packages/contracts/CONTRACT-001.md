@@ -154,3 +154,7 @@ integration (do not commit `package-lock.json` changes from a worker branch).
   other users' data); `DELETE /profile` (`DeleteProfileRequest`, reauth) → private fields deleted, competitive history
   anonymized ("Deleted player"), replays stay valid, imports and bot runs removed; `GET /profile/data-location` →
   `{ dataDir, databasePath, backupCommand }` for signed-in local users (shown in Settings).
+- C23. `CreateMatchRequest` human-human gains optional `invite?: boolean` (default false = listed lobby). Invite-only
+  lobbies are joinable by match id and never listed by `GET /matches`; non-members see only a minimal lobby summary
+  (id, creator displayName, createdAt). Persistence: `matches.listed INTEGER NOT NULL DEFAULT 1 CHECK (listed IN (0,1))`
+  (backend migration).
