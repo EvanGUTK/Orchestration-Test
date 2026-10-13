@@ -114,7 +114,7 @@ describe("RANK-04 client-posted score is never trusted", () => {
     });
     if (r.status === 400) expectErrorEnvelope(r, "VALIDATION_ERROR");
     else {
-      expect([200, 201], r.text).toContain(r.status);
+      expect(r.status, r.text).toBe(201);
       expect(r.json.state).toEqual(newGame(RULESETS["classic-v1"], "rank04-create"));
     }
   });

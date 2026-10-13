@@ -98,6 +98,23 @@ test.describe("OPS-01 offline (guest paths)", () => {
     }
   });
 
+  test("the UI is served with a restrictive Content-Security-Policy (no remote origins)", async ({
+    request,
+  }) => {
+    const res = await request.get("/");
+    expect(res.status()).toBe(200);
+    const csp = res.headers()["content-security-policy"] ?? "";
+    expect(csp, "CSP header on the UI document").toMatch(/default-src 'self'/);
+    // no remote hosts or wildcards anywhere in the policy
+    expect(csp).not.toMatch(/https?:|\*|data:\s*https?/i);
+  });
+});
+
+// The product CSP (default-src 'self') would block the page's external fetch before the route guard sees
+// it, so ONLY this self-test bypasses CSP to prove the suite-wide guard itself still trips.
+test.describe("OPS-01 offline guard self-test", () => {
+  test.use({ bypassCSP: true });
+
   test("guard self-test: a page-initiated external request fails the test (expected failure)", async ({
     page,
   }) => {

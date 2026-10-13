@@ -30,7 +30,7 @@ const ok = (status: number) => status === 200 || status === 201 || status === 20
 
 async function createGame(c: Client): Promise<string> {
   const r = await c.post<GameResponse>("/games", { mode: "classic" });
-  if (!ok(r.status)) throw new Error(`create game: ${r.status} ${r.text}`);
+  if (r.status !== 201) throw new Error(`create game: ${r.status} ${r.text}`);
   return r.json.game.id;
 }
 

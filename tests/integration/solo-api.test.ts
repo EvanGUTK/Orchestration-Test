@@ -168,10 +168,31 @@ describe("SOLO-03 casual undo", () => {
     const u = await undo(c, g.game.id, 3);
     expect(u.status, u.text).toBe(200);
     const now = (await getGame(c, g.game.id)).state;
+    expect(u.json.state, "C14: undo returns the restored game's GameResponse").toEqual(now);
     sameGame(now, states[2] as GameState);
     expect(now.revision).toBeGreaterThan(3);
     // the next move follows the restored PRNG stream exactly
     await playMirrored(c, g.game.id, now, 2);
+  });
+
+  it("C11: undo with nothing to undo is 400 VALIDATION_ERROR; undo-disabled practice is 403 FORBIDDEN", async () => {
+    t = await createTestApp();
+    const c = new Client(t.app);
+    const fresh = await createGame(c, { mode: "classic", seed: "solo03-empty" });
+    const none = await undo(c, fresh.game.id, 0);
+    expect(none.status, none.text).toBe(400);
+    expectErrorEnvelope(none, "VALIDATION_ERROR");
+    expect((await getGame(c, fresh.game.id)).state).toEqual(fresh.state);
+
+    const noUndo = await createGame(c, {
+      mode: "practice",
+      practice: { size: 4, seed: "solo03-noundo", undo: false },
+    });
+    const s = await legalMove(c, noUndo.game.id, noUndo.state);
+    const denied = await undo(c, noUndo.game.id, s.revision);
+    expect(denied.status, denied.text).toBe(403);
+    expectErrorEnvelope(denied, "FORBIDDEN");
+    expect((await getGame(c, noUndo.game.id)).state).toEqual(s);
   });
 
   it(
@@ -199,8 +220,9 @@ describe("SOLO-03 casual undo", () => {
       const r = await getGame(c, g.game.id);
       expect(r.canUndo).toBe(false);
       const extra = await undo(c, g.game.id, s.revision);
-      expect([400, 409], extra.text).toContain(extra.status);
-      expectErrorEnvelope(extra);
+      // CONTRACT-001 C11: beyond the history limit -> 400 VALIDATION_ERROR, state unchanged
+      expect(extra.status, extra.text).toBe(400);
+      expectErrorEnvelope(extra, "VALIDATION_ERROR");
       expect((await getGame(c, g.game.id)).state).toEqual(s);
     },
   );

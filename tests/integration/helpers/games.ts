@@ -13,15 +13,14 @@ export function cmd(prefix = "cmd"): string {
   return `${prefix}-${counter}-${randomBytes(6).toString("hex")}`;
 }
 
-const ok2xx = (s: number) => s >= 200 && s < 300;
-
 export type CreateGameBody =
   | { mode: "classic"; seed?: string }
   | { mode: "practice"; practice: { size: number; fourWeight?: number; seed?: string; undo?: boolean } };
 
 export async function createGame(c: Client, body: CreateGameBody): Promise<GameResponse> {
   const r = await c.post<GameResponse>("/games", body);
-  if (!ok2xx(r.status)) throw new Error(`POST /games ${JSON.stringify(body)} -> ${r.status} ${r.text}`);
+  // CONTRACT-001 C14: POST /games -> 201 GameResponse
+  if (r.status !== 201) throw new Error(`POST /games ${JSON.stringify(body)} -> ${r.status} ${r.text}`);
   return r.json;
 }
 
@@ -51,11 +50,13 @@ export async function legalMove(c: Client, id: string, state: GameState, turn = 
   return r.json.state;
 }
 
+/** C14: undo/forfeit take RevisionCommandRequest and return 200 GameResponse. */
 export async function undo(c: Client, id: string, expectedRevision: number, commandId = cmd("undo")) {
-  return c.post<{ state?: GameState } & Partial<GameResponse>>(`/games/${id}/undo`, {
-    commandId,
-    expectedRevision,
-  });
+  return c.post<GameResponse>(`/games/${id}/undo`, { commandId, expectedRevision });
+}
+
+export async function forfeit(c: Client, id: string, expectedRevision: number, commandId = cmd("ff")) {
+  return c.post<GameResponse>(`/games/${id}/forfeit`, { commandId, expectedRevision });
 }
 
 /**
