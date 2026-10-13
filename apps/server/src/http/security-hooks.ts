@@ -116,6 +116,14 @@ export function installSecurityHooks(app: FastifyInstance, auth: AuthService, po
     }
   });
 
+  // A WebSocket upgrade refused by any hook (Host, fetch metadata, CSRF, 404...) must not leave the raw
+  // socket open: it would linger and block server shutdown.
+  app.addHook("onResponse", async (request, reply) => {
+    if (reply.statusCode !== 101 && headerValue(request.headers.upgrade)?.toLowerCase() === "websocket") {
+      request.raw.socket?.destroy();
+    }
+  });
+
   app.addHook("onSend", async (request, reply: FastifyReply) => {
     void reply.header("x-content-type-options", "nosniff");
     void reply.header("x-frame-options", "DENY");

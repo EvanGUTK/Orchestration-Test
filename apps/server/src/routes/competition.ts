@@ -27,6 +27,13 @@ export type CompetitionRoutesOptions = {
 
 type IdParams = { id: string };
 
+/** Raw request size: the Content-Length the body limit enforced (never re-serializes the body). */
+function bodyBytes(request: FastifyRequest): number {
+  const header = request.headers["content-length"];
+  const value = Number(Array.isArray(header) ? header[0] : header);
+  return Number.isFinite(value) && value > 0 ? value : LIMITS.replayImportBytes;
+}
+
 function ownerOf(request: FastifyRequest): GameOwnerRef | null {
   const identity = request.identity;
   if (identity.kind === "user") return { userId: identity.user.id };
@@ -71,11 +78,12 @@ export const competitionRoutes: FastifyPluginAsync<CompetitionRoutesOptions> = a
     "/replays/import",
     { bodyLimit: LIMITS.replayImportBytes, errorHandler: importErrorHandler },
     async (request, reply) => {
-      const size = Number(request.headers["content-length"] ?? JSON.stringify(request.body ?? null).length);
+      // Verify first (no identity is created for a rejected file), then store for the caller.
+      const verified = await replays.verifyImport(request.body, bodyBytes(request), request.ip);
       const identity = await ensureSession(request, reply, auth);
       const owner: GameOwnerRef =
         identity.kind === "user" ? { userId: identity.user.id } : { guestId: identity.guestId };
-      const result = await replays.import(owner, request.body, size);
+      const result = await replays.storeImport(owner, verified);
       return reply.code(201).send(result);
     },
   );
@@ -85,7 +93,7 @@ export const competitionRoutes: FastifyPluginAsync<CompetitionRoutesOptions> = a
     const identity = await ensureSession(request, reply, auth);
     const owner: GameOwnerRef =
       identity.kind === "user" ? { userId: identity.user.id } : { guestId: identity.guestId };
-    const view: BotRunView = await botRuns.start(owner, body);
+    const view: BotRunView = await botRuns.start(owner, body, request.ip);
     return reply.code(201).send(view);
   });
 
