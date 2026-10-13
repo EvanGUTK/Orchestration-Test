@@ -77,6 +77,16 @@ returns a handle with `pause`, `resume`, `step`, `cancel`, and `result`. Use the
 `bot.progress` WebSocket events and persist `BotRunResult` into `bot_runs`. A cancelled run has
 `status: "cancelled"` and is never counted as a result.
 
+Run limits (security gate 4, H2), set via `createBotServices({ maxWallClockMs, idleTimeoutMs, maxRunsPerOwner })`
+or `BotRunnerOptions`:
+
+- `maxWallClockMs` (default 30 min): a run still going after this is cancelled with
+  `cancelReason: "wall-clock"`.
+- `idleTimeoutMs` (default 10 min): a run that is paused or waiting for `step()` longer than this is
+  cancelled with `cancelReason: "idle"`, freeing its run slot. Each `step()`/`resume()` resets the clock.
+- `maxRunsPerOwner` + `start({ ownerKey })`: more active runs for one owner key fail with `OWNER_LIMIT`;
+  `runner.activeRunsFor(ownerKey)` reports the current count. A user cancel reports `cancelReason: "user"`.
+
 ### Bot league
 
 `runTournament(engineAdapter, { seeds, pairings })` plays deterministic node-budget games on duel-v1.

@@ -24,6 +24,10 @@ export function createBotServices(
   options: BotWorkerPoolOptions & {
     /** Max simultaneously active bot-lab runs; default LIMITS.concurrentBotRunsMax. */
     readonly maxLabRuns?: number;
+    /** Bot-lab run limits (see BotRunnerOptions). */
+    readonly maxWallClockMs?: number;
+    readonly idleTimeoutMs?: number;
+    readonly maxRunsPerOwner?: number;
     readonly enginePort?: EnginePort;
     readonly now?: () => number;
   } = {},
@@ -32,6 +36,9 @@ export function createBotServices(
   const runner = new BotRunner({
     pool,
     ...(options.maxLabRuns === undefined ? {} : { maxConcurrent: options.maxLabRuns }),
+    ...(options.maxWallClockMs === undefined ? {} : { maxWallClockMs: options.maxWallClockMs }),
+    ...(options.idleTimeoutMs === undefined ? {} : { idleTimeoutMs: options.idleTimeoutMs }),
+    ...(options.maxRunsPerOwner === undefined ? {} : { maxRunsPerOwner: options.maxRunsPerOwner }),
     ...(options.enginePort === undefined ? {} : { enginePort: options.enginePort }),
     ...(options.now === undefined ? {} : { now: options.now }),
   });
