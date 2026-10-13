@@ -19,7 +19,9 @@ import { EventBus } from "./services/event-bus.js";
 import { GameService } from "./services/game-service.js";
 import { gameRoutes } from "./routes/games.js";
 import { competitionRoutes } from "./routes/competition.js";
-import { BotRunService } from "./services/bot-run-service.js";
+import { BotRunService, botServicesOptions, type BotRunLimits } from "./services/bot-run-service.js";
+import { matchesPlugin } from "./matches/plugin.js";
+import { realtimePlugin } from "./realtime/plugin.js";
 import { ChallengeService } from "./services/challenge-service.js";
 import { LeaderboardService } from "./services/leaderboard-service.js";
 import { ReplayService } from "./services/replay-service.js";
@@ -61,6 +63,8 @@ export type AppOptions = {
   maintenanceIntervalMs?: number;
   /** Bot worker pool + runner; created once per app when omitted (shut down on close). */
   botServices?: BotServices;
+  /** Bot-lab resource limits (defaults: DEFAULT_BOT_RUN_LIMITS). */
+  botRunLimits?: Partial<BotRunLimits>;
 };
 
 /** Services exposed for feature plugins (ports/adapters): later tasks register routes against these. */
@@ -139,8 +143,9 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   const challenges = new ChallengeService(ctx, games);
   const leaderboards = new LeaderboardService(ctx);
   const replays = new ReplayService(ctx, games);
-  const bots = options.botServices ?? createBotServices();
-  const botRuns = new BotRunService(ctx, games, bots, events);
+  // Runner-side limits (wall clock, idle, active runs per owner) come from the bot-run limits (H2).
+  const bots = options.botServices ?? createBotServices(botServicesOptions(options.botRunLimits ?? {}));
+  const botRuns = new BotRunService(ctx, games, bots, events, options.botRunLimits ?? {});
   app.decorate("services", { ctx, auth, games, events, challenges, leaderboards, replays, botRuns, bots });
 
   // Housekeeping: purge expired/revoked sessions and orphaned guests at startup and periodically.
@@ -188,6 +193,9 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     replays,
     botRuns,
   });
+  // Competition lane plugins (COMP-006): the WebSocket hub first, then matches (which needs it).
+  await app.register(realtimePlugin, {});
+  await app.register(matchesPlugin, {});
 
   const serveWeb = webDist !== null && existsSync(webDist);
   if (serveWeb) await app.register(fastifyStatic, { root: webDist, wildcard: false });

@@ -37,16 +37,20 @@ function decode<T>(cursor: string, valid: (v: unknown) => v is T): T {
   throw new AppError("VALIDATION_ERROR", "Invalid cursor", { field: "cursor" });
 }
 
-const isBoardKey = (v: unknown): v is BoardKey => {
-  const k = v as Partial<BoardKey> | null;
+/**
+ * Short opaque board cursor: the last row's id (game id for casual, attempt id for challenge) and its
+ * rank. The row's score/exponent/created_at are looked up server-side, so the cursor stays far below
+ * the 256-character PageQuery limit even for 300 000-digit scores (DB-08).
+ */
+type RowCursor = { i: string; r: number };
+const isRowCursor = (v: unknown): v is RowCursor => {
+  const k = v as Partial<RowCursor> | null;
   return (
     typeof k === "object" &&
     k !== null &&
-    typeof k.s === "string" &&
-    typeof k.e === "string" &&
-    typeof k.c === "string" &&
     typeof k.i === "string" &&
-    Number.isSafeInteger(k.rank)
+    k.i.length <= 64 &&
+    Number.isSafeInteger(k.r)
   );
 };
 type EloKey = { rating: number; userId: string; rank: number };
@@ -109,7 +113,7 @@ export class LeaderboardService {
       from = season.startsAt;
       to = season.endsAt ?? undefined;
     }
-    const after = q.cursor ? decode(q.cursor, isBoardKey) : null;
+    const after = q.cursor ? this.#boardKey("casual", decode(q.cursor, isRowCursor)) : null;
     const rows = competitionRepo.casualBoard(this.#ctx.db, {
       after,
       limit: q.limit + 1,
@@ -121,7 +125,7 @@ export class LeaderboardService {
   }
 
   #challenge(q: LeaderboardQueryInput): Page<LeaderboardEntry> {
-    const after = q.cursor ? decode(q.cursor, isBoardKey) : null;
+    const after = q.cursor ? this.#boardKey("challenge", decode(q.cursor, isRowCursor)) : null;
     const rows = competitionRepo.challengeBoard(this.#ctx.db, {
       after,
       limit: q.limit + 1,
@@ -148,16 +152,18 @@ export class LeaderboardService {
     }));
     const last = page[page.length - 1];
     const nextCursor =
-      rows.length > limit && last
-        ? encode({
-            s: last.score,
-            e: last.maxExponent,
-            c: last.createdAt,
-            i: last.id,
-            rank: last.rank,
-          } satisfies BoardKey)
-        : null;
+      rows.length > limit && last ? encode({ i: last.id, r: last.rank } satisfies RowCursor) : null;
     return { items, nextCursor };
+  }
+
+  /** Resolves a row cursor to the keyset position of that row's stored values. */
+  #boardKey(kind: "casual" | "challenge", cursor: RowCursor): BoardKey {
+    const key = competitionRepo.boardKeyFor(this.#ctx.db, kind, cursor.i);
+    if (!key)
+      throw new AppError("VALIDATION_ERROR", "Cursor no longer valid; start from the first page", {
+        field: "cursor",
+      });
+    return { ...key, rank: cursor.r };
   }
 
   #elo(q: LeaderboardQueryInput): Page<LeaderboardEntry> {

@@ -138,6 +138,10 @@ export function importErrorHandler(
   reply: FastifyReply,
 ): FastifyReply {
   const code = (error as Partial<FastifyError>).code ?? "";
+  if (error instanceof RangeError) {
+    // e.g. pathologically nested JSON: a client error, never a 500.
+    return sendError(reply, request, new AppError("IMPORT_INVALID", "Replay file is too deeply nested"));
+  }
   if (code.startsWith("FST_ERR_CTP_")) {
     const message =
       code === "FST_ERR_CTP_BODY_TOO_LARGE" ? "Replay file is too large" : "Replay file is not valid JSON";

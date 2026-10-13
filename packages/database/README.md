@@ -27,6 +27,7 @@ Decimal ordering: `decimalOrderBy("score")` → `length(score) DESC, score DESC`
 - 3: `replay_imports` (verified, never-ranked imported replays) and the `games_casual_best` index.
 - 4: `match_events` (per-match event log; `matches.sequence` = max sequence, same transaction) and
   `match_seats.bot_rng_json` (requested by the competition lane for BACKEND-005).
+- 5: `match_events` append-only triggers (no UPDATE; DELETE only via the parent match's cascade).
 
 ## Writer
 

@@ -320,6 +320,25 @@ export const competitionRepo = {
     return pageQuery(db, base, params, query);
   },
 
+  /** Keyset values (score, exponent or '', created_at, id) of a board row, by game or attempt id. */
+  boardKeyFor(db: DatabaseSync, kind: "casual" | "challenge", id: string): Omit<BoardKey, "rank"> | null {
+    const row = (
+      kind === "casual"
+        ? db
+            .prepare(
+              "SELECT score AS s, COALESCE(max_exponent, '') AS e, created_at AS c, id AS i FROM games WHERE id = ? AND mode = 'classic'",
+            )
+            .get(id)
+        : db
+            .prepare(
+              `SELECT official_score AS s, COALESCE(official_max_exponent, '') AS e, created_at AS c, id AS i
+                 FROM challenge_attempts WHERE id = ? AND status = 'completed'`,
+            )
+            .get(id)
+    ) as Omit<BoardKey, "rank"> | undefined;
+    return row ?? null;
+  },
+
   eloBoard(
     db: DatabaseSync,
     query: {
@@ -414,6 +433,62 @@ export const competitionRepo = {
       run.now,
       run.now,
     );
+  },
+
+  /** Status change only while the run is still active (never overwrites a terminal status). */
+  updateActiveBotRunStatus(db: DatabaseSync, id: string, status: string, now: string): boolean {
+    const result = db
+      .prepare(
+        "UPDATE bot_runs SET status = ?, updated_at = ? WHERE id = ? AND status IN ('queued', 'running', 'paused')",
+      )
+      .run(status, now, id);
+    return Number(result.changes) === 1;
+  },
+
+  /**
+   * Retention: keeps an owner's newest `keep` terminal bot runs; older runs are deleted together with
+   * their bot-exhibition games (commands/moves/snapshots cascade). Returns the number of runs pruned.
+   */
+  pruneBotRuns(db: DatabaseSync, owner: { userId: string } | { guestId: string }, keep: number): number {
+    const column = "userId" in owner ? "owner_user_id" : "owner_guest_id";
+    const ownerId = "userId" in owner ? owner.userId : owner.guestId;
+    const old = db
+      .prepare(
+        `SELECT id, game_id AS gameId FROM bot_runs
+          WHERE ${column} = ? AND status NOT IN ('queued', 'running', 'paused')
+          ORDER BY created_at DESC, id DESC LIMIT -1 OFFSET ?`,
+      )
+      .all(ownerId, keep) as { id: string; gameId: string | null }[];
+    const deleteRun = db.prepare("DELETE FROM bot_runs WHERE id = ?");
+    const deleteGame = db.prepare("DELETE FROM games WHERE id = ? AND mode = 'bot-exhibition'");
+    for (const row of old) {
+      deleteRun.run(row.id);
+      if (row.gameId) deleteGame.run(row.gameId);
+    }
+    return old.length;
+  },
+
+  /** Number and total bytes of an owner's stored replay imports (quota check, inside the writer txn). */
+  replayImportUsage(
+    db: DatabaseSync,
+    owner: { userId: string } | { guestId: string },
+  ): { count: number; bytes: number } {
+    const column = "userId" in owner ? "owner_user_id" : "owner_guest_id";
+    const ownerId = "userId" in owner ? owner.userId : owner.guestId;
+    const row = db
+      .prepare(
+        `SELECT COUNT(*) AS count, COALESCE(SUM(size_bytes), 0) AS bytes FROM replay_imports WHERE ${column} = ?`,
+      )
+      .get(ownerId) as { count: number; bytes: number };
+    return { count: Number(row.count), bytes: Number(row.bytes) };
+  },
+
+  /** Status of the match a seat game belongs to (null when the game is not a match seat). */
+  matchStatusForGame(db: DatabaseSync, gameId: string): string | null {
+    const row = db
+      .prepare("SELECT m.status FROM match_seats s JOIN matches m ON m.id = s.match_id WHERE s.game_id = ?")
+      .get(gameId) as { status: string } | undefined;
+    return row?.status ?? null;
   },
 
   updateBotRun(

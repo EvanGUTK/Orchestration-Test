@@ -163,6 +163,36 @@ undo/forfeit. The writer primitive behind it is `writer.afterCommit(callback)`.
   result is persisted. Runs in flight at a crash are marked `cancelled` (`metrics.interruptedByRestart`)
   at the next start, never counted as results. `bot.progress` / `bot.finished` events go to the bus.
 
+### Resource limits (security gate 4, SEC-FIX-004)
+
+- Replay import: verified BEFORE any guest identity is created, in 500-move chunks that yield to the
+  event loop; 10 imports per minute per client and per owner (429 `RATE_LIMITED`); quota 50 files /
+  50 MiB per owner, checked inside the writer transaction (503 `RESOURCE_LIMIT`); `practice-v1` files
+  must carry `rules`; seeds ≤ 128 characters; stored normalized (canonical initial state, known keys
+  only); error messages never echo client strings; nesting/size failures are 400 `IMPORT_INVALID`.
+- Bot runs: the bot runner enforces ≤ 2 active (queued/running/paused) runs per owner (runner
+  `OWNER_LIMIT` → 503 `RESOURCE_LIMIT`), a 10-minute whole-run wall clock and a 10-minute pause/idle
+  timeout (`createBotServices(botServicesOptions(limits))`); `BotRunView` additionally carries
+  `cancelReason` (`user` | `wall-clock` | `idle`, null unless cancelled). The service allows 20 starts
+  per minute per client (429), stores only runs of ≤ 2 000 moves as bot-exhibition games, and keeps the
+  newest 50 finished runs per owner (older runs are deleted with their bot games). Status writes after a
+  run ended are ignored; a result that cannot be persisted marks the run `failed` (or `cancelled` at
+  the next start).
+- Realtime authorization for `bot.*` events: `app.services.botRuns.canView(owner, runId)`.
+- WebSocket hub and matches (competition lane, `apps/server/src/{realtime,matches}`) are registered in
+  `app.ts` after the competition routes: `realtimePlugin` first, then `matchesPlugin`. Any WebSocket
+  upgrade refused by a hook (root Host/fetch-metadata/CSRF checks, 404s) has its socket destroyed in a
+  root `onResponse` hook, so refused upgrades never linger or block shutdown.
+- Leaderboard cursors are short opaque references (last row id + rank); the row's stored score,
+  exponent, and creation time are looked up server-side, so cursors stay far below the 256-character
+  `PageQuery` limit even for 300 000-digit scores (DB-08).
+- Replay publicity: finished ranked games are a public local record (anyone on this machine may export
+  them); a duel seat's replay is available only once its MATCH is finished; seeds are not secret
+  (PROJECT_SCOPE). Very long games can export files larger than the 5 MiB import limit; such files
+  cannot be re-imported.
+- Account deletion (ACC-05, M5) must delete the account's `replay_imports` and `bot_runs` with their
+  bot-exhibition games (or anonymize them) — users are tombstoned, so no ON DELETE cascade fires.
+
 ## Durability and timeouts (BACKEND-FIX-003)
 
 - SQLite runs in WAL mode with `PRAGMA synchronous = NORMAL` by default. Every acknowledged command

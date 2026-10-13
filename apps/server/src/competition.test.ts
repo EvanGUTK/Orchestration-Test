@@ -610,3 +610,39 @@ describe("ENG-05 exactness through replays", () => {
     expect(applyMove(seeded, "left", RULESETS["classic-v1"]).state).toEqual(moved.state);
   });
 });
+
+describe("DB-08 cursors stay short for huge scores", () => {
+  it("pages 300-digit scores with cursors well under the 256-character limit", async () => {
+    const s = await server();
+    const ids: string[] = [];
+    for (let i = 0; i < 3; i += 1) {
+      const c = await signedIn(s.app, `huge_${i}`);
+      const g = (
+        await c.request("POST", "/games", { mode: "classic", seed: `huge-${i}` })
+      ).json() as GameResponse;
+      force(s, g.game.id, {
+        ...newGame(RULESETS["classic-v1"], `huge-${i}`),
+        board: { size: 4, cells: DEAD },
+        score: `${i + 1}${"0".repeat(299)}`,
+        status: "completed",
+      });
+      ids.push(g.game.id);
+    }
+    const viewer = new TestClient(s.app);
+    await viewer.me();
+    const seen: string[] = [];
+    let cursor: string | null = null;
+    do {
+      const res = await viewer.request(
+        "GET",
+        `/leaderboards?scope=casual&limit=1${cursor ? `&cursor=${cursor}` : ""}`,
+      );
+      expect(res.statusCode, res.body).toBe(200);
+      const page = res.json() as Page<LeaderboardEntry>;
+      seen.push(...page.items.map((e) => e.gameId as string));
+      cursor = page.nextCursor;
+      if (cursor) expect(cursor.length).toBeLessThan(120);
+    } while (cursor);
+    expect(seen).toEqual([...ids].reverse());
+  });
+});
