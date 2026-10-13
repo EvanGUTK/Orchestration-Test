@@ -127,6 +127,13 @@ export class ServerGameAdapter implements GameAdapter {
     return this.session;
   }
 
+  /** Adopts a game the server just created elsewhere (e.g. a challenge attempt). */
+  adopt(res: GameResponse): GameSession {
+    this.unresolved = null;
+    this.session = this.fromResponse(res);
+    return this.session;
+  }
+
   /** Opens (resumes) a saved server game by ID. */
   async open(id: string): Promise<GameSession> {
     const res = await this.retry(() => this.api.getGame(id));

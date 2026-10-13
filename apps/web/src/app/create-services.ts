@@ -11,6 +11,14 @@ import { ServerGameAdapter } from "../game/server-adapter.js";
 import { createSoundPlayer } from "../lib/sound.js";
 import type { SoundPlayer } from "../lib/sound.js";
 import { AccountSettingsStore } from "../settings/account-settings.js";
+import { inlineAnalyzer, workerAnalyzer } from "../replay/analyzer.js";
+import type { ReplayAnalyzer } from "../replay/analyzer.js";
+import { workerDecisionService } from "../bots/decision.js";
+import type { DecisionService } from "../bots/decision.js";
+import { WebSocketEventStream } from "../api/events.js";
+import type { EventStream } from "../api/events.js";
+import { apiRankingSource } from "../ranking/source.js";
+import type { RankingSource } from "../ranking/source.js";
 import { AuthStore } from "./auth.js";
 import type { AppServices } from "./services.js";
 
@@ -26,6 +34,11 @@ export type ServiceOptions = {
   sleep?: Sleep;
   retryDelays?: readonly number[];
   settingsDebounceMs?: number;
+  /** Replay verification; defaults to a Web Worker (inline when workers are unavailable). */
+  replayAnalyzer?: ReplayAnalyzer;
+  decisions?: DecisionService | null;
+  events?: EventStream | null;
+  ranking?: RankingSource;
 };
 
 export function createAppServices(options: ServiceOptions): AppServices {
@@ -57,7 +70,30 @@ export function createAppServices(options: ServiceOptions): AppServices {
     }
   });
 
-  return { api, auth, localGame, serverGame, serverAdapter, settings, saves, announcer, sound };
+  const replayAnalyzer =
+    options.replayAnalyzer ?? (options.engine ? workerAnalyzer(inlineAnalyzer(options.engine)) : null);
+
+  return {
+    api,
+    auth,
+    engine: options.engine,
+    replayAnalyzer,
+    ranking: options.ranking ?? apiRankingSource(api),
+    decisions: options.decisions !== undefined ? options.decisions : workerDecisionService(),
+    events:
+      options.events !== undefined
+        ? options.events
+        : typeof WebSocket === "undefined"
+          ? null
+          : new WebSocketEventStream(),
+    localGame,
+    serverGame,
+    serverAdapter,
+    settings,
+    saves,
+    announcer,
+    sound,
+  };
 }
 
 export function safeLocalStorage(): Storage | null {

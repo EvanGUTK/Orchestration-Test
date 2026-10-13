@@ -6,6 +6,7 @@ import { createAppServices } from "./app/create-services.js";
 import { localEngine } from "./game/local-engine.js";
 import { silentSoundPlayer } from "./lib/sound.js";
 import { createFakeEngine, memoryStorage } from "./test/fake-engine.js";
+import { inlineDecisionService } from "./test/inline-decisions.js";
 
 async function go(path: string) {
   await act(async () => {
@@ -38,19 +39,40 @@ describe("App shell", () => {
   });
 
   it("shows honest unavailable states without fake rankings or numbers", async () => {
+    // A server without BACKEND-004: every ranking/challenge endpoint answers 404 NOT_FOUND.
+    const notFound = () =>
+      Promise.resolve(
+        new Response(JSON.stringify({ error: { code: "NOT_FOUND", message: "Not found" } }), {
+          status: 404,
+          headers: { "content-type": "application/json" },
+        }),
+      );
     const services = createAppServices({
       engine: localEngine,
       storage: memoryStorage(),
       sound: silentSoundPlayer,
+      fetch: notFound,
+      sleep: () => Promise.resolve(),
+      retryDelays: [1],
     });
     render(<App services={services} />);
-    for (const path of ["/leaderboards", "/challenges", "/duel", "/duel/match", "/bots", "/replays"]) {
+    for (const path of ["/leaderboards", "/challenges", "/duel", "/duel/match"]) {
       await go(path);
       const main = screen.getByRole("main");
-      expect(within(main).getByText("Not available yet")).toBeTruthy();
+      expect(await within(main).findByText("Not available yet")).toBeTruthy();
       expect(main.querySelector("table, ol")).toBeNull();
       expect(main.textContent).not.toMatch(/\b(1st|#1|Elo \d|\d{3,} pts)\b/);
     }
+    // Bot lab and replays work offline: real controls, no invented results.
+    await go("/bots");
+    expect(await screen.findByText("Not available yet")).toBeTruthy(); // jsdom: no Web Worker
+    cleanup();
+    render(<App services={{ ...services, decisions: inlineDecisionService() }} />);
+    await go("/bots");
+    expect(screen.getByRole("button", { name: "Set up run" })).toBeTruthy();
+    await go("/replays");
+    expect(screen.getByRole("heading", { name: "Import a replay file" })).toBeTruthy();
+    expect(screen.getByRole("main").querySelector("table")).toBeNull();
   });
 
   it("shows an unavailable engine state when no engine is provided", async () => {

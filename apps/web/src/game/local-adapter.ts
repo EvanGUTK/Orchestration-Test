@@ -1,5 +1,8 @@
 import type { Direction, GameState } from "@g2048/contracts";
-import type { GameAdapter, GameSession, MoveOutcome, StartRequest } from "./adapter.js";
+import type { GameAdapter, GameSession, MoveOutcome, ReplayData, StartRequest } from "./adapter.js";
+
+const LETTER: Record<Direction, string> = { up: "u", right: "r", down: "d", left: "l" };
+const FROM_LETTER: Record<string, Direction> = { u: "up", r: "right", d: "down", l: "left" };
 import type { EnginePort } from "./engine-port.js";
 import { toEngineFailure } from "./engine-port.js";
 import type { GuestSaveStore } from "./save-store.js";
@@ -19,6 +22,9 @@ export function randomSeed(bytes = 16): string {
 export function createLocalAdapter(engine: EnginePort, saves: GuestSaveStore): GameAdapter {
   let session: GameSession | null = null;
   let history: GameState[] = [];
+  /** Replay record: initial state and the accepted moves on the final path (undo removes the last). */
+  let initial: GameState | null = null;
+  let path = "";
 
   function withState(state: GameState): GameSession {
     if (!session) throw new Error("No session");
@@ -41,6 +47,7 @@ export function createLocalAdapter(engine: EnginePort, saves: GuestSaveStore): G
       seed: session.seed,
       state: engine.serialize(session.state),
       savedAt: new Date().toISOString(),
+      ...(initial ? { initial: engine.serialize(initial), path } : {}),
     });
   }
 
@@ -61,6 +68,15 @@ export function createLocalAdapter(engine: EnginePort, saves: GuestSaveStore): G
           canUndo: false,
           authority: "local",
         };
+        if (saved.initial !== undefined && saved.path !== undefined) {
+          try {
+            initial = engine.deserialize(saved.initial);
+            path = saved.path;
+          } catch {
+            initial = null;
+            path = "";
+          }
+        }
       }
     } catch {
       session = null;
@@ -74,6 +90,8 @@ export function createLocalAdapter(engine: EnginePort, saves: GuestSaveStore): G
       const seed = request.seed ?? randomSeed();
       const state = engine.newGame(request.rules, seed);
       history = [];
+      initial = state;
+      path = "";
       session = {
         id: `local-${randomSeed(8)}`,
         mode: request.mode,
@@ -104,6 +122,7 @@ export function createLocalAdapter(engine: EnginePort, saves: GuestSaveStore): G
         if (session.rules.undo && session.rules.historyLimit > 0) {
           history = [...history, before].slice(-session.rules.historyLimit);
         }
+        path += LETTER[direction];
         withState(result.state);
         persist();
       }
@@ -120,6 +139,7 @@ export function createLocalAdapter(engine: EnginePort, saves: GuestSaveStore): G
       const previous = history.at(-1);
       if (!previous) return null;
       history = history.slice(0, -1);
+      path = path.slice(0, -1);
       withState(previous);
       persist();
       return session;
@@ -134,9 +154,21 @@ export function createLocalAdapter(engine: EnginePort, saves: GuestSaveStore): G
     async reload() {
       return session;
     },
+    replayData(): ReplayData | null {
+      if (!session || !initial || session.seed === null) return null;
+      return {
+        mode: session.mode,
+        rules: session.rules,
+        seed: session.seed,
+        initial,
+        moves: [...path].map((c) => FROM_LETTER[c] as Direction),
+      };
+    },
     async discard() {
       session = null;
       history = [];
+      initial = null;
+      path = "";
       saves.clear();
     },
   };

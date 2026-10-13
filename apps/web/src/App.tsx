@@ -8,14 +8,11 @@ import { LiveRegion } from "./components/LiveRegion.js";
 import { ConnectionBanner, IdentityChip } from "./components/StatusBar.js";
 import { DataScreen } from "./screens/DataScreen.js";
 import { ModesScreen } from "./screens/ModesScreen.js";
-import {
-  BotLabScreen,
-  ChallengesScreen,
-  DuelScreen,
-  LeaderboardsScreen,
-  LobbyScreen,
-  ReplaysScreen,
-} from "./screens/PendingScreens.js";
+import { BotLabScreen } from "./screens/BotLabScreen.js";
+import { ChallengesScreen } from "./screens/ChallengesScreen.js";
+import { LeaderboardsScreen } from "./screens/LeaderboardsScreen.js";
+import { DuelScreen, LobbyScreen } from "./screens/PendingScreens.js";
+import { ReplaysScreen } from "./screens/ReplaysScreen.js";
 import { ProfileScreen } from "./screens/ProfileScreen.js";
 import { PlayScreen } from "./screens/PlayScreen.js";
 import { PracticeScreen } from "./screens/PracticeScreen.js";

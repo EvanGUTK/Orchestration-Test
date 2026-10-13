@@ -13,5 +13,9 @@
     "tsBuildInfoFile": "build/tsc/.tsbuildinfo"
   },
   "include": ["src", "vite.config.ts"],
-  "references": [{ "path": "../../packages/contracts" }, { "path": "../../packages/engine" }]
+  "references": [
+    { "path": "../../packages/contracts" },
+    { "path": "../../packages/engine" },
+    { "path": "../../packages/bots" }
+  ]
 }

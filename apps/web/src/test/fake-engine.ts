@@ -73,6 +73,11 @@ export function createFakeEngine(): FakeEngine {
     },
     legalMoves: () => ["up", "right", "down", "left"],
     forfeit: (state) => ({ ...state, status: "forfeited" }),
+    checksum: (state) => `fake-${state.revision}-${state.score}`,
+    replay: () => {
+      throw Object.assign(new Error("not supported by the fake engine"), { code: "VALIDATION_ERROR" });
+    },
+    verifyReplay: () => ({ ok: false, code: "VALIDATION_ERROR", atMove: null, message: "fake engine" }),
     serialize: (state) => JSON.stringify(state),
     deserialize(json: string) {
       const value = JSON.parse(json) as GameState;

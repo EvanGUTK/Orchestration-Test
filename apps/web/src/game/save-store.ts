@@ -11,6 +11,9 @@ export type SavedGame = {
   /** engine.serialize(state): canonical JSON, re-validated with engine.deserialize on load. */
   readonly state: string;
   readonly savedAt: string;
+  /** For replays: serialized initial state and the final-path moves as letters u/r/d/l (undo pops). */
+  readonly initial?: string;
+  readonly path?: string;
 };
 
 export interface GuestSaveStore {
@@ -49,7 +52,11 @@ function parseSaved(raw: string): SavedGame | null {
   if (!rules) return null;
   const seed = typeof v.seed === "string" ? v.seed : null;
   const savedAt = typeof v.savedAt === "string" ? v.savedAt : "";
-  return { version: 1, id: v.id, mode: v.mode, rules, seed, state: v.state, savedAt };
+  const replay =
+    typeof v.initial === "string" && typeof v.path === "string" && /^[urdl]*$/.test(v.path)
+      ? { initial: v.initial, path: v.path }
+      : {};
+  return { version: 1, id: v.id, mode: v.mode, rules, seed, state: v.state, savedAt, ...replay };
 }
 
 /** localStorage-backed store; every storage failure (quota, privacy mode) degrades to "no save". */
