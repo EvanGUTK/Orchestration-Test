@@ -6,7 +6,7 @@ import type { BotWorkerData, ChooseRequest, WorkerReply } from "./protocol.js";
 import { WORKER_EXEC_ARGV, WORKER_URL } from "./worker-url.js";
 
 export type BotPoolErrorCode =
-  "RUNNER_BUSY" | "DUPLICATE_RUN" | "NOT_PAUSED" | "CANCELLED" | "VALIDATION_ERROR";
+  "RUNNER_BUSY" | "OWNER_LIMIT" | "DUPLICATE_RUN" | "NOT_PAUSED" | "CANCELLED" | "VALIDATION_ERROR";
 
 export class BotRunnerError extends Error {
   readonly code: BotPoolErrorCode;

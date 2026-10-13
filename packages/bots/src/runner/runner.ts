@@ -34,6 +34,8 @@ export type BotRunParams = {
   readonly maxMoves: number;
   /** Start paused so the caller can drive the run with step(). */
   readonly startPaused?: boolean;
+  /** Owner of the run (e.g. `user:<id>` / `guest:<id>`) for per-owner caps; opaque to the runner. */
+  readonly ownerKey?: string;
 };
 
 export type BotRunProgress = {
@@ -47,9 +49,13 @@ export type BotRunProgress = {
   readonly state: GameState;
 };
 
+/** Why a run was cancelled: by the caller, its whole-run time limit, or by sitting idle (paused). */
+export type BotRunCancelReason = "user" | "wall-clock" | "idle";
+
 export type BotRunResult = {
   readonly runId: string;
   readonly status: "finished" | "cancelled" | "failed";
+  readonly cancelReason: BotRunCancelReason | null;
   readonly end: BotGameEnd | "error";
   readonly strategy: BotConfig["strategy"];
   readonly botVersion: string;
@@ -96,7 +102,19 @@ export type BotRunnerOptions = {
    * jobs. When omitted, the runner owns a private pool and shuts it down with itself.
    */
   readonly pool?: BotWorkerPool;
+  /** Whole-run wall-clock limit; when it expires the run is cancelled (reason "wall-clock"). Default 30 min. */
+  readonly maxWallClockMs?: number;
+  /**
+   * A run that is paused (or waiting for step()) longer than this is cancelled (reason "idle"), so a
+   * forgotten step-mode run cannot hold a run slot forever. Default 10 min.
+   */
+  readonly idleTimeoutMs?: number;
+  /** Max simultaneously active runs per `ownerKey`; default unlimited (only maxConcurrent applies). */
+  readonly maxRunsPerOwner?: number;
 };
+
+export const DEFAULT_MAX_WALL_CLOCK_MS = 30 * 60 * 1000;
+export const DEFAULT_IDLE_TIMEOUT_MS = 10 * 60 * 1000;
 
 /**
  * Runs bot-lab games. Every search is a "lab" job on the shared BotWorkerPool (worker_threads),
@@ -111,6 +129,7 @@ export class BotRunner {
   private readonly now: () => number;
   private readonly pool: BotWorkerPool;
   private readonly ownsPool: boolean;
+  private readonly limits: { maxWallClockMs: number; idleTimeoutMs: number; maxRunsPerOwner: number | null };
 
   constructor(options: BotRunnerOptions = {}) {
     const max = options.maxConcurrent ?? LIMITS.concurrentBotRunsMax;
@@ -122,10 +141,31 @@ export class BotRunner {
     this.now = options.now ?? (() => performance.now());
     this.ownsPool = options.pool === undefined;
     this.pool = options.pool ?? new BotWorkerPool();
+    const positive = (value: number | undefined, fallback: number, name: string): number => {
+      const v = value ?? fallback;
+      if (!Number.isSafeInteger(v) || v < 1)
+        throw new BotRunnerError("VALIDATION_ERROR", `${name} must be >= 1`);
+      return v;
+    };
+    this.limits = {
+      maxWallClockMs: positive(options.maxWallClockMs, DEFAULT_MAX_WALL_CLOCK_MS, "maxWallClockMs"),
+      idleTimeoutMs: positive(options.idleTimeoutMs, DEFAULT_IDLE_TIMEOUT_MS, "idleTimeoutMs"),
+      maxRunsPerOwner:
+        options.maxRunsPerOwner === undefined
+          ? null
+          : positive(options.maxRunsPerOwner, 1, "maxRunsPerOwner"),
+    };
   }
 
   get activeRuns(): number {
     return this.runs.size;
+  }
+
+  /** Active runs started with this ownerKey. */
+  activeRunsFor(ownerKey: string): number {
+    let n = 0;
+    for (const run of this.runs.values()) if (run.ownerKey === ownerKey) n += 1;
+    return n;
   }
 
   start(params: BotRunParams, onProgress?: (progress: BotRunProgress) => void): BotRunHandle {
@@ -134,11 +174,24 @@ export class BotRunner {
     if (this.runs.size >= this.maxConcurrent) {
       throw new BotRunnerError("RUNNER_BUSY", `at most ${this.maxConcurrent} concurrent bot runs`);
     }
+    if (
+      params.ownerKey !== undefined &&
+      this.limits.maxRunsPerOwner !== null &&
+      this.activeRunsFor(params.ownerKey) >= this.limits.maxRunsPerOwner
+    ) {
+      throw new BotRunnerError(
+        "OWNER_LIMIT",
+        `at most ${this.limits.maxRunsPerOwner} active bot runs per owner`,
+      );
+    }
     if (!Number.isSafeInteger(params.maxMoves) || params.maxMoves < 1 || params.maxMoves > 100_000) {
       throw new BotRunnerError("VALIDATION_ERROR", "maxMoves must be an integer in 1..100000");
     }
     const config = validateBotConfig(params.config);
-    const run = new BotRun({ ...params, config }, this.pool, this.port, this.now, onProgress);
+    const run = new BotRun({ ...params, config }, this.pool, this.port, this.now, onProgress, {
+      maxWallClockMs: this.limits.maxWallClockMs,
+      idleTimeoutMs: this.limits.idleTimeoutMs,
+    });
     this.runs.set(params.runId, run);
     void run.result.finally(() => this.runs.delete(params.runId));
     return run;
@@ -155,8 +208,12 @@ class BotRun implements BotRunHandle {
   readonly runId: string;
   readonly result: Promise<BotRunResult>;
   private currentStatus: BotRunStatus = "queued";
+  readonly ownerKey: string | undefined;
   private task: BotPoolTask | null = null;
   private cancelRequested = false;
+  private cancelReason: BotRunCancelReason | null = null;
+  private wallClockTimer: NodeJS.Timeout | null = null;
+  private idleTimer: NodeJS.Timeout | null = null;
   private wantPaused: boolean;
   private gate: (() => void) | null = null;
   private readonly stepResolvers: ((progress: BotRunProgress | null) => void)[] = [];
@@ -176,8 +233,12 @@ class BotRun implements BotRunHandle {
     private readonly port: EnginePort,
     private readonly now: () => number,
     private readonly onProgress: ((progress: BotRunProgress) => void) | undefined,
+    private readonly timeouts: { maxWallClockMs: number; idleTimeoutMs: number },
   ) {
     this.runId = params.runId;
+    this.ownerKey = params.ownerKey;
+    this.wallClockTimer = setTimeout(() => this.abort("wall-clock"), timeouts.maxWallClockMs);
+    this.wallClockTimer.unref();
     this.wantPaused = params.startPaused === true;
     this.botSeed = params.botSeed ?? params.seed;
     this.state = port.newGame(params.rules, params.seed);
@@ -211,12 +272,16 @@ class BotRun implements BotRunHandle {
   }
 
   async cancel(): Promise<BotRunResult> {
-    if (!this.isEnded()) {
-      this.cancelRequested = true;
-      this.task?.cancel(); // aborts the in-flight search at its next node
-      this.openGate();
-    }
+    this.abort("user");
     return this.result;
+  }
+
+  private abort(reason: BotRunCancelReason): void {
+    if (this.isEnded() || this.cancelRequested) return;
+    this.cancelRequested = true;
+    this.cancelReason = reason;
+    this.task?.cancel(); // aborts the in-flight search at its next node
+    this.openGate();
   }
 
   private isEnded(): boolean {
@@ -228,6 +293,8 @@ class BotRun implements BotRunHandle {
   }
 
   private openGate(): void {
+    if (this.idleTimer) clearTimeout(this.idleTimer);
+    this.idleTimer = null;
     const release = this.gate;
     this.gate = null;
     release?.();
@@ -272,6 +339,9 @@ class BotRun implements BotRunHandle {
           this.currentStatus = "paused";
           await new Promise<void>((resolve) => {
             this.gate = resolve;
+            // Paused or waiting for step(): an abandoned run is cancelled after idleTimeoutMs.
+            this.idleTimer = setTimeout(() => this.abort("idle"), this.timeouts.idleTimeoutMs);
+            this.idleTimer.unref();
           });
           continue;
         }
@@ -318,11 +388,14 @@ class BotRun implements BotRunHandle {
       }
     }
     this.currentStatus = end === "cancelled" ? "cancelled" : end === "error" ? "failed" : "finished";
+    if (this.wallClockTimer) clearTimeout(this.wallClockTimer);
+    if (this.idleTimer) clearTimeout(this.idleTimer);
     for (const resolve of this.stepResolvers.splice(0)) resolve(null);
     const { config } = this.params;
     return {
       runId: this.runId,
       status: this.currentStatus as BotRunResult["status"],
+      cancelReason: this.currentStatus === "cancelled" ? (this.cancelReason ?? "user") : null,
       end,
       strategy: config.strategy,
       botVersion: BOT_VERSION,

@@ -146,3 +146,75 @@ describe("BotRunner (worker_threads)", () => {
     expect(runner.activeRuns).toBe(0);
   });
 });
+
+describe("BotRunner run limits (bot-lab H2)", () => {
+  const limited: BotRunner[] = [];
+  afterEach(async () => {
+    await Promise.all(limited.splice(0).map((r) => r.shutdown()));
+  });
+  function limitedRunner(options: ConstructorParameters<typeof BotRunner>[0]): BotRunner {
+    const r = new BotRunner(options);
+    limited.push(r);
+    return r;
+  }
+
+  it("cancels a run that exceeds its whole-run wall-clock limit", async () => {
+    const runner = limitedRunner({ maxWallClockMs: 400 });
+    const t0 = performance.now();
+    const handle = runner.start({ runId: "wall", config: heavy, seed: "wall", rules: duel, maxMoves: 500 });
+    const result = await handle.result;
+    expect(result).toMatchObject({ status: "cancelled", end: "cancelled", cancelReason: "wall-clock" });
+    expect(performance.now() - t0).toBeLessThan(5000);
+    expect(runner.activeRuns).toBe(0);
+  }, 30_000);
+
+  it("cancels a paused or step-mode run left idle, freeing its slot", async () => {
+    const runner = limitedRunner({ idleTimeoutMs: 200, maxConcurrent: 1 });
+    const handle = runner.start({
+      runId: "idle",
+      config: greedy,
+      seed: "idle",
+      rules: duel,
+      maxMoves: 50,
+      startPaused: true,
+    });
+    expect((await handle.step())?.moveIndex).toBe(0); // stepping resets the idle clock
+    const result = await handle.result;
+    expect(result).toMatchObject({ status: "cancelled", cancelReason: "idle", acceptedMoves: 1 });
+    // The slot is free again.
+    const next = runner.start({ runId: "after", config: greedy, seed: "after", rules: duel, maxMoves: 3 });
+    expect((await next.result).cancelReason).toBeNull();
+  }, 30_000);
+
+  it("a running (not paused) run is never cancelled as idle; user cancel is reported as such", async () => {
+    const runner = limitedRunner({ idleTimeoutMs: 50 });
+    const done = await runner.start({
+      runId: "busy",
+      config: greedy,
+      seed: "busy",
+      rules: duel,
+      maxMoves: 60,
+    }).result;
+    expect(done).toMatchObject({ status: "finished", cancelReason: null, acceptedMoves: 60 });
+    const slow = runner.start({ runId: "user", config: heavy, seed: "user", rules: duel, maxMoves: 500 });
+    await new Promise((r) => setTimeout(r, 200));
+    expect(await slow.cancel()).toMatchObject({ status: "cancelled", cancelReason: "user" });
+  }, 30_000);
+
+  it("caps active runs per owner key", async () => {
+    const runner = limitedRunner({ maxRunsPerOwner: 1 });
+    const base = { config: heavy, rules: duel, maxMoves: 500 } as const;
+    const first = runner.start({ ...base, runId: "o1", seed: "o1", ownerKey: "user:1" });
+    expect(() => runner.start({ ...base, runId: "o2", seed: "o2", ownerKey: "user:1" })).toThrow(
+      expect.objectContaining({ code: "OWNER_LIMIT" }),
+    );
+    const other = runner.start({ ...base, runId: "o3", seed: "o3", ownerKey: "guest:9" });
+    expect(runner.activeRunsFor("user:1")).toBe(1);
+    expect(runner.activeRunsFor("guest:9")).toBe(1);
+    await first.cancel();
+    await Promise.resolve();
+    expect(runner.activeRunsFor("user:1")).toBe(0);
+    await other.cancel();
+    expect(() => new BotRunner({ idleTimeoutMs: 0 })).toThrow(BotRunnerError);
+  }, 30_000);
+});
