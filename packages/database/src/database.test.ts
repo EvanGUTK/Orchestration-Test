@@ -26,6 +26,10 @@ import {
 } from "./index.js";
 import { insertTestGame, insertTestUser, makeTempDir, TEST_NOW } from "./test-helpers.js";
 
+const ALL_VERSIONS = MIGRATIONS.map((m) => m.version);
+const LATEST = MIGRATIONS.length;
+const NEXT = LATEST + 1;
+
 const EXPECTED_TABLES = [
   "challenge_attempts",
   "challenges",
@@ -75,7 +79,7 @@ describe("DB-01 migrations", () => {
   it("fresh migrate creates every table, records checksum, seeds rulesets, enables WAL + FKs", async () => {
     const { db, applied, preflightBackup } = await prepareDatabase(dbPath);
     track(db);
-    expect(applied).toEqual([1]);
+    expect(applied).toEqual(ALL_VERSIONS);
     expect(preflightBackup).toBeNull();
     const tables = (
       db
@@ -101,7 +105,9 @@ describe("DB-01 migrations", () => {
       for (const col of cols) expect(col.type.toUpperCase()).not.toBe("REAL");
     }
     const migration = db.prepare("SELECT version, checksum FROM schema_migrations").all();
-    expect(migration).toEqual([{ version: 1, checksum: migrationChecksum(MIGRATIONS[0] as Migration) }]);
+    expect(migration).toEqual(
+      MIGRATIONS.map((m) => ({ version: m.version, checksum: migrationChecksum(m) })),
+    );
     expect((db.prepare("PRAGMA journal_mode").get() as { journal_mode: string }).journal_mode).toBe("wal");
     expect((db.prepare("PRAGMA foreign_keys").get() as { foreign_keys: number }).foreign_keys).toBe(1);
 
@@ -187,18 +193,20 @@ describe("DB-01 migrations", () => {
     insertTestUser(db, "keepme");
     db.close();
     const bad: Migration = {
-      version: 2,
+      version: NEXT,
       name: "broken",
       sql: "CREATE TABLE half_done (x INTEGER) STRICT; ALTER TABLE users ADD COLUMN bogus TEXT; INSERT INTO no_such_table VALUES (1);",
     };
     await expect(prepareDatabase(dbPath, { migrations: [...MIGRATIONS, bad] })).rejects.toBeInstanceOf(
       MigrationError,
     );
-    const backups = readdirSync(temp.dir).filter((f) => f.includes(".pre-migrate-v1-to-v2-"));
+    const backups = readdirSync(temp.dir).filter((f) => f.includes(`.pre-migrate-v${LATEST}-to-v${NEXT}-`));
     expect(backups).toHaveLength(1);
 
     const after = track(openDatabase(dbPath));
-    expect(after.prepare("SELECT version FROM schema_migrations").all()).toEqual([{ version: 1 }]);
+    expect(after.prepare("SELECT version FROM schema_migrations ORDER BY version").all()).toEqual(
+      ALL_VERSIONS.map((version) => ({ version })),
+    );
     expect(after.prepare("SELECT name FROM sqlite_master WHERE name = 'half_done'").get()).toBeUndefined();
     const cols = (
       after.prepare("SELECT name FROM pragma_table_info('users')").all() as { name: string }[]
@@ -209,10 +217,14 @@ describe("DB-01 migrations", () => {
     ]);
     after.close();
 
-    const good: Migration = { version: 2, name: "add-table", sql: "CREATE TABLE extra (x INTEGER) STRICT;" };
+    const good: Migration = {
+      version: NEXT,
+      name: "add-table",
+      sql: "CREATE TABLE extra (x INTEGER) STRICT;",
+    };
     const upgraded = await prepareDatabase(dbPath, { migrations: [...MIGRATIONS, good] });
     track(upgraded.db);
-    expect(upgraded.applied).toEqual([2]);
+    expect(upgraded.applied).toEqual([NEXT]);
     expect(upgraded.preflightBackup).not.toBeNull();
     expect(existsSync(upgraded.preflightBackup as string)).toBe(true);
   });
@@ -443,7 +455,7 @@ describe("DB-05 backup and validated restore", () => {
     db.close();
 
     const result = await restoreDatabase(backupPath, dbPath);
-    expect(result.report.appliedMigrations).toEqual([1]);
+    expect(result.report.appliedMigrations).toEqual(ALL_VERSIONS);
     expect(result.safetyBackup).not.toBeNull();
 
     const restored = track(openDatabase(dbPath));
@@ -538,7 +550,7 @@ describe("SEC-FIX-001 lock and restore hardening", () => {
     const release = acquireDatabaseLock(fresh);
     const { db, applied } = await prepareDatabase(fresh);
     track(db);
-    expect(applied).toEqual([1]);
+    expect(applied).toEqual(ALL_VERSIONS);
     expect(existsSync(lockPathFor(fresh))).toBe(true);
     release();
     expect(existsSync(lockPathFor(fresh))).toBe(false);

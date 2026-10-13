@@ -38,7 +38,7 @@ Shared requirements: [architecture](../../docs/ARCHITECTURE.md).
   loopback `Host`, and `Sec-Fetch-Site: cross-site | same-site` is rejected → 403.
 - Argon2 work is capped at 2 concurrent derivations; the unknown-user dummy hash is built at boot.
   Housekeeping purges expired/revoked sessions and orphaned guests at startup and hourly.
-- UI responses carry `Content-Security-Policy: default-src 'self'; frame-ancestors 'none';
+- All responses carry `Content-Security-Policy: default-src 'self'; frame-ancestors 'none';
   base-uri 'none'; object-src 'none'; form-action 'self'` (the built SPA has no inline script/style).
 - Errors: `{ error: { code, message, requestId, details? } }`, status from `ERROR_HTTP_STATUS`, no
   stack traces. Logs record method/path/status only and redact cookies, tokens, passwords.
@@ -73,7 +73,46 @@ Shared requirements: [architecture](../../docs/ARCHITECTURE.md).
   repaired. On demand: `node --conditions=source --import tsx apps/server/src/cli.ts verify-games [id]`.
 - A saved state whose checksum does not match is refused (500, logged). Engine `RESOURCE_LIMIT` →
   503 with the game unchanged; writer queue full → 503 `DB_BUSY`.
-- Later features create games through `GameService.createInTransaction(db, owner, { mode, rules, seed })`.
+- Mode policy of the generic routes (SEC-FIX-002 R2-02): commands (`moves`/`undo`/`forfeit`) reach
+  only `classic`, `practice` and `ranked`; reads (`GET /games/:id`, `/events`) additionally reach the
+  caller's own `bot-exhibition` games (bot-lab results). `duel-*` and `bot-vs-bot` games are 404 on
+  every generic route; matches use their own routes (`apps/server/src/matches`). `ranked` is handled
+  by **mode-aware delegation**: the same move/forfeit routes apply the ranked ruleset (no undo → 403,
+  500-move cap) and the challenge-attempt terminal hook runs in the same transaction.
+- `ranked` and `duel-*` responses omit `state.rng` (R2-06); casual modes keep it. Replays of finished
+  ranked games are full files.
+- Undo is a bounded stack (`games.undo_available`, migration 2): each changed move pushes (capped at
+  `historyLimit` = 100, oldest dropped), each undo pops, forfeit clears. Nothing left to undo or the
+  cap reached → 400 `VALIDATION_ERROR`; undo not allowed by the mode → 403 (C11).
+- At most 25 unfinished classic/practice/ranked games per owner (503 `RESOURCE_LIMIT`). Only the
+  newest 100 no-change command rows per game are kept, so retrying an older no-op `commandId`
+  re-evaluates it (still a no-op unless the board changed).
+
+### Internal game API (for the matches / realtime / ranked / bot services)
+
+All `*InTransaction` methods run inside the caller's `app.services.ctx.writer.run((tx) => …)` job
+(synchronous; never await inside) and take `access: GameAccess = { owner: GameOwnerRef | null;
+allowedModes: readonly GameMode[] }`. `owner: null` means the caller already authorized the actor;
+a game outside `allowedModes` (or owned by someone else) is `NOT_FOUND`.
+
+```ts
+games.createInTransaction(tx, owner: GameOwnerRef | null, spec: { mode; rules: Ruleset; seed: string; id?: string }): GameRecord
+games.moveInTransaction(tx, gameId, cmd: { commandId; expectedRevision; direction }, access): MoveResponse
+games.undoInTransaction(tx, gameId, cmd: { commandId; expectedRevision }, access): GameResponse
+games.forfeitInTransaction(tx, gameId, cmd: { commandId; expectedRevision }, access): GameResponse
+games.readInTransaction(db, gameId, access): GameResponse
+games.eventsInTransaction(db, gameId, { afterRevision; limit }, access): GameEventsResponse
+games.stateAtInTransaction(db, gameId, revision): GameState      // full state incl. rng (server-side only)
+games.onTerminal((tx, game: GameRecord, finalState: GameState, reason: "move-cap" | "dead-board" | "forfeit") => void)
+```
+
+Post-commit events: `app.services.events` (`EventBus`).
+`events.publishAfterCommit({ type: WsEventType, resourceId, sequence, payload })` must be called
+inside a writer job and is delivered only after that transaction COMMITs (dropped on rollback);
+`events.subscribe(listener) => unsubscribe` is what the realtime hub uses; `events.publishNow(event)`
+is for non-database events such as `server.recovering`. GameService publishes `game.updated`
+(`sequence` = game revision, payload `{ gameId, kind, revision, status }`) after every create/move/
+undo/forfeit. The writer primitive behind it is `writer.afterCommit(callback)`.
 
 ## Local-only threat model (security gate 1 notes)
 
@@ -93,5 +132,13 @@ owner). Within that model:
   or the user profile ACL (Windows). Keep `DATA_DIR` inside the user's home (default
   `~/.2048-infinite`) or `chmod 700` it; the files contain password hashes and session hashes, never
   plaintext passwords or raw tokens.
-- Cookies are not port-isolated: another web app on `localhost` could set a `gid` cookie. A tossed
-  pending guest token gives no access to accounts (separate identity, CSRF + Origin still apply).
+- Cookies are not port-isolated: another web app on `localhost` could set a `gid` cookie. Pending
+  guest tokens are `<random>.<HMAC(per-process secret)>`, so only tokens this server minted are ever
+  adopted as a guest session (SEC-R2-03); a tossed value is ignored and replaced. A restart
+  invalidates unadopted pending tokens (the client just calls `GET /auth/me` again).
+- Every request (API, static files, 404s) must carry an allowed loopback `Host`, and
+  `Sec-Fetch-Site: cross-site | same-site` is refused except for a top-level navigation to a UI page.
+  API-ness is decided by the matched route (decoded path), never the raw URL (SEC-R2-01).
+- Retention: expired/revoked sessions are deleted at startup and hourly; a guest with no remaining
+  session whose games were all last touched more than 30 days ago is deleted with its games; at most
+  10 000 guest profiles exist (503 `RESOURCE_LIMIT` beyond that; create an account).

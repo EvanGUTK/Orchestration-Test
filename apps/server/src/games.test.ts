@@ -418,9 +418,29 @@ describe("SOLO-03 undo, forfeit, events", () => {
       commandId: cid(),
       expectedRevision: revision,
     });
-    expectError(capped, 403, "FORBIDDEN");
+    expectError(capped, 400, "VALIDATION_ERROR"); // CONTRACT-001 C11
     expect(((await alice.request("GET", `/games/${game.game.id}`)).json() as GameResponse).canUndo).toBe(
       false,
+    );
+    // TOTAL depth is capped (SEC-R2-07): one new move re-enables exactly one undo, not 99 more.
+    const current = ((await alice.request("GET", `/games/${game.game.id}`)).json() as GameResponse).state;
+    const moved = (
+      await move(alice, game.game.id, legalMoves(current.board)[0] as Direction, revision)
+    ).json() as MoveResponse;
+    revision = moved.state.revision;
+    const once = await alice.request("POST", `/games/${game.game.id}/undo`, {
+      commandId: cid(),
+      expectedRevision: revision,
+    });
+    expect(once.statusCode, once.body).toBe(200);
+    revision += 1;
+    expectError(
+      await alice.request("POST", `/games/${game.game.id}/undo`, {
+        commandId: cid(),
+        expectedRevision: revision,
+      }),
+      400,
+      "VALIDATION_ERROR",
     );
     expect(app.services.games.verifyIntegrity(game.game.id).ok).toBe(true);
 

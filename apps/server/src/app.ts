@@ -6,14 +6,15 @@ import fastifyCookie from "@fastify/cookie";
 import fastifyStatic from "@fastify/static";
 import { API_BASE, LIMITS } from "@g2048/contracts";
 import { DatabaseWriter } from "@g2048/database";
-import { apiNotFound, installErrorHandling, isApiPath } from "./http/errors.js";
+import { apiNotFound, installErrorHandling } from "./http/errors.js";
 import { loggerOptions, type LogDestination } from "./http/logging.js";
-import { installSecurityHooks } from "./http/security-hooks.js";
+import { installSecurityHooks, isApiRequest } from "./http/security-hooks.js";
 import { authRoutes } from "./routes/auth.js";
 import { healthRoutes } from "./routes/health.js";
 import { profileRoutes } from "./routes/profile.js";
 import { PasswordHasher } from "./security/passwords.js";
 import { AuthService } from "./services/auth-service.js";
+import { EventBus } from "./services/event-bus.js";
 import { GameService } from "./services/game-service.js";
 import { gameRoutes } from "./routes/games.js";
 import type { Clock, ServiceContext } from "./services/context.js";
@@ -31,12 +32,13 @@ export type AppOptions = {
   loginWindowMs?: number;
   registrationsPerWindow?: number;
   guestsPerWindow?: number;
+  maxGuests?: number;
   /** Session/guest purge interval; 0 disables the timer (it still runs once when the app is ready). */
   maintenanceIntervalMs?: number;
 };
 
 /** Services exposed for feature plugins (ports/adapters): later tasks register routes against these. */
-export type AppServices = { ctx: ServiceContext; auth: AuthService; games: GameService };
+export type AppServices = { ctx: ServiceContext; auth: AuthService; games: GameService; events: EventBus };
 
 declare module "fastify" {
   interface FastifyInstance {
@@ -66,10 +68,12 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
       ? { registrationsPerWindow: options.registrationsPerWindow }
       : {}),
     ...(options.guestsPerWindow !== undefined ? { guestsPerWindow: options.guestsPerWindow } : {}),
+    ...(options.maxGuests !== undefined ? { maxGuests: options.maxGuests } : {}),
   });
   await auth.warmup();
-  const games = new GameService(ctx);
-  app.decorate("services", { ctx, auth, games });
+  const events = new EventBus(writer);
+  const games = new GameService(ctx, events);
+  app.decorate("services", { ctx, auth, games, events });
 
   // Housekeeping: purge expired/revoked sessions and orphaned guests at startup and periodically.
   const purge = async (): Promise<void> => {
@@ -107,7 +111,7 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   if (serveWeb) await app.register(fastifyStatic, { root: webDist, wildcard: false });
   app.setNotFoundHandler((request, reply) => {
     // API paths always 404 as JSON; other paths fall back to the SPA entry when the UI is bundled.
-    if (isApiPath(request.url) || !serveWeb || request.method !== "GET") return apiNotFound(request, reply);
+    if (isApiRequest(request) || !serveWeb || request.method !== "GET") return apiNotFound(request, reply);
     return reply.sendFile("index.html");
   });
   return app;

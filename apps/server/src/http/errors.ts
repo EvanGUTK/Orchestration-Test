@@ -1,5 +1,5 @@
 import type { FastifyError, FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import { API_BASE, ERROR_HTTP_STATUS, type ApiError, type ErrorCode } from "@g2048/contracts";
+import { ERROR_HTTP_STATUS, type ApiError, type ErrorCode } from "@g2048/contracts";
 import { DbBusyError } from "@g2048/database";
 import { isEngineError } from "@g2048/engine";
 
@@ -119,8 +119,4 @@ export function installErrorHandling(app: FastifyInstance): void {
 
 export function apiNotFound(request: FastifyRequest, reply: FastifyReply): FastifyReply {
   return sendError(reply, request, new AppError("NOT_FOUND", "Not found"));
-}
-
-export function isApiPath(url: string): boolean {
-  return url === API_BASE || url.startsWith(`${API_BASE}/`) || url.startsWith(`${API_BASE}?`);
 }

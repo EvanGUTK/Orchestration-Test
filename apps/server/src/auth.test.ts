@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { afterEach, describe, expect, it } from "vitest";
 import { API_BASE, LIMITS } from "@g2048/contracts";
+import { MIGRATIONS } from "@g2048/database";
 import { ownerResetPassword } from "./owner-reset.js";
 import { PasswordHasher, type PasswordParams } from "./security/passwords.js";
 import { removeDir, startTestServer, TEST_HOST, TestClient, type TestServer } from "./test-support.js";
@@ -499,7 +500,10 @@ describe("error envelope, health, logging", () => {
     const { app } = await server();
     const client = new TestClient(app);
     expect((await client.request("GET", "/health")).json()).toEqual({ status: "ok" });
-    expect((await client.request("GET", "/ready")).json()).toMatchObject({ status: "ready", migrations: 1 });
+    expect((await client.request("GET", "/ready")).json()).toMatchObject({
+      status: "ready",
+      migrations: MIGRATIONS.length,
+    });
   });
 
   it("structured logs redact cookies, tokens and passwords", async () => {
