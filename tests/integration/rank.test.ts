@@ -154,14 +154,14 @@ describe("RANK-02 ranked rules are enforced by the server", () => {
     expect(r.status, r.text).toBe(200);
     expect(r.json.state.acceptedMoves).toBe(500);
     expect(r.json.state.status).toBe("completed");
-    const after = await move(
-      a,
-      g.json.game.id,
-      legalMoves(r.json.state.board)[0] as Direction,
-      r.json.state.revision,
-    );
-    expect([400, 403, 409], after.text).toContain(after.status);
-    expectErrorEnvelope(after);
+    // C14: commands on a non-active game -> 403 FORBIDDEN at the current revision, 409 if stale
+    const nextDir = legalMoves(r.json.state.board)[0] as Direction;
+    const after = await move(a, g.json.game.id, nextDir, r.json.state.revision);
+    expect(after.status, after.text).toBe(403);
+    expectErrorEnvelope(after, "FORBIDDEN");
+    const stale = await move(a, g.json.game.id, nextDir, r.json.state.revision - 1);
+    expect(stale.status, stale.text).toBe(409);
+    expectErrorEnvelope(stale, "REVISION_CONFLICT");
     expect((await getGame(a, g.json.game.id)).state).toEqual(r.json.state);
     const row = t.db
       .prepare("SELECT status, official_score FROM challenge_attempts WHERE game_id = ?")

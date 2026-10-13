@@ -1,7 +1,7 @@
 // BOT-04 | Repeatable bot league — same seeds/versions/budgets reproduce outcomes; human Elo unchanged.
 // Also checks the RANK-03 separation for bots (bot results only in the bot-league scope).
-// Spec-first: POST /bots/runs (CreateBotRunRequest) -> BotRunView; ASSUMPTION: GET /bots/runs/:id returns
-// the BotRunView for polling (the HTTP table lists only create/cancel; flagged to chief).
+// Spec-first: POST /bots/runs (CreateBotRunRequest) -> BotRunView; GET /bots/runs/:id -> BotRunView for
+// polling (CONTRACT-001 C13).
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { BOT_STRATEGIES } from "@g2048/contracts";
 import type { BotRunView, BotStrategy, GameResponse, LeaderboardEntry } from "@g2048/contracts";
