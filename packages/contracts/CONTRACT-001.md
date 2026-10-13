@@ -138,7 +138,7 @@ integration (do not commit `package-lock.json` changes from a worker branch).
 - C16. `ReplayFile.rules?: Ruleset` (optional field, additive). Exporters always include it; it is required to verify
   `practice-v1` replays; importers use it (and check `rules.version === rulesetVersion`) instead of guessing.
 - C17. `GET /challenges` → 200 `Page<ChallengeSummary>`; `POST /challenges/:id/attempts` → 201 `GameResponse` for a
-  new attempt, 200 `GameResponse` when resuming; consumed/completed attempt → 409 `REVISION_CONFLICT`-free 403 `FORBIDDEN`.
+  new attempt, 200 `GameResponse` when resuming; a consumed or completed attempt → 403 `FORBIDDEN`; guests → 403 `FORBIDDEN`.
 - C18. WebSocket adds `match.updated` (payload `{ match: MatchView }`) for lobby join / match start / seat progress.
   Season rows (incl. `duel-v1` and `ranked-v1` active seasons) are seeded by backend at startup; other services read them.
 - C19. Casual best-score board counts all `classic-v1` games (server- or client-seeded). It is a casual board and not
