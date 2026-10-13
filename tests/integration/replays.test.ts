@@ -48,6 +48,7 @@ describe("REP-01 full replay and snapshot seek", () => {
     expect(file.engineVersion).toBe(ENGINE_VERSION);
     expect(file.rulesetVersion).toBe("classic-v1");
     expect(file.seed).toBe("rep01");
+    expect(file.rules, "C16: exporters always include rules").toEqual(RULESETS["classic-v1"]);
     expect(file.moves).toHaveLength(state.acceptedMoves);
     expect(file.finalChecksum).toBe(checksum(state));
     expect(file.initialChecksum).toBe(checksum(file.initialState));

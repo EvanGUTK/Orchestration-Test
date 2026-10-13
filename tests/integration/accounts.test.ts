@@ -282,16 +282,16 @@ describe("ACC-03 two accounts and a guest are isolated", () => {
   it("a guest can never enter a human ranked challenge", async () => {
     const a = new Client(t.app);
     await a.signUp("lister", PASSWORD);
-    const list = await a.get<{ items?: { id: string }[] } | { id: string }[]>("/challenges");
+    const list = await a.get<{ items: { id: string }[] }>("/challenges");
     expect(list.status).toBe(200);
-    const items = Array.isArray(list.json) ? list.json : (list.json.items ?? []);
+    const items = list.json.items; // C17: Page<ChallengeSummary>
     const challenge = items[0];
     expect(challenge, "the local challenge catalog must contain at least one challenge").toBeDefined();
     const guest = new Client(t.app);
     await guest.me();
     const attempt = await guest.post(`/challenges/${challenge?.id}/attempts`, {});
-    expect([401, 403]).toContain(attempt.status);
-    expectErrorEnvelope(attempt);
+    expect(attempt.status, attempt.text).toBe(403); // C17: guests -> 403 FORBIDDEN
+    expectErrorEnvelope(attempt, "FORBIDDEN");
   });
 });
 
