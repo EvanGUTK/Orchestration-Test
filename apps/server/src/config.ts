@@ -9,6 +9,8 @@ export type ServerConfig = {
   webDist: string | null;
   /** host:port values accepted on mutating requests: the API port plus the dev web port (Vite proxy). */
   allowedHosts: string[];
+  /** SQLite WAL durability: NORMAL (default) or FULL (env DB_SYNCHRONOUS). */
+  dbSynchronous: "NORMAL" | "FULL";
 };
 
 const LOOPBACK = new Set(["127.0.0.1", "::1"]);
@@ -35,5 +37,13 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
     databasePath: env.DATABASE_PATH ?? join(dataDir, "game.sqlite3"),
     webDist: env.WEB_DIST ?? null,
     allowedHosts: loopbackHostsFor(ports),
+    dbSynchronous: parseSynchronous(env.DB_SYNCHRONOUS),
   };
+}
+
+function parseSynchronous(value: string | undefined): "NORMAL" | "FULL" {
+  if (value === undefined || value === "") return "NORMAL";
+  const upper = value.toUpperCase();
+  if (upper === "NORMAL" || upper === "FULL") return upper;
+  throw new Error(`DB_SYNCHRONOUS must be NORMAL or FULL, got ${value}`);
 }

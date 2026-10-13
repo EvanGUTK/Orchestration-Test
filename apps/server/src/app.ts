@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { existsSync } from "node:fs";
+import { createServer } from "node:http";
 import type { DatabaseSync } from "node:sqlite";
 import Fastify, { type FastifyInstance } from "fastify";
 import fastifyCookie from "@fastify/cookie";
@@ -24,6 +25,23 @@ import { LeaderboardService } from "./services/leaderboard-service.js";
 import { ReplayService } from "./services/replay-service.js";
 import { createBotServices, type BotServices } from "@g2048/bots/runner";
 import type { Clock, ServiceContext } from "./services/context.js";
+
+/**
+ * HTTP timeouts (OPS-09): slow-loris clients are cut off promptly. Node checks pending requests every
+ * `connectionsCheckingInterval`; incomplete headers after `headersTimeout`, an incomplete request after
+ * `requestTimeout`; idle keep-alive sockets close after `keepAliveTimeout`, idle sockets after
+ * `connectionTimeout` (upgraded WebSockets clear their own socket timeout).
+ */
+export const HTTP_TIMEOUTS = {
+  headersTimeoutMs: 10_000,
+  requestTimeoutMs: 30_000,
+  keepAliveTimeoutMs: 5_000,
+  connectionTimeoutMs: 120_000,
+  connectionsCheckingIntervalMs: 1_000,
+} as const;
+
+/** Requests slower than this are logged at warn level even when routine logging is at info. */
+export const SLOW_REQUEST_MS = 1_000;
 
 export type AppOptions = {
   db: DatabaseSync;
@@ -69,9 +87,36 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   const app = Fastify({
     logger: loggerOptions(options.logger ?? false),
     bodyLimit: LIMITS.requestBodyBytes,
-    requestTimeout: 30_000,
+    requestTimeout: HTTP_TIMEOUTS.requestTimeoutMs,
+    keepAliveTimeout: HTTP_TIMEOUTS.keepAliveTimeoutMs,
+    connectionTimeout: HTTP_TIMEOUTS.connectionTimeoutMs,
+    serverFactory: (handler) =>
+      createServer(
+        {
+          headersTimeout: HTTP_TIMEOUTS.headersTimeoutMs,
+          requestTimeout: HTTP_TIMEOUTS.requestTimeoutMs,
+          keepAliveTimeout: HTTP_TIMEOUTS.keepAliveTimeoutMs,
+          connectionsCheckingInterval: HTTP_TIMEOUTS.connectionsCheckingIntervalMs,
+        },
+        handler,
+      ),
     genReqId: () => randomUUID(),
     trustProxy: false,
+    // Per-request info lines cost more than the request itself (stdout pipes are synchronous on
+    // Windows; OPS-03). Routine requests log at debug; errors and slow requests at warn (below).
+    disableRequestLogging: true,
+  });
+  app.addHook("onResponse", async (request, reply) => {
+    const ms = reply.elapsedTime;
+    const entry = {
+      reqId: request.id,
+      method: request.method,
+      url: request.url.split("?")[0],
+      statusCode: reply.statusCode,
+      ms,
+    };
+    if (reply.statusCode >= 500 || ms > SLOW_REQUEST_MS) request.log.warn(entry, "request completed");
+    else request.log.debug(entry, "request completed");
   });
 
   const writer = new DatabaseWriter(db, { maxQueue: options.writerQueueMax ?? LIMITS.dbWriterQueueMax });

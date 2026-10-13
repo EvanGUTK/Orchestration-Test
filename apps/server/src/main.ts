@@ -9,7 +9,7 @@ const releaseLock = acquireDatabaseLock(config.databasePath);
 let prepared: PreparedDatabase;
 try {
   // Pending migrations apply (with a preflight backup) before any request is accepted.
-  prepared = await prepareDatabase(config.databasePath);
+  prepared = await prepareDatabase(config.databasePath, { synchronous: config.dbSynchronous });
 } catch (error) {
   releaseLock();
   console.error(

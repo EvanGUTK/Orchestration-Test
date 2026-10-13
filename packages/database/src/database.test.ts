@@ -611,3 +611,37 @@ describe("SEC-FIX-001 L6 schema comparison", () => {
     await expect(restoreDatabase(edited, dbPath)).rejects.toThrow(/modified index games_casual_standings/);
   });
 });
+
+describe("OPS-10 restore over a corrupt live database", () => {
+  it("moves the unreadable database aside byte-for-byte and installs the validated backup", async () => {
+    const { db } = await prepareDatabase(dbPath);
+    track(db);
+    insertTestUser(db, "survivor");
+    const backupPath = join(temp.dir, "good.sqlite3");
+    await backupDatabase(db, backupPath);
+    db.close();
+    for (const suffix of ["-wal", "-shm"]) rmSync(`${dbPath}${suffix}`, { force: true });
+    const garbage = Buffer.from("definitely not sqlite ".repeat(512));
+    writeFileSync(dbPath, garbage);
+
+    const result = await restoreDatabase(backupPath, dbPath);
+    expect(result.safetyBackup).not.toBeNull();
+    expect(readFileSync(result.safetyBackup as string).equals(garbage)).toBe(true);
+    const restored = track(openDatabase(dbPath));
+    expect(restored.prepare("SELECT username_normalized FROM users").all()).toEqual([
+      { username_normalized: "survivor" },
+    ]);
+    expect(restored.prepare("PRAGMA integrity_check").get()).toEqual({ integrity_check: "ok" });
+  });
+});
+
+describe("durability level", () => {
+  it("defaults to WAL + synchronous NORMAL; FULL is opt-in", () => {
+    const normal = track(openDatabase(dbPath));
+    expect(normal.prepare("PRAGMA synchronous").get()).toEqual({ synchronous: 1 });
+    normal.close();
+    const full = track(openDatabase(dbPath, { synchronous: "FULL" }));
+    expect(full.prepare("PRAGMA synchronous").get()).toEqual({ synchronous: 2 });
+    expect(full.prepare("PRAGMA journal_mode").get()).toEqual({ journal_mode: "wal" });
+  });
+});
