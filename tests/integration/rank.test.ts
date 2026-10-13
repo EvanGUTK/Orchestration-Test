@@ -13,10 +13,19 @@ import type {
   GameState,
   LeaderboardEntry,
 } from "@g2048/contracts";
-import { legalMoves, newGame } from "@g2048/engine";
+import { applyMove, legalMoves, newGame } from "@g2048/engine";
 import { createTestApp } from "./helpers/app.js";
 import type { TestApp } from "./helpers/app.js";
-import { cmd, createGame, getGame, legalMove, move, seedGameState, undo } from "./helpers/games.js";
+import {
+  cmd,
+  createGame,
+  getGame,
+  legalMove,
+  move,
+  seedGameState,
+  stateFromDb,
+  undo,
+} from "./helpers/games.js";
 import { Client, expectErrorEnvelope } from "./helpers/http.js";
 import type { Res } from "./helpers/http.js";
 
@@ -29,9 +38,10 @@ afterEach(async () => {
 });
 
 async function challenges(c: Client): Promise<ChallengeSummary[]> {
-  const r = await c.get<{ items?: ChallengeSummary[] } | ChallengeSummary[]>("/challenges");
+  // C17: GET /challenges -> 200 Page<ChallengeSummary>
+  const r = await c.get<{ items: ChallengeSummary[]; nextCursor: string | null }>("/challenges");
   expect(r.status, r.text).toBe(200);
-  return Array.isArray(r.json) ? r.json : (r.json.items ?? []);
+  return r.json.items;
 }
 async function openChallenge(c: Client): Promise<ChallengeSummary> {
   const ch = (await challenges(c)).find((x) => x.status === "open");
@@ -53,7 +63,7 @@ describe("RANK-01 one official attempt per account and challenge", () => {
     expect(ch.moveCap).toBe(500);
 
     const start = await attempt(a, ch.id);
-    expect([200, 201], start.text).toContain(start.status);
+    expect(start.status, start.text).toBe(201); // C17: new attempt
     expect(start.json.game).toMatchObject({ mode: "ranked", rulesetVersion: "ranked-v1", status: "active" });
     expect(start.json.state.board.cells.filter((x) => x !== null)).toHaveLength(2);
     let s = start.json.state;
@@ -63,7 +73,7 @@ describe("RANK-01 one official attempt per account and challenge", () => {
     const a2 = new Client(t.app);
     expect((await a2.login("ranked_a", "correct horse battery")).status).toBe(200);
     const resumed = await attempt(a2, ch.id);
-    expect([200, 201]).toContain(resumed.status);
+    expect(resumed.status, resumed.text).toBe(200); // C17: resume
     expect(resumed.json.game.id).toBe(start.json.game.id);
     expect(resumed.json.state).toEqual(s);
     expect((await challenges(a2)).find((x) => x.id === ch.id)?.myAttempt).toEqual({
@@ -78,8 +88,8 @@ describe("RANK-01 one official attempt per account and challenge", () => {
     expect(ff.status, ff.text).toBe(200);
     expect((await challenges(a2)).find((x) => x.id === ch.id)?.myAttempt?.status).toBe("forfeited");
     const retry = await attempt(a2, ch.id);
-    expect([403, 409], retry.text).toContain(retry.status);
-    expectErrorEnvelope(retry);
+    expect(retry.status, retry.text).toBe(403); // C17: consumed attempt
+    expectErrorEnvelope(retry, "FORBIDDEN");
     const n = t.db
       .prepare("SELECT COUNT(*) AS n FROM challenge_attempts WHERE challenge_id = ?")
       .get(ch.id) as { n: number };
@@ -105,8 +115,8 @@ describe("RANK-01 one official attempt per account and challenge", () => {
     const ch = await openChallenge(owner);
     const guest = new Client(t.app);
     const r = await attempt(guest, ch.id);
-    expect([401, 403]).toContain(r.status);
-    expectErrorEnvelope(r);
+    expect(r.status, r.text).toBe(403); // C17: guests
+    expectErrorEnvelope(r, "FORBIDDEN");
   });
 });
 
@@ -147,11 +157,15 @@ describe("RANK-02 ranked rules are enforced by the server", () => {
     await a.signUp("ranked_cap");
     const ch = await openChallenge(a);
     const g = await attempt(a, ch.id);
-    const at499: GameState = { ...g.json.state, acceptedMoves: 499 };
+    // C20: ranked responses omit state.rng; the full state comes from the database row
+    expect(g.json.state.rng, "C20: ranked API responses omit rng").toBeUndefined();
+    const at499: GameState = { ...stateFromDb(t.db, g.json.game.id), acceptedMoves: 499 };
     seedGameState(t.db, g.json.game.id, at499);
     const d = legalMoves(at499.board)[0] as Direction;
     const r = await move(a, g.json.game.id, d, at499.revision);
     expect(r.status, r.text).toBe(200);
+    const { rng: _rng, ...expectedPublic } = applyMove(at499, d, RULESETS["ranked-v1"]).state;
+    expect(r.json.state).toEqual(expectedPublic);
     expect(r.json.state.acceptedMoves).toBe(500);
     expect(r.json.state.status).toBe("completed");
     // C14: commands on a non-active game -> 403 FORBIDDEN at the current revision, 409 if stale
