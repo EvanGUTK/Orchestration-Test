@@ -128,3 +128,7 @@ integration (do not commit `package-lock.json` changes from a worker branch).
 - C14. Game command responses: `POST /games` → 201 `GameResponse`; moves → 200 `MoveResponse`; undo/forfeit
   (`RevisionCommandRequest`) → 200 `GameResponse`; a repeated commandId returns the originally stored response;
   commands on a non-active game → 409 `REVISION_CONFLICT` if the revision is stale, else 403 `FORBIDDEN`.
+- C15. Ownership handoff (chief, for BACKEND-005 parallelism): the competition lane owns the NEW directories
+  `apps/server/src/matches/**` and `apps/server/src/realtime/**`; backend keeps every other server/database path,
+  including `app.ts` registration and migrations. Generic `/games/:id/*` routes serve only classic/practice games;
+  ranked attempts and duel seats use mode-restricted internal game-service methods (SEC-R2-02).
