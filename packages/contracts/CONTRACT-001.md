@@ -132,3 +132,16 @@ integration (do not commit `package-lock.json` changes from a worker branch).
   `apps/server/src/matches/**` and `apps/server/src/realtime/**`; backend keeps every other server/database path,
   including `app.ts` registration and migrations. Generic `/games/:id/*` routes serve only classic/practice games;
   ranked attempts and duel seats use mode-restricted internal game-service methods (SEC-R2-02).
+- C15a. Amendment: ranked challenge games use the generic `/games/:id/moves` and `/games/:id/forfeit` routes with
+  mode-aware delegation (ranked ruleset: undo 403, 500 cap, attempt bookkeeping in the same transaction). Duel and
+  bot-vs-bot games are 404 on every generic route; a caller's own bot-exhibition game is readable (GET) there.
+- C16. `ReplayFile.rules?: Ruleset` (optional field, additive). Exporters always include it; it is required to verify
+  `practice-v1` replays; importers use it (and check `rules.version === rulesetVersion`) instead of guessing.
+- C17. `GET /challenges` → 200 `Page<ChallengeSummary>`; `POST /challenges/:id/attempts` → 201 `GameResponse` for a
+  new attempt, 200 `GameResponse` when resuming; consumed/completed attempt → 409 `REVISION_CONFLICT`-free 403 `FORBIDDEN`.
+- C18. WebSocket adds `match.updated` (payload `{ match: MatchView }`) for lobby join / match start / seat progress.
+  Season rows (incl. `duel-v1` and `ranked-v1` active seasons) are seeded by backend at startup; other services read them.
+- C19. Casual best-score board counts all `classic-v1` games (server- or client-seeded). It is a casual board and not
+  tamper-proof (seed choice, undo); ranked challenge standings are the competitive board. Documented in the UI/README.
+- C20. Ranked and duel API responses omit `state.rng` (SEC-R2-06); tests needing a full state build it from
+  `newGame(rules, seed)` or read it from the database.

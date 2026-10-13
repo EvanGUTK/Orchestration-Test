@@ -4,6 +4,7 @@ import type { PROTOCOL_VERSION } from "./versions.js";
 export const WS_PATH = "/api/v1/events";
 export const WS_EVENT_TYPES = [
   "game.updated",
+  "match.updated",
   "match.seat-ended",
   "match.finished",
   "rating.updated",
