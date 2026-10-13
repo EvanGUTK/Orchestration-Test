@@ -11,8 +11,9 @@ export type {
   BotPoolTask,
   BotWorkerPoolOptions,
 } from "./pool.js";
-export { BotRunner } from "./runner.js";
+export { BotRunner, DEFAULT_IDLE_TIMEOUT_MS, DEFAULT_MAX_WALL_CLOCK_MS } from "./runner.js";
 export type {
+  BotRunCancelReason,
   BotRunHandle,
   BotRunnerErrorCode,
   BotRunnerOptions,
