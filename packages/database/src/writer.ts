@@ -51,6 +51,7 @@ export class DatabaseWriter {
   #scheduled = false;
   #closed = false;
   #idleWaiters: (() => void)[] = [];
+  #commitCallbacks: (() => void)[] | null = null;
 
   constructor(db: DatabaseSync, options: WriterOptions = {}) {
     this.db = db;
@@ -70,6 +71,16 @@ export class DatabaseWriter {
       this.#queue.push({ work, resolve: resolve as (value: unknown) => void, reject });
       this.#schedule();
     });
+  }
+
+  /**
+   * Registers `callback` to run after the CURRENT job's transaction commits (never on rollback).
+   * Only valid inside a job passed to `run`; used to publish events strictly after the commit.
+   * Callback errors are swallowed so a faulty listener can never undo or fail a committed write.
+   */
+  afterCommit(callback: () => void): void {
+    if (this.#commitCallbacks === null) throw new Error("afterCommit must be called inside a writer job");
+    this.#commitCallbacks.push(callback);
   }
 
   /** Resolves once every queued job has finished. */
@@ -93,10 +104,27 @@ export class DatabaseWriter {
   #pump(): void {
     const job = this.#queue.shift();
     if (job) {
+      const callbacks: (() => void)[] = [];
+      this.#commitCallbacks = callbacks;
+      let committed = false;
+      let value: unknown;
       try {
-        job.resolve(transactionSync(this.db, job.work));
+        value = transactionSync(this.db, job.work);
+        committed = true;
       } catch (error) {
         job.reject(error);
+      } finally {
+        this.#commitCallbacks = null;
+      }
+      if (committed) {
+        for (const callback of callbacks) {
+          try {
+            callback();
+          } catch {
+            // listeners must not affect a committed transaction
+          }
+        }
+        job.resolve(value);
       }
     }
     if (this.#queue.length > 0) {

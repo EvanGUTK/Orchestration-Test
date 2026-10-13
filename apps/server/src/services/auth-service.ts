@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import {
   LIMITS,
   PreferencesSchema,
@@ -17,7 +17,15 @@ import {
 } from "@g2048/database";
 import { AppError } from "../http/errors.js";
 import type { PasswordHasher } from "../security/passwords.js";
-import { csrfTokenFor, hashToken, isWellFormedToken, newSessionToken } from "../security/tokens.js";
+import {
+  csrfTokenFor,
+  hashToken,
+  isPendingGuestTokenShape,
+  isWellFormedToken,
+  newPendingGuestToken,
+  newSessionToken,
+  verifyPendingGuestToken,
+} from "../security/tokens.js";
 import type { ServiceContext } from "./context.js";
 import { nowIso } from "./context.js";
 import type { AnonymousIdentity, GuestIdentity, Identity, UserIdentity } from "./identity.js";
@@ -38,6 +46,8 @@ export function checkDisplayName(name: string): void {
 }
 
 const GENERIC_LOGIN_FAILURE = "Invalid username or password";
+/** Guests without a session whose games are all older than this are purged with their games. */
+export const GUEST_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 
 export type NewSession = { token: string; expiresAt: Date };
 
@@ -51,6 +61,8 @@ export type AuthServiceOptions = {
   registrationsPerWindow?: number;
   /** Guest identities created per client per window (default 30). */
   guestsPerWindow?: number;
+  /** Total guest identities kept (default 10_000); creation beyond it is RESOURCE_LIMIT. */
+  maxGuests?: number;
 };
 
 function rateLimited(decision: RateLimitDecision, message: string): AppError | null {
@@ -72,6 +84,9 @@ export class AuthService {
   readonly #perClient: FailureRateLimiter;
   readonly #registrations: FailureRateLimiter;
   readonly #guestCreation: FailureRateLimiter;
+  /** Per-process key for pending guest tokens; a restart invalidates unpersisted pending tokens. */
+  readonly #pendingSecret = randomBytes(32);
+  readonly #maxGuests: number;
 
   constructor(ctx: ServiceContext, options: AuthServiceOptions) {
     this.#ctx = ctx;
@@ -89,6 +104,7 @@ export class AuthService {
       now,
     });
     this.#guestCreation = new FailureRateLimiter({ limit: options.guestsPerWindow ?? 30, windowMs, now });
+    this.#maxGuests = options.maxGuests ?? 10_000;
   }
 
   /** Eagerly prepares the dummy hash so unknown-user timing matches from the first request. */
@@ -109,7 +125,7 @@ export class AuthService {
         return { kind: "user", user, sessionToken: sidCookie, tokenHash, csrfToken: csrfTokenFor(sidCookie) };
       }
     }
-    if (isWellFormedToken(gidCookie)) {
+    if (isWellFormedToken(gidCookie) || isPendingGuestTokenShape(gidCookie)) {
       const tokenHash = hashToken(gidCookie);
       const session = sessionsRepo.findActive(db, tokenHash, "guest", now);
       if (session?.guestId) {
@@ -121,14 +137,17 @@ export class AuthService {
           csrfToken: csrfTokenFor(gidCookie),
         };
       }
-      return { kind: "anonymous", pendingToken: gidCookie, csrfToken: csrfTokenFor(gidCookie) };
+      // Not a session: only a pending token minted by this server process is honoured.
+      if (isPendingGuestTokenShape(gidCookie) && verifyPendingGuestToken(this.#pendingSecret, gidCookie)) {
+        return { kind: "anonymous", pendingToken: gidCookie, csrfToken: csrfTokenFor(gidCookie) };
+      }
     }
     return { kind: "anonymous", pendingToken: null, csrfToken: null };
   }
 
   /** A fresh unregistered `gid` token for an anonymous caller; nothing is written to the database. */
   issuePendingGuestToken(): { token: string; csrfToken: string; expiresAt: Date } {
-    const token = newSessionToken();
+    const token = newPendingGuestToken(this.#pendingSecret);
     return {
       token,
       csrfToken: csrfTokenFor(token),
@@ -161,14 +180,21 @@ export class AuthService {
     if (limited) throw limited;
     const guestId = randomUUID();
     const expiresAt = new Date(this.#ctx.clock().getTime() + this.#sessionTtlMs);
-    let token = anonymous.pendingToken ?? newSessionToken();
+    // Only a token this server process minted (MAC-verified in resolve) is adopted (SEC-R2-03).
+    const adoptable =
+      anonymous.pendingToken !== null && verifyPendingGuestToken(this.#pendingSecret, anonymous.pendingToken);
+    let token = adoptable ? (anonymous.pendingToken as string) : newPendingGuestToken(this.#pendingSecret);
     const tokenHash = await this.#ctx.writer.run((db) => {
       const now = nowIso(this.#ctx);
+      const guests = (db.prepare("SELECT COUNT(*) AS n FROM guests").get() as { n: number }).n;
+      if (guests >= this.#maxGuests) {
+        throw new AppError("RESOURCE_LIMIT", "Too many guest profiles on this machine; create an account");
+      }
       let hash = hashToken(token);
       const reused =
         db.prepare("SELECT 1 AS used FROM sessions WHERE token_hash = ?").get(hash) !== undefined;
       if (reused) {
-        token = newSessionToken();
+        token = newPendingGuestToken(this.#pendingSecret);
         hash = hashToken(token);
       }
       guestsRepo.insert(db, guestId, now);
@@ -362,12 +388,21 @@ export class AuthService {
 
   // ---------- housekeeping ----------
 
-  /** Deletes expired/revoked sessions and guests left with no session and no games. */
+  /**
+   * Retention (documented in apps/server/README.md): deletes expired/revoked sessions, guests left
+   * with no session and no games, and guests with no session whose games were all last touched more
+   * than GUEST_RETENTION_MS ago (their games cascade).
+   */
   async purgeInactive(): Promise<{ sessions: number; guests: number }> {
     return this.#ctx.writer.run((db) => {
-      const sessions = sessionsRepo.purgeInactive(db, nowIso(this.#ctx));
-      const guests = guestsRepo.purgeOrphans(db);
-      return { sessions, guests };
+      const now = this.#ctx.clock();
+      const sessions = sessionsRepo.purgeInactive(db, now.toISOString());
+      const orphans = guestsRepo.purgeOrphans(db);
+      const abandoned = guestsRepo.purgeAbandoned(
+        db,
+        new Date(now.getTime() - GUEST_RETENTION_MS).toISOString(),
+      );
+      return { sessions, guests: orphans + abandoned };
     });
   }
 

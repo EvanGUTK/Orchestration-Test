@@ -26,6 +26,8 @@ export type GameRecord = {
   state: GameState;
   stateChecksum: string;
   maxExponent: string | null;
+  /** Size of the bounded undo stack (migration 2). */
+  undoAvailable: number;
   createdAt: string;
   updatedAt: string;
 };
@@ -48,13 +50,14 @@ type RawGame = {
   status: GameState["status"];
   celebrated_2048: number;
   state_checksum: string;
+  undo_available: number;
   created_at: string;
   updated_at: string;
 };
 
 const GAME_COLUMNS = `id, owner_user_id, owner_guest_id, mode, ruleset_version, rules_json, engine_version, seed,
   board_json, rng_state, score, max_exponent, accepted_moves, revision, status, celebrated_2048, state_checksum,
-  created_at, updated_at`;
+  undo_available, created_at, updated_at`;
 
 function toRecord(row: RawGame): GameRecord {
   const board = JSON.parse(row.board_json) as Board;
@@ -82,6 +85,7 @@ function toRecord(row: RawGame): GameRecord {
     state,
     stateChecksum: row.state_checksum,
     maxExponent: row.max_exponent,
+    undoAvailable: row.undo_available,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -134,7 +138,8 @@ export const gamesRepo = {
     db: DatabaseSync,
     game: {
       id: string;
-      owner: GameOwnerRef;
+      /** null for games no human or guest owns (e.g. bot-vs-bot seats). */
+      owner: GameOwnerRef | null;
       mode: GameMode;
       rulesJson: string;
       seed: string;
@@ -152,8 +157,8 @@ export const gamesRepo = {
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     ).run(
       game.id,
-      "userId" in game.owner ? game.owner.userId : null,
-      "guestId" in game.owner ? game.owner.guestId : null,
+      game.owner && "userId" in game.owner ? game.owner.userId : null,
+      game.owner && "guestId" in game.owner ? game.owner.guestId : null,
       game.mode,
       s.rulesetVersion,
       game.rulesJson,
@@ -192,11 +197,12 @@ export const gamesRepo = {
     checksum: string,
     maxExponent: string | null,
     now: string,
+    undoAvailable = 0,
   ): boolean {
     const result = db
       .prepare(
         `UPDATE games SET board_json = ?, rng_state = ?, score = ?, max_exponent = ?, accepted_moves = ?, revision = ?,
-           status = ?, celebrated_2048 = ?, state_checksum = ?, updated_at = ?,
+           status = ?, celebrated_2048 = ?, state_checksum = ?, updated_at = ?, undo_available = ?,
            finished_at = CASE WHEN ? = 'active' THEN NULL ELSE COALESCE(finished_at, ?) END
          WHERE id = ? AND revision = ?`,
       )
@@ -211,6 +217,7 @@ export const gamesRepo = {
         state.celebrated2048 ? 1 : 0,
         checksum,
         now,
+        undoAvailable,
         state.status,
         now,
         id,
@@ -219,31 +226,56 @@ export const gamesRepo = {
     return Number(result.changes) === 1;
   },
 
-  /** Owned games with `status`, newest activity first; keyset cursor on (updated_at, id). */
+  /** Owned games with `status` and one of `modes`, newest activity first; keyset cursor on (updated_at, id). */
   listOwned(
     db: DatabaseSync,
     owner: GameOwnerRef,
     status: GameState["status"],
+    modes: readonly GameMode[],
     after: { updatedAt: string; id: string } | null,
     limit: number,
   ): GameRecord[] {
     const column = "userId" in owner ? "owner_user_id" : "owner_guest_id";
     const ownerId = "userId" in owner ? owner.userId : owner.guestId;
+    const modeList = modes.map(() => "?").join(", ");
     const rows = after
       ? db
           .prepare(
-            `SELECT ${GAME_COLUMNS} FROM games WHERE ${column} = ? AND status = ?
+            `SELECT ${GAME_COLUMNS} FROM games WHERE ${column} = ? AND status = ? AND mode IN (${modeList})
                AND (updated_at < ? OR (updated_at = ? AND id < ?))
              ORDER BY updated_at DESC, id DESC LIMIT ?`,
           )
-          .all(ownerId, status, after.updatedAt, after.updatedAt, after.id, limit)
+          .all(ownerId, status, ...modes, after.updatedAt, after.updatedAt, after.id, limit)
       : db
           .prepare(
-            `SELECT ${GAME_COLUMNS} FROM games WHERE ${column} = ? AND status = ?
+            `SELECT ${GAME_COLUMNS} FROM games WHERE ${column} = ? AND status = ? AND mode IN (${modeList})
              ORDER BY updated_at DESC, id DESC LIMIT ?`,
           )
-          .all(ownerId, status, limit);
+          .all(ownerId, status, ...modes, limit);
     return (rows as RawGame[]).map(toRecord);
+  },
+
+  countActiveOwned(db: DatabaseSync, owner: GameOwnerRef, modes: readonly GameMode[]): number {
+    const column = "userId" in owner ? "owner_user_id" : "owner_guest_id";
+    const ownerId = "userId" in owner ? owner.userId : owner.guestId;
+    const row = db
+      .prepare(
+        `SELECT COUNT(*) AS n FROM games WHERE ${column} = ? AND status = 'active'
+           AND mode IN (${modes.map(() => "?").join(", ")})`,
+      )
+      .get(ownerId, ...modes) as { n: number };
+    return row.n;
+  },
+
+  /** Keeps only the newest `keep` no-change command rows of a game (bounded idempotency log for no-ops). */
+  pruneNoChangeCommands(db: DatabaseSync, gameId: string, keep: number): number {
+    const result = db
+      .prepare(
+        `DELETE FROM game_commands WHERE game_id = ? AND outcome = 'no-change' AND rowid NOT IN (
+           SELECT rowid FROM game_commands WHERE game_id = ? AND outcome = 'no-change' ORDER BY rowid DESC LIMIT ?)`,
+      )
+      .run(gameId, gameId, keep);
+    return Number(result.changes);
   },
 
   listIdsByStatus(db: DatabaseSync, status: GameState["status"]): string[] {

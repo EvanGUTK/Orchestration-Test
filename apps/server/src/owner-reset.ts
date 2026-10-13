@@ -1,5 +1,12 @@
 import { PasswordInput } from "@g2048/contracts";
-import { DatabaseWriter, inspectMigrations, lockHolder, MIGRATIONS, openDatabase } from "@g2048/database";
+import {
+  acquireDatabaseLock,
+  DatabaseLockedError,
+  DatabaseWriter,
+  inspectMigrations,
+  MIGRATIONS,
+  openDatabase,
+} from "@g2048/database";
 import { AppError, parseWith } from "./http/errors.js";
 import { PasswordHasher } from "./security/passwords.js";
 import { AuthService } from "./services/auth-service.js";
@@ -8,7 +15,8 @@ import { AuthService } from "./services/auth-service.js";
  * Explicit local owner password reset (PROJECT_SCOPE "Password recovery is an explicit local owner
  * reset"). Only reachable from the CLI on the machine that holds the database file; there is no HTTP
  * route and no hidden credential. Every session of the account is revoked. Refused while the server
- * holds the database (its in-memory state would be stale) or while migrations are pending.
+ * holds the database (its in-memory state would be stale) or while migrations are pending, and holds
+ * the owner lock itself for the whole reset so a server cannot start mid-reset (SEC-FIX-002 R2-04).
  */
 export async function ownerResetPassword(
   databasePath: string,
@@ -20,8 +28,17 @@ export async function ownerResetPassword(
     throw new Error("New password must be 12-128 characters");
   }
   const password = parseWith(PasswordInput, newPassword);
-  const holder = lockHolder(databasePath);
-  if (holder) throw new Error(`The server (pid ${holder.pid}) is using the database; stop it first`);
+  let release: () => void;
+  try {
+    release = acquireDatabaseLock(databasePath);
+  } catch (error) {
+    if (error instanceof DatabaseLockedError) {
+      throw new Error(`The server (pid ${error.holderPid}) is using the database; stop it first`, {
+        cause: error,
+      });
+    }
+    throw error;
+  }
   const db = openDatabase(databasePath);
   const writer = new DatabaseWriter(db);
   try {
@@ -42,5 +59,6 @@ export async function ownerResetPassword(
   } finally {
     await writer.close();
     db.close();
+    release();
   }
 }

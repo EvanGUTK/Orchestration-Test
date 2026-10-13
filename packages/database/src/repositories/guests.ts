@@ -40,6 +40,23 @@ export const guestsRepo = {
     return Number(result.changes) === 1;
   },
 
+  /**
+   * Retention: delete guests that have no session left (expired sessions are purged first), were
+   * last seen before `before`, and whose games were all last updated before `before`. Their games,
+   * commands, moves, and snapshots cascade.
+   */
+  purgeAbandoned(db: DatabaseSync, before: string): number {
+    const result = db
+      .prepare(
+        `DELETE FROM guests
+          WHERE last_seen_at < ?
+            AND NOT EXISTS (SELECT 1 FROM sessions s WHERE s.guest_id = guests.id)
+            AND NOT EXISTS (SELECT 1 FROM games g WHERE g.owner_guest_id = guests.id AND g.updated_at >= ?)`,
+      )
+      .run(before, before);
+    return Number(result.changes);
+  },
+
   /** Housekeeping: delete guests with no session rows and no owned games. */
   purgeOrphans(db: DatabaseSync): number {
     const result = db
