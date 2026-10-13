@@ -1,7 +1,7 @@
 // Cookie-jar + CSRF client over Fastify inject, per CONTRACT-001 "HTTP / WebSocket / DB":
 // mutating requests carry a same-origin `Origin` and `x-csrf-token` (from GET /auth/me);
 // cookies `sid` (account) and `gid` (guest) are HttpOnly; SameSite=Strict; Path=/.
-import { request as httpRequest } from "node:http";
+import { Agent, request as httpRequest } from "node:http";
 import { API_BASE } from "@g2048/contracts";
 import type { MeResponse } from "@g2048/contracts";
 import type { App } from "./app.js";
@@ -54,6 +54,9 @@ type RawResponse = {
   headers: Record<string, string | string[] | number | undefined>;
 };
 
+/** Keep-alive pool for real-socket transport (avoids ephemeral-port churn in long perf runs). */
+const keepAlive = new Agent({ keepAlive: true, maxSockets: 256 });
+
 function httpSend(
   port: number,
   method: string,
@@ -63,7 +66,7 @@ function httpSend(
 ): Promise<RawResponse> {
   return new Promise((resolve, reject) => {
     const req = httpRequest(
-      { host: "127.0.0.1", port, method, path: url, headers, timeout: 30_000 },
+      { host: "127.0.0.1", port, method, path: url, headers, timeout: 30_000, agent: keepAlive },
       (res) => {
         const chunks: Buffer[] = [];
         res.on("data", (c: Buffer) => chunks.push(c));
