@@ -145,3 +145,12 @@ integration (do not commit `package-lock.json` changes from a worker branch).
   tamper-proof (seed choice, undo); ranked challenge standings are the competitive board. Documented in the UI/README.
 - C20. Ranked and duel API responses omit `state.rng` (SEC-R2-06); tests needing a full state build it from
   `newGame(rules, seed)` or read it from the database.
+- C21. Additions accepted from BACKEND-004/SEC-FIX-004: `BotRunView.cancelReason?: "user" | "wall-clock" | "idle" | null`;
+  attempt responses may include `attempt` (status); `POST /replays/import` → 201 `{ id, rulesetVersion, moves, finalChecksum,
+  score }`; practice replays must carry `rules` to import. Resource caps (imports, bot runs, lobbies, active games) answer
+  503 `RESOURCE_LIMIT` (429 `RATE_LIMITED` for per-minute throttles) with `details.limit`.
+- C22. Profile endpoints (M5): `GET /profile/stats` → profile statistics (exact decimals) computed with
+  `computeProfileStats`; `GET /profile/export` → JSON download of the caller's own data (no password hash, tokens, CSRF,
+  other users' data); `DELETE /profile` (`DeleteProfileRequest`, reauth) → private fields deleted, competitive history
+  anonymized ("Deleted player"), replays stay valid, imports and bot runs removed; `GET /profile/data-location` →
+  `{ dataDir, databasePath, backupCommand }` for signed-in local users (shown in Settings).
