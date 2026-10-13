@@ -163,6 +163,24 @@ undo/forfeit. The writer primitive behind it is `writer.afterCommit(callback)`.
   result is persisted. Runs in flight at a crash are marked `cancelled` (`metrics.interruptedByRestart`)
   at the next start, never counted as results. `bot.progress` / `bot.finished` events go to the bus.
 
+## Durability and timeouts (BACKEND-FIX-003)
+
+- SQLite runs in WAL mode with `PRAGMA synchronous = NORMAL` by default. Every acknowledged command
+  is committed atomically and survives **process termination** (kill, crash, `Ctrl+C`): the WAL is
+  replayed on the next open and the database is never left partially written (DB-02). The window:
+  an **operating-system crash or power loss** may drop the most recently committed transactions
+  (those not yet checkpointed/fsynced), rolling the game back to an earlier consistent state; it
+  never corrupts or half-applies a move. Set `DB_SYNCHRONOUS=FULL` to fsync every commit and close
+  that window, at the cost of slower writes (OPS-03).
+- HTTP timeouts (OPS-09): headers must arrive within 10 s, a whole request within 30 s, idle
+  keep-alive sockets close after 5 s and idle sockets after 120 s; Node enforces them every 1 s.
+- Logging: routine requests are logged at `debug` (one line each, method/path/status/ms); 5xx and
+  requests slower than 1 s at `warn`. Per-request info lines cost more than the request itself on
+  Windows, where stdout pipes are synchronous (OPS-03 p95 210 ms → ~50 ms). `LOG_LEVEL=debug` restores
+  the full request log.
+- Restore over a corrupt live database (OPS-10): the unreadable file and its `-wal`/`-shm` are moved
+  aside byte-for-byte as `<db>.pre-restore-<stamp>` and the validated backup is installed.
+
 ## Local-only threat model (security gate 1 notes)
 
 The product binds to loopback and has no remote users. Anyone with OS access to the data directory

@@ -11,6 +11,14 @@ function stamp(): string {
   return new Date().toISOString().replace(/[:.]/g, "-");
 }
 
+/** Renames a database file and its -wal/-shm/-journal sidecars (when present) to `destination*`. */
+function moveAside(path: string, destination: string): void {
+  for (const suffix of ["-wal", "-shm", "-journal"]) {
+    if (existsSync(`${path}${suffix}`)) renameSync(`${path}${suffix}`, `${destination}${suffix}`);
+  }
+  renameSync(path, destination);
+}
+
 function removeDatabaseFiles(path: string): void {
   for (const suffix of ["", "-wal", "-shm", "-journal"]) rmSync(`${path}${suffix}`, { force: true });
 }
@@ -171,7 +179,9 @@ export type RestoreResult = {
  *     (integrity_check, foreign_key_check, known migration versions/checksums, and a schema digest
  *     matching a fresh database migrated to the same version; see compareSchema). Any failure deletes
  *     the staging file and leaves the active database untouched.
- *  3. Checkpoints the current target and saves it via the backup API as `<target>.pre-restore-<stamp>`.
+ *  3. Checkpoints the current target and saves it via the backup API as `<target>.pre-restore-<stamp>`;
+ *     if the current target is unreadable (corrupt), it is moved aside byte-for-byte under that name
+ *     together with its -wal/-shm sidecars instead.
  *  4. Atomically renames the staged file over the target and removes stale -wal/-shm sidecars.
  * Pending migrations (an older backup) are applied by the next server start / `db:migrate`.
  */
@@ -227,16 +237,23 @@ async function restoreLocked(
   let safetyBackup: string | null = null;
   try {
     if (existsSync(target)) {
-      const current = new DatabaseSync(target);
+      safetyBackup = `${target}.pre-restore-${stamp()}`;
       try {
-        current.exec("PRAGMA wal_checkpoint(TRUNCATE)");
-        safetyBackup = `${target}.pre-restore-${stamp()}`;
-        await backupDatabase(current, safetyBackup);
-      } finally {
-        current.close();
+        const current = new DatabaseSync(target);
+        try {
+          current.exec("PRAGMA wal_checkpoint(TRUNCATE)");
+          await backupDatabase(current, safetyBackup);
+        } finally {
+          current.close();
+        }
+        for (const suffix of ["-wal", "-shm", "-journal"]) rmSync(`${target}${suffix}`, { force: true });
+      } catch {
+        // The current database is unreadable (e.g. corrupt): keep it byte-for-byte, with its
+        // sidecars, instead of a SQLite-level copy, so restoring over it still works (OPS-10).
+        removeDatabaseFiles(safetyBackup);
+        moveAside(target, safetyBackup);
       }
     }
-    for (const suffix of ["-wal", "-shm", "-journal"]) rmSync(`${target}${suffix}`, { force: true });
     renameSync(staged, target);
   } catch (error) {
     removeDatabaseFiles(staged);

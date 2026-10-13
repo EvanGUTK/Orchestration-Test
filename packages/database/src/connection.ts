@@ -6,6 +6,12 @@ export type OpenOptions = {
   /** Milliseconds SQLite waits on a competing lock before failing with SQLITE_BUSY. */
   busyTimeoutMs?: number;
   readOnly?: boolean;
+  /**
+   * WAL durability level. NORMAL (default) is crash-safe for PROCESS termination and keeps the database
+   * consistent, but an OS crash or power loss may lose the most recently committed transactions.
+   * FULL fsyncs on every commit (slower writes) and also survives power loss. Env: DB_SYNCHRONOUS.
+   */
+  synchronous?: "NORMAL" | "FULL";
 };
 
 export const DEFAULT_BUSY_TIMEOUT_MS = 5_000;
@@ -22,7 +28,7 @@ export function openDatabase(path: string, options: OpenOptions = {}): DatabaseS
   db.exec(`PRAGMA busy_timeout = ${busy}`);
   if (!readOnly) {
     db.exec("PRAGMA journal_mode = WAL");
-    db.exec("PRAGMA synchronous = FULL");
+    db.exec(`PRAGMA synchronous = ${options.synchronous === "FULL" ? "FULL" : "NORMAL"}`);
   }
   db.exec("PRAGMA foreign_keys = ON");
   db.enableDefensive(true);
