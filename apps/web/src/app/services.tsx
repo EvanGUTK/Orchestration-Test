@@ -3,6 +3,11 @@ import type { ReactNode } from "react";
 import type { Announcer } from "../a11y/announcer.js";
 import type { ApiClient, ConnectionState } from "../api/client.js";
 import type { GameController, GameSnapshot } from "../game/controller.js";
+import type { EnginePort } from "../game/engine-port.js";
+import type { ReplayAnalyzer } from "../replay/analyzer.js";
+import type { DecisionService } from "../bots/decision.js";
+import type { EventStream } from "../api/events.js";
+import type { RankingSource } from "../ranking/source.js";
 import type { ServerGameAdapter } from "../game/server-adapter.js";
 import type { GuestSaveStore } from "../game/save-store.js";
 import type { SoundPlayer } from "../lib/sound.js";
@@ -13,6 +18,14 @@ import type { AuthState, AuthStore } from "./auth.js";
 /** Everything screens need, injected so tests can supply doubles (engine, fetch, storage, timers). */
 export type AppServices = {
   readonly api: ApiClient;
+  /** The pure engine (guest play, replay building/verification), or null if unavailable. */
+  readonly engine: EnginePort | null;
+  readonly replayAnalyzer: ReplayAnalyzer | null;
+  /** Bot search off the UI thread (Web Worker), or null when workers are unavailable. */
+  readonly decisions: DecisionService | null;
+  /** Server push events (WebSocket), or null when unavailable. */
+  readonly events: EventStream | null;
+  readonly ranking: RankingSource;
   readonly auth: AuthStore;
   /** Guest game (local engine, works offline), or null if no engine is available in this build. */
   readonly localGame: GameController | null;

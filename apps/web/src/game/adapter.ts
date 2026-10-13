@@ -64,4 +64,14 @@ export interface GameAdapter {
   reload(): Promise<GameSession | null>;
   /** Detaches the current game (and removes a local guest save). Server games stay resumable. */
   discard(): Promise<void>;
+  /** Local games: what is needed to build a ReplayFile (initial state + accepted final-path moves). */
+  replayData?(): ReplayData | null;
 }
+
+export type ReplayData = {
+  readonly mode: GameMode;
+  readonly rules: Ruleset;
+  readonly seed: string;
+  readonly initial: GameState;
+  readonly moves: readonly Direction[];
+};

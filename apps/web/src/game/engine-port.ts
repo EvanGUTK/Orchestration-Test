@@ -1,4 +1,12 @@
-import type { Board, Direction, GameState, MoveResult, Ruleset } from "@g2048/contracts";
+import type {
+  Board,
+  Direction,
+  EngineErrorCode,
+  GameState,
+  MoveResult,
+  ReplayFile,
+  Ruleset,
+} from "@g2048/contracts";
 
 /**
  * The subset of the CONTRACT-001 engine API (`@g2048/engine`) that the browser uses for guest play.
@@ -14,6 +22,19 @@ export type EnginePort = {
   serialize(state: GameState): string;
   /** Validates; throws an EngineError-shaped value ({ code }) on bad input/version. */
   deserialize(json: string): GameState;
+  checksum(state: GameState): string;
+  /** Re-applies moves; returns the final state and the checksum after each move. */
+  replay(
+    initial: GameState,
+    moves: readonly Direction[],
+    rules: Ruleset,
+  ): { final: GameState; checksums: string[] };
+  verifyReplay(
+    file: ReplayFile,
+    rules: Ruleset,
+  ):
+    | { ok: true; final: GameState }
+    | { ok: false; code: EngineErrorCode; atMove: number | null; message: string };
 };
 
 export type EngineFailure = { code: string; message: string };

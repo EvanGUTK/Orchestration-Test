@@ -8,6 +8,7 @@
     "dev": "vite"
   },
   "dependencies": {
+    "@g2048/bots": "0.1.0",
     "@g2048/contracts": "0.1.0",
     "@g2048/engine": "0.1.0",
     "react": "19.3.0",
